@@ -1,5 +1,5 @@
 # ton-wallet
-tonwallet.me is a free, client-side interface helping you interact with the TON blockchain.
+https://tonwallet.me is a free, client-side interface helping you interact with the TON blockchain.
 
 ## Security
 Private keys do not leave your device, the keys are stored in the browser memory, encrypted with a password that is entered during transaction generation. Backend (which is already open-source) will be switchable soon.
