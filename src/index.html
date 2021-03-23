@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TON Wallet Beta</title>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+
+    <link rel="icon" href="assets/favicon.ico">
+
+    <link rel="stylesheet" href="css/main.css?21">
+</head>
+<body>
+
+<div class="body-container">
+
+    <!-- Start Screen -->
+
+    <div id="start" class="screen" style="display: none">
+        <div class="middle">
+            <tgs-player data-name="start" src="assets/lottie/intro.tgs"
+                        width="120" height="120"
+                        class="screen-lottie">
+            </tgs-player>
+
+            <div class="screen-title">TON Wallet</div>
+            <div class="screen-text">
+                TON wallet allows you to make fast and<br>
+                secure blockchain-based payments<br>
+                without intermediaries.
+            </div>
+
+            <div style="margin-top: 95px">
+                <button id="start_createBtn" class="btn-blue screen-btn">Create My Wallet</button>
+            </div>
+            <div style="margin-top: 10px">
+                <button id="start_importBtn" class="btn-lite" style="font-weight: normal">Import existing wallet
+                </button>
+            </div>
+        </div>
+
+        <div class="screen-text"
+             style="font-size: 12px; position: absolute; width: 100%; left: 0; bottom: 0; text-align: center">
+        </div>
+    </div>
+
+    <!-- Import Screen -->
+
+    <div id="import" class="screen" style="text-align: center; display: none">
+        <div class="screen-title" style="margin-top: 80px">24 Secret Words</div>
+        <div class="screen-text" style="margin-bottom: 10px">
+            Please restore access to your wallet by<br>
+            entering the 24 secret words you wrote<br>
+            down when creating the wallet.
+        </div>
+
+        <button id="import_alertBtn" class="btn-lite">I don't have them</button>
+
+        <div id="importWords">
+
+        </div>
+
+        <div id="wordsPopup" style="display: none">
+        </div>
+
+        <div style="clear: both">
+            <button id="import_continueBtn" class="btn-blue screen-btn" style="margin-top: 30px; margin-bottom: 20px">
+                Continue
+            </button>
+        </div>
+    </div>
+
+    <!-- Created Screen -->
+
+    <div id="created" class="screen" style="display: none">
+        <div class="middle">
+            <tgs-player data-name="created" src="assets/lottie/created.tgs"
+                        width="120" height="120"
+                        class="screen-lottie">
+            </tgs-player>
+
+            <div class="screen-title">Congratulations</div>
+
+            <div class="screen-text">
+                Your TON wallet has just been created.<br>
+                Only you control it.
+            </div>
+
+            <div class="screen-text">
+                To be able to always have access to it,<br>
+                please set up a secure password and write<br>
+                down secret words.
+            </div>
+
+            <div>
+                <button id="createdContinueButton" class="btn-blue screen-btn"
+                        style="margin-top: 18px; margin-bottom: 20px">Continue
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backup Screen -->
+
+    <div id="backup" class="screen" style="text-align: center; display: none">
+        <tgs-player data-name="backup" src="assets/lottie/paper.tgs"
+                    width="120" height="120"
+                    class="screen-lottie" style="margin-top: 30px">
+        </tgs-player>
+
+        <div class="screen-title">24 secret words</div>
+
+        <div class="screen-text">
+            Write down these 24 words in the correct<br>
+            order and store them in secret place.
+        </div>
+
+        <div class="screen-text">
+            Use these secret words to restore access to<br>
+            your wallet if you lose your password or<br>
+            access to this device.
+        </div>
+
+        <div id="createWords">
+
+        </div>
+
+        <div style="clear: both">
+            <button id="backup_continueBtn" class="btn-blue screen-btn" style="margin-top: 26px; margin-bottom: 20px">
+                Continue
+            </button>
+        </div>
+    </div>
+
+    <!-- Create Password Screen -->
+
+    <div id="createPassword" class="screen" style="display: none">
+        <div class="middle">
+            <tgs-player data-name="createPassword" src="assets/lottie/lock.tgs"
+                        width="120" height="120"
+                        class="screen-lottie">
+            </tgs-player>
+
+            <div class="screen-title">Secure Password</div>
+
+            <div class="screen-text">
+                Please choose a secure password<br>
+                for confirming your payments
+            </div>
+
+            <div style="margin-top: 54px">
+                <input id="createPassword_input" placeholder="Enter your password" type="password">
+            </div>
+            <div>
+                <input id="createPassword_repeatInput" placeholder="Repeat your password" type="password">
+            </div>
+
+            <div>
+                <button id="createPassword_continueBtn" class="btn-blue screen-btn"
+                        style="margin-top: 38px; margin-bottom: 20px">Continue
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ready To Go Screen -->
+
+    <div id="readyToGo" class="screen" style="display: none">
+        <div class="middle">
+            <tgs-player data-name="readyToGo" src="assets/lottie/done.tgs"
+                        width="120" height="120"
+                        class="screen-lottie">
+            </tgs-player>
+
+            <div class="screen-title">Ready to go!</div>
+
+            <div class="screen-text">
+                You're all set. Now you have a wallet that<br>
+                only you control - directly, without<br>
+                middlemen or bankers.
+            </div>
+
+            <div>
+                <button id="readyToGo_continueBtn" class="btn-blue screen-btn"
+                        style="margin-top: 170px; margin-bottom: 20px">View My Wallet
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Screen -->
+
+    <div id="main" class="screen" style="display: none">
+        <div class="head">
+            <div class="head-row">
+                <button id="main_refreshBtn" class="btn-round"
+                        style="background-image: url('assets/refresh.svg')">
+                </button>
+
+                <div id="updateLabel"></div>
+
+                <button id="main_settingsButton" class="btn-round"
+                        style="background-image: url('assets/menu.svg')">
+                </button>
+            </div>
+
+            <div id="balance">💎</div>
+            <div class="your-balance">Your balance</div>
+
+            <button id="main_receiveBtn" class="btn-blue">
+                <div class="btn-icon" style="background-image: url('assets/down-left.svg')"></div>
+                Receive
+            </button>
+
+            <button id="sendButton" class="btn-blue" style="display: none">
+                <div class="btn-icon"
+                     style="background-image: url('assets/down-left.svg'); transform: rotate(180deg)"></div>
+                Send
+            </button>
+        </div>
+
+        <div id="transactionsContainer">
+            <div id="transactionsList">
+            </div>
+            <div id="walletCreated" style="display: none">
+                <tgs-player data-name="main"
+                            width="150" height="150"
+                            src="assets/lottie/empty.tgs">
+                </tgs-player>
+                <div>Wallet Created</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal -->
+
+    <div id="modal" style="display: none"></div>
+
+    <!-- Menu Dropdown -->
+
+    <div id="menuDropdown" style="display: none">
+        <div class="dropdown-item" onclick="window.open('https://tonwallet.me/plugin', '_blank')">Chrome Plugin</div>
+        <div id="menu_about" class="dropdown-item">About</div>
+        <div id="menu_changePassword" class="dropdown-item">Change password</div>
+        <div id="menu_backupWallet" class="dropdown-item">Back up wallet</div>
+        <div id="menu_delete" class="dropdown-item">Delete wallet</div>
+    </div>
+
+    <!-- Receive Popup-->
+
+    <div id="receive" class="popup" style="display: none">
+        <div class="popup-title">Receive TON</div>
+        <div class="popup-text">Share this address to receive TON.
+        </div>
+
+        <div class="qr-container">
+            <div id="qr"></div>
+        </div>
+
+        <div class="my-addr addr"></div>
+
+        <button id="receive_invoiceBtn" class="btn-lite">Create Invoice</button>
+
+        <button id="receive_shareBtn" class="btn-blue">Share Wallet Address</button>
+
+        <button id="receive_closeBtn" class="popup-close-btn"></button>
+    </div>
+
+    <!-- Invoice Popup -->
+
+    <div id="invoice" class="popup" style="display: none">
+        <div class="popup-title">Create Invoice</div>
+
+        <div>
+            <div class="input-label">Amount</div>
+        </div>
+
+        <input id="invoice_amountInput" type="number" placeholder="Amount in TON you expect to receive">
+        <input id="invoice_commentInput" type="text" placeholder="Comment (optional)">
+
+        <div class="popup-grey-text">
+            You can specify the amount and purpose of<br>
+            the payment to save the sender some time.
+        </div>
+
+        <div class="input-label" style="margin-top: 24px; margin-bottom: 18px">Invoice URL</div>
+
+        <div id="invoice_link" class="popup-black-text">
+            ton://transfer/
+        </div>
+
+        <div class="popup-grey-text" style="margin-top: 24px">
+            Share this address to receive TON.
+        </div>
+
+        <button id="invoice_qrBtn" class="btn-lite">Generate QR Code</button>
+        <button id="invoice_shareBtn" class="btn-blue">Share Invoice URL</button>
+
+        <button id="invoice_closeBtn" class="popup-close-btn"></button>
+    </div>
+
+    <!-- Invoice QR Popup-->
+
+    <div id="invoiceQr" class="popup" style="display: none">
+        <div class="popup-title">Invoice QR</div>
+
+        <div class="qr-container">
+            <div id="invoiceQrImg"></div>
+        </div>
+
+        <div class="input-label">Expected Amount</div>
+
+        <div id="invoiceQrAmount" class="popup-black-text">
+            1
+        </div>
+
+        <button id="invoiceQr_shareBtn" class="btn-blue">Share QR Code</button>
+
+        <button id="invoiceQr_closeBtn" class="popup-close-btn"></button>
+    </div>
+
+    <!-- Transaction Popup -->
+
+    <div id="transaction" class="popup" style="display: none">
+        <div class="popup-title">Transaction</div>
+
+        <div id="transactionAmount">+0.1 TON</div>
+        <div id="transactionFee">0.1 transaction fee</div>
+        <div id="transactionStorageFee">0.1 storage fee</div>
+
+        <div id="transactionSenderLabel" class="input-label" style="margin-top: 20px">Sender</div>
+
+        <div id="transactionSender" class="addr">
+
+        </div>
+
+        <div class="input-label">Date</div>
+
+        <div id="transactionDate" class="popup-black-text">
+
+        </div>
+
+        <div id="transactionCommentLabel" class="input-label">Comment</div>
+
+        <div id="transactionComment" class="popup-black-text">
+
+        </div>
+
+        <button id="transaction_sendBtn" class="btn-blue" style="margin-top: 20px">Send TON to this address</button>
+
+        <button id="transaction_closeBtn" class="popup-close-btn"></button>
+    </div>
+
+    <!-- Send Popup -->
+
+    <div id="send" class="popup" style="display: none">
+        <div class="popup-title">Send TON</div>
+
+        <div class="input-label">Recipient wallet address</div>
+        <input id="toWalletInput" type="text" placeholder="Enter wallet address">
+
+        <div class="popup-grey-text">
+            Copy the 48-letter wallet address of the
+            recipient here or ask them to send you a
+            ton:// link
+        </div>
+
+        <div style="position: relative; width: 100%">
+            <div class="input-label">Amount</div>
+            <div id="sendBalance">Balance:</div>
+        </div>
+
+        <input id="amountInput" type="number" placeholder="0.0">
+        <input id="commentInput" type="text" placeholder="Comment (optional)">
+
+        <button id="send_btn" class="btn-blue">Send TON</button>
+
+        <button id="send_closeBtn" class="popup-close-btn"></button>
+    </div>
+
+    <!-- Send Confirm Popup -->
+
+    <div id="sendConfirm" class="popup" style="display: none; padding-bottom: 10px">
+        <div class="popup-title">Confirmation</div>
+        <div class="popup-black-text">Do you want to send <b id="sendConfirmAmount">x TON</b> to:</div>
+
+        <div id="sendConfirmAddr" class="addr"></div>
+
+        <div id="sendConfirmFee" class="popup-grey-text" style="text-align: center">Fee: ~x TON</div>
+
+        <button id="sendConfirm_closeBtn" class="popup-close-btn"></button>
+
+        <div class="popup-footer">
+            <button id="sendConfirm_cancelBtn" class="btn-lite">CANCEL</button>
+            <button id="sendConfirm_okBtn" class="btn-lite">SEND TON</button>
+        </div>
+    </div>
+
+    <!-- Processing Popup -->
+
+    <div id="processing" class="popup" style="display: none; text-align: center">
+        <tgs-player data-name="processing" src="assets/lottie/money.tgs" width="150" height="150"></tgs-player>
+        <div class="popup-title">Sending TON</div>
+        <div class="popup-grey-text">Please wait a few seconds for your<br>transaction to be processed..</div>
+
+        <button id="processing_closeBtn" class="popup-close-btn"></button>
+    </div>
+
+    <!-- Done Popup -->
+
+    <div id="done" class="popup" style="display: none; text-align: center; padding-bottom: 10px">
+        <tgs-player data-name="done" src="assets/lottie/done.tgs" width="150" height="150"></tgs-player>
+        <div class="popup-title">Done!</div>
+        <div class="popup-grey-text">1 TON have been send</div>
+
+        <div class="popup-footer">
+            <button id="done_closeBtn" class="btn-lite">CLOSE</button>
+        </div>
+    </div>
+
+    <!-- About Popup -->
+
+    <div id="about" class="popup" style="display: none; text-align: center; padding-bottom: 10px">
+        <div class="popup-title">TON Wallet</div>
+        <div class="popup-grey-text">
+            Version: 1.1.6
+        </div>
+        <tgs-player data-name="about" src="assets/lottie/intro.tgs" width="150" height="150"></tgs-player>
+        <div class="popup-grey-text">
+        </div>
+
+        <div class="popup-grey-text" style="line-height: 24px">
+            API provider: <a href="https://toncenter.com" target="_blank">toncenter.com</a><br>
+            <a href="https://github.com/toncenter/ton-wallet" target="_blank">GitHub</a>,
+            <a href="https://github.com/toncenter/ton-wallet/issues" target="_blank">Issue Tracker</a>
+        </div>
+
+        <div class="popup-footer">
+            <button id="about_closeBtn" class="btn-lite">CLOSE</button>
+        </div>
+    </div>
+
+    <!-- Change Password Popup -->
+
+    <div id="changePassword" class="popup" style="display: none; padding-bottom: 10px">
+        <div class="popup-title">Change Password</div>
+
+        <tgs-player data-name="changePassword" src="assets/lottie/lock.tgs" width="150" height="150"></tgs-player>
+
+        <input id="changePassword_oldInput" placeholder="Enter your old password" type="password"
+               style="text-align: center; width: 200px; margin-left: 40px; font-size: 15px">
+        <input id="changePassword_newInput" placeholder="Enter a new password" type="password"
+               style="text-align: center; width: 200px; margin-left: 40px; font-size: 15px;margin-top: 20px">
+        <input id="changePassword_repeatInput" placeholder="Repeat the new password" type="password"
+               style="text-align: center; width: 200px; margin-left: 40px; font-size: 15px">
+
+        <div class="popup-footer">
+            <button id="changePassword_cancelBtn" class="btn-lite">CANCEL</button>
+            <button id="changePassword_okBtn" class="btn-lite">SAVE</button>
+        </div>
+    </div>
+
+    <!-- Enter Password Popup -->
+
+    <div id="enterPassword" class="popup" style="display: none; padding-bottom: 10px">
+        <div class="popup-title">Password</div>
+
+        <tgs-player data-name="enterPassword" src="assets/lottie/lock.tgs" width="150" height="150"></tgs-player>
+        <input id="enterPassword_input" placeholder="Enter your password" type="password"
+               style="text-align: center; width: 200px; margin-left: 40px; font-size: 15px">
+
+        <div class="popup-footer">
+            <button id="enterPassword_cancelBtn" class="btn-lite">CANCEL</button>
+            <button id="enterPassword_okBtn" class="btn-lite">NEXT</button>
+        </div>
+    </div>
+
+    <!-- Delete Wallet Popup -->
+
+    <div id="delete" class="popup" style="display: none; padding-bottom: 10px">
+        <div class="popup-title">Delete Wallet</div>
+        <div class="popup-black-text">
+            This will disconnect the wallet from this<br>
+            app. You will be able to restore your<br>
+            wallet using <b>24 secret words</b> - or import<br>
+            another wallet.
+        </div>
+        <div class="popup-black-text" style="margin-top: 20px">
+            Wallets are located in the decentralized<br>
+            TON Blockchain. If you want the wallet to<br>
+            be deleted simply transfer all the TON<br>
+            from it and leave it empty.
+        </div>
+
+        <div class="popup-footer">
+            <button id="delete_cancelBtn" class="btn-lite">CANCEL</button>
+            <button id="delete_okBtn" class="btn-lite btn-lite-red">DISCONNECT</button>
+        </div>
+    </div>
+
+    <!-- Notify-->
+
+    <div id="notify" style="display: none"></div>
+</div>
+
+<!-- Scripts -->
+
+<script type="text/javascript" src="libs/pako/1.0.10/pako_inflate.min.js"></script>
+<script type="text/javascript" src="libs/lottie-web/5.6.3/lottie_canvas.min.js"></script>
+<script type="text/javascript" src="libs/EasyQRcodeJS.js"></script>
+
+<script type="text/javascript" src="libs/tonweb-0.0.12.js"></script>
+<script type="text/javascript" src="libs/tonweb-mnemonic-0.0.2.js"></script>
+
+<script src="js/view/View.js?26" type="module"></script>
+<script src="js/Controller.js?26" type="module"></script> <!-- For Plugin we need to delete this line-->
+
+</body>
+</html>
