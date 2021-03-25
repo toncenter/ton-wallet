@@ -6,3 +6,4 @@ build/
 build.tar
 deploy.sh
 deploy_plugin.sh
+old/
