@@ -104,6 +104,8 @@ class View {
 
         $("#start_createBtn").addEventListener('click', () => this.sendMessage('showScreen', {name: 'created'}));
         $("#start_importBtn").addEventListener('click', () => this.sendMessage('showScreen', {name: 'import'}));
+        $("#start_importLedgerHidBtn").addEventListener('click', () => this.sendMessage('showScreen', {name: 'importLedger', transportType: 'hid'}));
+        $("#start_importLedgerBleBtn").addEventListener('click', () => this.sendMessage('showScreen', {name: 'importLedger', transportType: 'ble'}));
 
         $('#import_alertBtn').addEventListener('click', () => alert('Too Bad. Without the secret words, you can\'t restore access to your wallet.'));
         $('#import_continueBtn').addEventListener('click', () => this.sendMessage('import', {words: this.getImportWords()}));
@@ -445,6 +447,8 @@ class View {
     onSettingsClick() {
         toggle($('#modal'), true);
         toggle($('#menuDropdown'), true);
+        toggle($('#menu_changePassword'), !this.isLedger);
+        toggle($('#menu_backupWallet'), !this.isLedger);
     }
 
     clearBalance() {
@@ -654,6 +658,10 @@ class View {
                 this.passwordHash = params;
                 break;
 
+            case 'setIsLedger':
+                this.isLedger = params;
+                break;
+
             case 'showScreen':
                 this.showScreen(params.name);
 
@@ -717,6 +725,7 @@ class View {
                         if (params.toAddr) {
                             $('#toWalletInput').value = params.toAddr;
                         }
+                        toggle($('#commentInput'), !this.isLedger);
                         $('#toWalletInput').focus();
                         break;
                     case 'sendConfirm':

@@ -1,3 +1,5 @@
+import {FakeTransport} from "./FakeLedgerTransport.js";
+
 let contentScriptPort = null;
 let popupPort = null;
 const queueToPopup = [];
@@ -103,6 +105,9 @@ class Controller {
         this.sendingData = null;
         this.processingVisible = false;
 
+        this.ledgerApp = null;
+        this.isLedger = false;
+
         if (window.view) {
             window.view.controller = this;
         }
@@ -113,6 +118,11 @@ class Controller {
             localStorage.clear();
             this.sendToView('showScreen', {name: 'start'})
         } else {
+            if (localStorage.getItem('isLedger') === 'true') {
+                this.isLedger = true;
+                this.sendToView('setIsLedger', this.isLedger);
+            }
+
             this.showMain();
         }
     }
@@ -283,6 +293,44 @@ class Controller {
         }
     }
 
+    // IMPORT LEDGER
+
+    async createLedger(transportType) {
+        let transport;
+
+        switch (transportType) {
+            case 'hid':
+                transport = new FakeTransport(this.ton);
+                // transport = await TonWeb.ledger.TransportWebHID.create();
+                break;
+            case 'ble':
+                transport = await TonWeb.ledger.BluetoothTransport.create();
+                break;
+            default:
+                throw new Error('unknown transportType' + transportType)
+        }
+
+        transport.setDebugMode(true);
+        this.isLedger = true;
+        this.ledgerApp = new TonWeb.ledger.AppTon(transport, this.ton);
+        console.log('ledgerAppConfig=', await this.ledgerApp.getAppConfiguration());
+    }
+
+    async importLedger(transportType) {
+        await this.createLedger(transportType);
+        const {address, wallet} = await this.ledgerApp.getAddress(0, false);
+        this.walletContract = wallet;
+        this.myAddress = address.toString(true, true, true);
+        localStorage.setItem('walletVersion', this.walletContract.getName());
+        localStorage.setItem('address', this.myAddress);
+        localStorage.setItem('isLedger', 'true');
+        localStorage.setItem('ledgerTransportType', transportType);
+        localStorage.setItem('pwdHash', 'ledger');
+        localStorage.setItem('words', 'ledger');
+        this.sendToView('setIsLedger', this.isLedger);
+        this.sendToView('showScreen', {name: 'readyToGo'});
+    }
+
     // IMPORT WALLET
 
     showImport() {
@@ -341,12 +389,15 @@ class Controller {
     }
 
     async savePrivateKey(password) {
+        this.isLedger = false;
+        localStorage.setItem('isLedger', 'false');
         localStorage.setItem('address', this.myAddress);
         await Controller.saveWords(this.myMnemonicWords, password);
         const passwordHash = await hash(password);
         localStorage.setItem('pwdHash', passwordHash);
         this.myMnemonicWords = null;
 
+        this.sendToView('setIsLedger', this.isLedger);
         this.sendToView('setPasswordHash', passwordHash);
         this.sendToView('showScreen', {name: 'readyToGo'});
     }
@@ -508,20 +559,29 @@ class Controller {
 
         const fee = await this.getFees(amount, toAddress, comment);
 
-        this.afterEnterPassword = async password => {
-            const words = await Controller.loadWords(password);
-            this.processingVisible = true;
-            this.sendToView('showPopup', {name: 'processing'});
-            const privateKey = await Controller.wordsToPrivateKey(words);
-            this.send(toAddress, amount, comment, privateKey);
-        };
+        if (this.isLedger) {
 
-        this.sendToView('showPopup', {
-            name: 'sendConfirm',
-            amount: amount.toString(),
-            toAddress: toAddress,
-            fee: fee.toString()
-        }, needQueue);
+            this.sendToView('showPopup', {name: 'processing'});
+            this.send(toAddress, amount, comment, null);
+
+        } else {
+
+            this.afterEnterPassword = async password => {
+                const words = await Controller.loadWords(password);
+                this.processingVisible = true;
+                this.sendToView('showPopup', {name: 'processing'});
+                const privateKey = await Controller.wordsToPrivateKey(words);
+                this.send(toAddress, amount, comment, privateKey);
+            };
+
+            this.sendToView('showPopup', {
+                name: 'sendConfirm',
+                amount: amount.toString(),
+                toAddress: toAddress,
+                fee: fee.toString()
+            }, needQueue);
+
+        }
     }
 
     /**
@@ -536,20 +596,44 @@ class Controller {
                 toAddress = (new Address(toAddress)).toString(true, true, false);
             }
 
-            const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
-            const query = await this.sign(toAddress, amount, comment, keyPair);
-            this.sendingData = {toAddress: toAddress, amount: amount, comment: comment, query: query};
+            if (this.isLedger) {
 
-            if (this.checkContractInitialized(await this.getWallet())) {
-                this.sendQuery(query);
-            } else {
-                console.log('Deploy contract');
-                const response = await this.deployContract(privateKey).send();
-                if (response["@type"] === "ok") {
-                    // wait for initialization, then send transfer
+                if (!this.ledgerApp) {
+                    await this.createLedger(localStorage.getItem('ledgerTransportType') || 'hid');
+                }
+
+                const wallet = await this.getWallet(this.myAddress);
+                let seqno = wallet.seqno;
+                if (!seqno) seqno = 1; // if contract not initialized, use seqno = 1
+
+                const query = await this.ledgerApp.transfer(0, this.walletContract, toAddress, amount, seqno);
+                this.sendingData = {toAddress: toAddress, amount: amount, comment: comment, query: query};
+
+                if (this.checkContractInitialized(await this.getWallet())) {
+                    this.sendQuery(query);
                 } else {
-                    this.sendToView('closePopup');
-                    alert('Deploy contract error');
+                    console.log('Deploy contract');
+                    const result = await this.ledgerApp.deploy(0, this.walletContract);
+                    await this.sendQuery(result);
+                    // wait for initialization, then send transfer
+                }
+            } else {
+
+                const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
+                const query = await this.sign(toAddress, amount, comment, keyPair);
+                this.sendingData = {toAddress: toAddress, amount: amount, comment: comment, query: query};
+
+                if (this.checkContractInitialized(await this.getWallet())) {
+                    this.sendQuery(query);
+                } else {
+                    console.log('Deploy contract');
+                    const response = await this.deployContract(privateKey).send();
+                    if (response["@type"] === "ok") {
+                        // wait for initialization, then send transfer
+                    } else {
+                        this.sendToView('closePopup');
+                        alert('Deploy contract error');
+                    }
                 }
             }
         } catch (e) {
@@ -584,6 +668,8 @@ class Controller {
         this.isContractInitialized = false;
         this.sendingData = null;
         this.processingVisible = false;
+        this.isLedger = false;
+        this.ledgerApp = null;
         clearInterval(this.updateIntervalId);
         localStorage.clear();
         this.sendToView('showScreen', {name: 'start'});
@@ -616,6 +702,9 @@ class Controller {
                         break;
                     case 'import':
                         this.showImport();
+                        break;
+                    case 'importLedger':
+                        this.importLedger(params.transportType);
                         break;
                 }
                 break;
