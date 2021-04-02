@@ -562,6 +562,7 @@ class Controller {
         if (this.isLedger) {
 
             this.sendToView('showPopup', {name: 'processing'});
+            this.processingVisible = true;
             this.send(toAddress, amount, comment, null);
 
         } else {

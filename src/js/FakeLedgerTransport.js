@@ -14,7 +14,13 @@ function createResult(arr) {
 
 export class FakeTransport {
     constructor(ton) {
-        this.keyPair = nacl.sign.keyPair(); // create new random key pair
+        const storageSecretKey = localStorage.getItem('FAKE');
+        if (!storageSecretKey) {
+            this.keyPair = nacl.sign.keyPair(); // create new random key pair
+            localStorage.setItem('FAKE', TonWeb.utils.bytesToBase64(this.keyPair.secretKey));
+        } else {
+            this.keyPair = nacl.sign.keyPair.fromSecretKey(TonWeb.utils.base64ToBytes(storageSecretKey))
+        }
         console.log('LEDGER keyPair is', this.keyPair);
 
         const WalletClass = ton.wallet.all['v3R1'];
