@@ -44,15 +44,15 @@ export class FakeTransport {
 
             return createResult(this.keyPair.publicKey);
 
-        } else if (arr[1] === 0x02 && arr[5]) { // sign bytes
+        } else if (arr[1] === 0x03 ) { // sign bytes
 
-            const signature = TonWeb.utils.nacl.sign.detached(arr[5], this.keyPair.secretKey);
+            const signature = TonWeb.utils.nacl.sign.detached(new Uint8Array(8), this.keyPair.secretKey);
             return createResult(signature);
 
         } else if (arr[1] === 0x04) { // sign transfer
 
             console.log('LEDGER: print transfer info')
-            const hash = new Uint8Array(await TonWeb.utils.sha256(arr[5]));
+            const hash = new Uint8Array(await TonWeb.utils.sha256(new Uint8Array(8)));
             const signature = TonWeb.utils.nacl.sign.detached(hash, this.keyPair.secretKey);
             return createResult(signature);
 

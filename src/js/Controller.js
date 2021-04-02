@@ -300,8 +300,8 @@ class Controller {
 
         switch (transportType) {
             case 'hid':
-                transport = new FakeTransport(this.ton);
-                // transport = await TonWeb.ledger.TransportWebHID.create();
+                // transport = new FakeTransport(this.ton);
+                transport = await TonWeb.ledger.TransportWebHID.create();
                 break;
             case 'ble':
                 transport = await TonWeb.ledger.BluetoothTransport.create();
@@ -314,13 +314,13 @@ class Controller {
         this.isLedger = true;
         this.ledgerApp = new TonWeb.ledger.AppTon(transport, this.ton);
         console.log('ledgerAppConfig=', await this.ledgerApp.getAppConfiguration());
+        const {address, wallet} = await this.ledgerApp.getAddress(0, false); // todo: можно сохранять publicKey и не запрашивать это
+        this.walletContract = wallet;
+        this.myAddress = address.toString(true, true, true);
     }
 
     async importLedger(transportType) {
         await this.createLedger(transportType);
-        const {address, wallet} = await this.ledgerApp.getAddress(0, false);
-        this.walletContract = wallet;
-        this.myAddress = address.toString(true, true, true);
         localStorage.setItem('walletVersion', this.walletContract.getName());
         localStorage.setItem('address', this.myAddress);
         localStorage.setItem('isLedger', 'true');
@@ -637,6 +637,7 @@ class Controller {
                 }
             }
         } catch (e) {
+            console.error(e);
             this.sendToView('closePopup');
             alert('Error sending');
         }
