@@ -106,7 +106,10 @@ class View {
 
         $("#start_createBtn").addEventListener('click', () => this.sendMessage('showScreen', {name: 'created'}));
         $("#start_importBtn").addEventListener('click', () => this.sendMessage('showScreen', {name: 'import'}));
-        $("#start_importLedgerHidBtn").addEventListener('click', () => this.sendMessage('showScreen', {name: 'importLedger', transportType: 'hid'}));
+        $("#start_importLedgerHidBtn").addEventListener('click', () => {
+            this.showPopup('connectLedger');
+            this.sendMessage('showScreen', {name: 'importLedger', transportType: 'hid'})
+        });
         $("#start_importLedgerBleBtn").addEventListener('click', () => this.sendMessage('showScreen', {name: 'importLedger', transportType: 'ble'}));
 
         $('#import_alertBtn').addEventListener('click', () => alert('Too Bad. Without the secret words, you can\'t restore access to your wallet.'));
@@ -163,6 +166,8 @@ class View {
 
         $('#transaction_sendBtn').addEventListener('click', () => this.onTransactionButtonClick());
         $('#transaction_closeBtn').addEventListener('click', () => this.closePopup());
+
+        $('#connectLedger_cancelBtn').addEventListener('click', () => this.closePopup());
 
         $('#send_btn').addEventListener('click', () => {
             const amount = Number($('#amountInput').value);
@@ -249,7 +254,7 @@ class View {
 
         toggle($('#modal'), name !== '');
 
-        const popups = ['receive', 'invoice', 'invoiceQr', 'send', 'sendConfirm', 'processing', 'done', 'menuDropdown', 'about', 'delete', 'changePassword', 'enterPassword', 'transaction'];
+        const popups = ['receive', 'invoice', 'invoiceQr', 'send', 'sendConfirm', 'processing', 'done', 'menuDropdown', 'about', 'delete', 'changePassword', 'enterPassword', 'transaction', 'connectLedger'];
 
         popups.forEach(popup => {
             toggle($('#' + popup), name === popup);

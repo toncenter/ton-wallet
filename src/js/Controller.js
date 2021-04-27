@@ -88,6 +88,8 @@ async function decrypt(ciphertext, password) {
 
 // CONTROLLER
 
+const ACCOUNT_NUMBER = 0;
+
 class Controller {
     constructor() {
         /** @type {string} */
@@ -317,7 +319,7 @@ class Controller {
         this.isLedger = true;
         this.ledgerApp = new TonWeb.ledger.AppTon(transport, this.ton);
         console.log('ledgerAppConfig=', await this.ledgerApp.getAppConfiguration());
-        const {address, wallet, publicKey} = await this.ledgerApp.getAddress(0, false); // todo: можно сохранять publicKey и не запрашивать это
+        const {address, wallet, publicKey} = await this.ledgerApp.getAddress(ACCOUNT_NUMBER, false); // todo: можно сохранять publicKey и не запрашивать это
         this.walletContract = wallet;
         this.myAddress = address.toString(true, true, true);
         this.publicKeyHex = TonWeb.utils.bytesToHex(publicKey);
@@ -521,7 +523,7 @@ class Controller {
         if (!this.ledgerApp) {
             await this.createLedger(localStorage.getItem('ledgerTransportType') || 'hid');
         }
-        const {publicKey} = await this.ledgerApp.getAddress(0, true);
+        const {publicKey} = await this.ledgerApp.getAddress(ACCOUNT_NUMBER, true);
         const hex = TonWeb.utils.bytesToHex(publicKey);
         this.sendToView('setPublicKey', hex);
     }
@@ -623,14 +625,16 @@ class Controller {
                 let seqno = wallet.seqno;
                 if (!seqno) seqno = 1; // if contract not initialized, use seqno = 1
 
-                const query = await this.ledgerApp.transfer(0, this.walletContract, toAddress, amount, seqno);
+                console.log('QQQ', {toAddress, amount: amount.toString(), seqno, selfAddress: await this.walletContract.getAddress()});
+
+                const query = await this.ledgerApp.transfer(ACCOUNT_NUMBER, this.walletContract, toAddress, amount, seqno);
                 this.sendingData = {toAddress: toAddress, amount: amount, comment: comment, query: query};
 
                 if (this.checkContractInitialized(await this.getWallet())) {
                     this.sendQuery(query);
                 } else {
                     console.log('Deploy contract');
-                    const result = await this.ledgerApp.deploy(0, this.walletContract);
+                    const result = await this.ledgerApp.deploy(ACCOUNT_NUMBER, this.walletContract);
                     await this.sendQuery(result);
                     // wait for initialization, then send transfer
                 }

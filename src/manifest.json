@@ -3,7 +3,7 @@
 
   "name": "TON Wallet",
   "description": "Set up your own TON Wallet on the The Open Network.",
-  "version": "1.1.6",
+  "version": "1.1.7",
 
   "browser_action": {
     "default_icon": "assets/icon_32x32.png",
