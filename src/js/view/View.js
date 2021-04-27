@@ -51,6 +51,8 @@ class View {
         this.balance = null;
         /** @type   {string} */
         this.currentScreenName = null;
+        /** @type   {string} */
+        this.publicKeyHex = null;
 
         this.createImportInputs();
 
@@ -133,7 +135,11 @@ class View {
         });
         $('#main_settingsButton').addEventListener('click', () => this.onSettingsClick());
 
-        $('#main_receiveBtn').addEventListener('click', () => this.showPopup('receive'));
+        $('#main_receiveBtn').addEventListener('click', () => {
+            this.updateReceiveAddress(false);
+            toggle($('#receive_showAddressOnDeviceBtn'), !!this.isLedger);
+            this.showPopup('receive');
+        });
         $('#sendButton').addEventListener('click', () => this.onMessage('showPopup', {name: 'send'}));
 
         $('#modal').addEventListener('click', () => this.closePopup());
@@ -143,6 +149,7 @@ class View {
         $('#menu_backupWallet').addEventListener('click', () => this.sendMessage('onBackupWalletClick'));
         $('#menu_delete').addEventListener('click', () => this.showPopup('delete'));
 
+        $('#receive_showAddressOnDeviceBtn').addEventListener('click', () => this.onShowAddressOnDevice());
         $('#receive_invoiceBtn').addEventListener('click', () => this.onCreateInvoiceClick());
         $('#receive_shareBtn').addEventListener('click', () => this.onShareAddressClick());
         $('#receive_closeBtn').addEventListener('click', () => this.closePopup());
@@ -569,11 +576,28 @@ class View {
             correctLevel: QRCode.CorrectLevel.L
         };
         new QRCode($('#qr'), options);
-        $('#receive .addr').innerHTML = formatAddr(address);
     }
+
+    updateReceiveAddress(showPublicKey) {
+        if (showPublicKey) {
+            $('#receive .addr').innerHTML = formatAddr(this.publicKeyHex);
+            $('#receive .addr').classList.add('hex');
+        } else {
+            $('#receive .addr').innerHTML = formatAddr(this.myAddress);
+            $('#receive .addr').classList.remove('hex');
+        }
+    };
 
     onShareAddressClick() {
         $('#notify').innerText = copyToClipboard('ton://transfer/' + this.myAddress) ? 'Transfer link copied to clipboard' : 'Can\'t copy link';
+        toggle($('#notify'), true);
+        setTimeout(() => toggle($('#notify'), false), 2000);
+    }
+
+    onShowAddressOnDevice() {
+        this.updateReceiveAddress(true);
+        this.sendMessage('showAddressOnDevice');
+        $('#notify').innerText = 'Please check the public key on your device';
         toggle($('#notify'), true);
         setTimeout(() => toggle($('#notify'), false), 2000);
     }
@@ -656,6 +680,10 @@ class View {
 
             case 'setPasswordHash':
                 this.passwordHash = params;
+                break;
+
+            case 'setPublicKey':
+                this.publicKeyHex = params;
                 break;
 
             case 'setIsLedger':

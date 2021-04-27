@@ -92,6 +92,8 @@ class Controller {
     constructor() {
         /** @type {string} */
         this.myAddress = null;
+        /** @type {string} */
+        this.publicKeyHex = null;
         /** @type {string[]} */
         this.myMnemonicWords = null;
         /** @type   {BN | null} */
@@ -120,6 +122,7 @@ class Controller {
         } else {
             if (localStorage.getItem('isLedger') === 'true') {
                 this.isLedger = true;
+                this.publicKeyHex = localStorage.getItem('publicKey');
                 this.sendToView('setIsLedger', this.isLedger);
             }
 
@@ -314,9 +317,10 @@ class Controller {
         this.isLedger = true;
         this.ledgerApp = new TonWeb.ledger.AppTon(transport, this.ton);
         console.log('ledgerAppConfig=', await this.ledgerApp.getAppConfiguration());
-        const {address, wallet} = await this.ledgerApp.getAddress(0, false); // todo: можно сохранять publicKey и не запрашивать это
+        const {address, wallet, publicKey} = await this.ledgerApp.getAddress(0, false); // todo: можно сохранять publicKey и не запрашивать это
         this.walletContract = wallet;
         this.myAddress = address.toString(true, true, true);
+        this.publicKeyHex = TonWeb.utils.bytesToHex(publicKey);
     }
 
     async importLedger(transportType) {
@@ -327,6 +331,7 @@ class Controller {
         localStorage.setItem('ledgerTransportType', transportType);
         localStorage.setItem('pwdHash', 'ledger');
         localStorage.setItem('words', 'ledger');
+        localStorage.setItem('publicKey', this.publicKeyHex);
         this.sendToView('setIsLedger', this.isLedger);
         this.sendToView('showScreen', {name: 'readyToGo'});
     }
@@ -427,6 +432,7 @@ class Controller {
     showMain() {
         this.sendToView('showScreen', {name: 'main', myAddress: this.myAddress});
         this.sendToView('setPasswordHash', localStorage.getItem('pwdHash'));
+        this.sendToView('setPublicKey', this.publicKeyHex);
         if (!this.walletContract) {
             const walletVersion = localStorage.getItem('walletVersion');
             const walletClass = walletVersion ? this.ton.wallet.all[walletVersion] : this.ton.wallet.default;
@@ -454,6 +460,7 @@ class Controller {
                 this.sendToView('setBalance', {balance: this.balance.toString(), txs: this.transactions});
             }
             this.sendToView('setPasswordHash', localStorage.getItem('pwdHash'));
+            this.sendToView('setPublicKey', this.publicKeyHex);
         }
     }
 
@@ -510,6 +517,15 @@ class Controller {
         });
     }
 
+    async showAddressOnDevice() {
+        if (!this.ledgerApp) {
+            await this.createLedger(localStorage.getItem('ledgerTransportType') || 'hid');
+        }
+        const {publicKey} = await this.ledgerApp.getAddress(0, true);
+        const hex = TonWeb.utils.bytesToHex(publicKey);
+        this.sendToView('setPublicKey', hex);
+    }
+
     // SEND GRAMS
 
     /**
@@ -561,7 +577,7 @@ class Controller {
 
         if (this.isLedger) {
 
-            this.sendToView('showPopup', {name: 'processing'});
+            this.sendToView('showPopup', {name: 'processing'}); // todo: show popup with amount, dest address in hex form, and label 'Please approve on device'
             this.processingVisible = true;
             this.send(toAddress, amount, comment, null);
 
@@ -663,6 +679,7 @@ class Controller {
 
     onDisconnectClick() {
         this.myAddress = null;
+        this.publicKeyHex = null;
         this.balance = null;
         this.walletContract = null;
         this.transactions = [];
@@ -721,6 +738,9 @@ class Controller {
                 break;
             case 'update':
                 this.update();
+                break;
+            case 'showAddressOnDevice':
+                this.showAddressOnDevice();
                 break;
             case 'onEnterPassword':
                 this.onEnterPassword(params.password);

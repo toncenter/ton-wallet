@@ -576,13 +576,21 @@ button {
     font-size: 18px;
     margin-top: -4px;
     max-width: 280px;
+    height: 42px;
+}
+
+#receive .my-addr.hex {
+    font-size: 14px;
 }
 
 #receive .btn-lite {
     text-align: center;
-    margin-top: 20px;
     width: 100%;
     font-weight: normal;
+}
+
+#receive .btn-lite-first {
+    margin-top: 20px;
 }
 
 #receive .btn-blue {
