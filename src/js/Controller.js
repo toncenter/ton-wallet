@@ -88,6 +88,8 @@ async function decrypt(ciphertext, password) {
 
 // CONTROLLER
 
+const IS_TESTNET = window.location.href.indexOf('testnet') > -1;
+
 const ACCOUNT_NUMBER = 0;
 
 class Controller {
@@ -116,7 +118,11 @@ class Controller {
             window.view.controller = this;
         }
 
-        this.ton = new TonWeb();
+        const mainnetRpc = 'https://toncenter.com/api/test/v2/jsonRPC';
+        const testnetRpc = 'https://testnet.toncenter.com/api/v2/jsonRPC';
+        this.sendToView('setIsTestnet', IS_TESTNET)
+
+        this.ton = new TonWeb(new TonWeb.HttpProvider(IS_TESTNET ? testnetRpc : mainnetRpc));
         this.myAddress = localStorage.getItem('address');
         if (!this.myAddress || !localStorage.getItem('words') || !localStorage.getItem('pwdHash')) {
             localStorage.clear();

@@ -679,6 +679,10 @@ class View {
                 $('#createdContinueButton').disabled = params;
                 break;
 
+            case 'setIsTestnet':
+                $('.your-balance').innerHTML = params ? 'Your testnet balance' : 'Your mainnet balance';
+                break;
+
             case 'setBalance':
                 this.setBalance(new BN(params.balance), params.txs);
                 break;
