@@ -140,7 +140,6 @@ button {
 .addr {
     min-width: 24ch;
     max-width: 24ch;
-    white-space: nowrap;
     hyphens: manual;
     user-select: text;
     -webkit-user-select: text;
