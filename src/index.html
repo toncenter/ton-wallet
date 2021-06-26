@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>TON Wallet Beta</title>
+    <title>TON Wallet</title>
     <meta name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -35,19 +35,19 @@
             <div style="margin-top: 95px">
                 <button id="start_createBtn" class="btn-blue screen-btn">Create My Wallet</button>
             </div>
-            <div style="margin-top: 10px">
+            <div style="margin-top: 20px">
                 <button id="start_importBtn" class="btn-lite" style="font-weight: normal">Import existing wallet
                 </button>
             </div>
             <div style="margin-top: 10px">
-                <button id="start_importLedgerHidBtn" class="btn-lite" style="font-weight: normal">Connect Ledger via HID
+                <button id="start_importLedgerHidBtn" class="btn-lite" style="font-weight: normal">Connect Ledger
                 </button>
             </div>
 
-            <div style="margin-top: 10px">
-                <button id="start_importLedgerBleBtn" class="btn-lite" style="font-weight: normal">Connect Ledger via Bluetooth
-                </button>
-            </div>
+<!--            <div style="margin-top: 10px">-->
+<!--                <button id="start_importLedgerBleBtn" class="btn-lite" style="font-weight: normal">Connect Ledger via Bluetooth-->
+<!--                </button>-->
+<!--            </div>-->
         </div>
 
         <div class="screen-text"
@@ -271,7 +271,7 @@
 
         <div class="my-addr addr"></div>
 
-        <button id="receive_showAddressOnDeviceBtn" class="btn-lite btn-lite-first">Show Public Key on Device</button>
+        <button id="receive_showAddressOnDeviceBtn" class="btn-lite btn-lite-first">Show Address on Device</button>
 
         <button id="receive_invoiceBtn" class="btn-lite">Create Invoice</button>
 
@@ -542,7 +542,7 @@
 <script type="text/javascript" src="libs/lottie-web/5.6.3/lottie_canvas.min.js"></script>
 <script type="text/javascript" src="libs/EasyQRcodeJS.js"></script>
 
-<script type="text/javascript" src="libs/tonweb-0.0.14.js"></script>
+<script type="text/javascript" src="libs/tonweb-0.0.15.js"></script>
 <script type="text/javascript" src="libs/tonweb-mnemonic-0.0.2.js"></script>
 
 <script src="js/view/View.js?28" type="module"></script>

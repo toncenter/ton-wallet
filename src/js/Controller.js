@@ -1,5 +1,3 @@
-import {FakeTransport} from "./FakeLedgerTransport.js";
-
 let contentScriptPort = null;
 let popupPort = null;
 const queueToPopup = [];
@@ -118,7 +116,7 @@ class Controller {
             window.view.controller = this;
         }
 
-        const mainnetRpc = 'https://toncenter.com/api/test/v2/jsonRPC';
+        const mainnetRpc = 'https://toncenter.com/api/v2/jsonRPC';
         const testnetRpc = 'https://testnet.toncenter.com/api/v2/jsonRPC';
         this.sendToView('setIsTestnet', IS_TESTNET)
 
@@ -311,7 +309,6 @@ class Controller {
 
         switch (transportType) {
             case 'hid':
-                // transport = new FakeTransport(this.ton);
                 transport = await TonWeb.ledger.TransportWebHID.create();
                 break;
             case 'ble':
@@ -325,8 +322,16 @@ class Controller {
         this.isLedger = true;
         this.ledgerApp = new TonWeb.ledger.AppTon(transport, this.ton);
         console.log('ledgerAppConfig=', await this.ledgerApp.getAppConfiguration());
-        const {address, wallet, publicKey} = await this.ledgerApp.getAddress(ACCOUNT_NUMBER, false); // todo: можно сохранять publicKey и не запрашивать это
+        const {publicKey} = await this.ledgerApp.getPublicKey(ACCOUNT_NUMBER, false); // todo: можно сохранять publicKey и не запрашивать это
+
+        const WalletClass = this.ton.wallet.all['v3R1'];
+        const wallet = new WalletClass(this.ton.provider, {
+            publicKey: publicKey,
+            wc: 0
+        });
         this.walletContract = wallet;
+
+        const address = await wallet.getAddress();
         this.myAddress = address.toString(true, true, true);
         this.publicKeyHex = TonWeb.utils.bytesToHex(publicKey);
     }
@@ -440,7 +445,6 @@ class Controller {
     showMain() {
         this.sendToView('showScreen', {name: 'main', myAddress: this.myAddress});
         this.sendToView('setPasswordHash', localStorage.getItem('pwdHash'));
-        this.sendToView('setPublicKey', this.publicKeyHex);
         if (!this.walletContract) {
             const walletVersion = localStorage.getItem('walletVersion');
             const walletClass = walletVersion ? this.ton.wallet.all[walletVersion] : this.ton.wallet.default;
@@ -468,7 +472,6 @@ class Controller {
                 this.sendToView('setBalance', {balance: this.balance.toString(), txs: this.transactions});
             }
             this.sendToView('setPasswordHash', localStorage.getItem('pwdHash'));
-            this.sendToView('setPublicKey', this.publicKeyHex);
         }
     }
 
@@ -529,9 +532,8 @@ class Controller {
         if (!this.ledgerApp) {
             await this.createLedger(localStorage.getItem('ledgerTransportType') || 'hid');
         }
-        const {publicKey} = await this.ledgerApp.getAddress(ACCOUNT_NUMBER, true);
-        const hex = TonWeb.utils.bytesToHex(publicKey);
-        this.sendToView('setPublicKey', hex);
+        const {address} = await this.ledgerApp.getAddress(ACCOUNT_NUMBER, 0, true, this.ledgerApp.ADDRESS_FORMAT_USER_FRIENDLY + this.ledgerApp.ADDRESS_FORMAT_URL_SAFE + this.ledgerApp.ADDRESS_FORMAT_BOUNCEABLE);
+        console.log(address.toString(true, true, true));
     }
 
     // SEND GRAMS
@@ -633,7 +635,22 @@ class Controller {
 
                 console.log('QQQ', {toAddress, amount: amount.toString(), seqno, selfAddress: await this.walletContract.getAddress()});
 
-                const query = await this.ledgerApp.transfer(ACCOUNT_NUMBER, this.walletContract, toAddress, amount, seqno);
+                let addressFormat = 0;
+                const toAddress_ = new Address(toAddress);
+                if (toAddress_.isUserFriendly) {
+                    addressFormat += this.ledgerApp.ADDRESS_FORMAT_USER_FRIENDLY;
+                    if (toAddress_.isUrlSafe) {
+                        addressFormat += this.ledgerApp.ADDRESS_FORMAT_URL_SAFE;
+                    }
+                    if (toAddress_.isBounceable) {
+                        addressFormat += this.ledgerApp.ADDRESS_FORMAT_BOUNCEABLE;
+                    }
+                    if (toAddress_.isTestOnly) {
+                        addressFormat += this.ledgerApp.ADDRESS_FORMAT_TEST_ONLY;
+                    }
+                }
+
+                const query = await this.ledgerApp.transfer(ACCOUNT_NUMBER, this.walletContract, toAddress, amount, seqno, addressFormat);
                 this.sendingData = {toAddress: toAddress, amount: amount, comment: comment, query: query};
 
                 if (this.checkContractInitialized(await this.getWallet())) {
