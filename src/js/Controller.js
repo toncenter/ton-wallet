@@ -228,15 +228,6 @@ class Controller {
     }
 
     /**
-     * @param privateKey    {String}  Base64 private key
-     * @return Promise<{send: Function, estimateFee: Function}>
-     */
-    deployContract(privateKey) {
-        const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
-        return this.walletContract.deploy(keyPair.secretKey);
-    }
-
-    /**
      * @param toAddress {String}  Destination address in any format
      * @param amount    {BN}  Transfer value in nanograms
      * @param comment   {String}  Transfer comment
@@ -246,7 +237,7 @@ class Controller {
     async sign(toAddress, amount, comment, keyPair) {
         const wallet = await this.getWallet(this.myAddress);
         let seqno = wallet.seqno;
-        if (!seqno) seqno = 1; // if contract not initialized, use seqno = 1
+        if (!seqno) seqno = 0;
 
         const secretKey = keyPair ? keyPair.secretKey : null;
         return this.walletContract.methods.transfer({
@@ -487,10 +478,6 @@ class Controller {
 
             if (!this.isContractInitialized && isContractInitialized) {
                 this.isContractInitialized = true;
-                if (this.sendingData) {
-                    console.log('try to send', this.sendingData);
-                    this.sendQuery(this.sendingData.query);
-                }
             }
 
             if (isBalanceChanged) {
@@ -532,7 +519,7 @@ class Controller {
         if (!this.ledgerApp) {
             await this.createLedger(localStorage.getItem('ledgerTransportType') || 'hid');
         }
-        const {address} = await this.ledgerApp.getAddress(ACCOUNT_NUMBER, 0, true, this.ledgerApp.ADDRESS_FORMAT_USER_FRIENDLY + this.ledgerApp.ADDRESS_FORMAT_URL_SAFE + this.ledgerApp.ADDRESS_FORMAT_BOUNCEABLE);
+        const {address} = await this.ledgerApp.getAddress(ACCOUNT_NUMBER, true, this.ledgerApp.ADDRESS_FORMAT_USER_FRIENDLY + this.ledgerApp.ADDRESS_FORMAT_URL_SAFE + this.ledgerApp.ADDRESS_FORMAT_BOUNCEABLE);
         console.log(address.toString(true, true, true));
     }
 
@@ -631,7 +618,7 @@ class Controller {
 
                 const wallet = await this.getWallet(this.myAddress);
                 let seqno = wallet.seqno;
-                if (!seqno) seqno = 1; // if contract not initialized, use seqno = 1
+                if (!seqno) seqno = 0;
 
                 console.log('QQQ', {toAddress, amount: amount.toString(), seqno, selfAddress: await this.walletContract.getAddress()});
 
@@ -652,33 +639,15 @@ class Controller {
 
                 const query = await this.ledgerApp.transfer(ACCOUNT_NUMBER, this.walletContract, toAddress, amount, seqno, addressFormat);
                 this.sendingData = {toAddress: toAddress, amount: amount, comment: comment, query: query};
+                await this.sendQuery(query);
 
-                if (this.checkContractInitialized(await this.getWallet())) {
-                    this.sendQuery(query);
-                } else {
-                    console.log('Deploy contract');
-                    const result = await this.ledgerApp.deploy(ACCOUNT_NUMBER, this.walletContract);
-                    await this.sendQuery(result);
-                    // wait for initialization, then send transfer
-                }
             } else {
 
                 const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
                 const query = await this.sign(toAddress, amount, comment, keyPair);
                 this.sendingData = {toAddress: toAddress, amount: amount, comment: comment, query: query};
+                await this.sendQuery(query);
 
-                if (this.checkContractInitialized(await this.getWallet())) {
-                    this.sendQuery(query);
-                } else {
-                    console.log('Deploy contract');
-                    const response = await this.deployContract(privateKey).send();
-                    if (response["@type"] === "ok") {
-                        // wait for initialization, then send transfer
-                    } else {
-                        this.sendToView('closePopup');
-                        alert('Deploy contract error');
-                    }
-                }
             }
         } catch (e) {
             console.error(e);
