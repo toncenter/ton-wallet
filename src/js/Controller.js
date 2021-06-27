@@ -618,6 +618,11 @@ class Controller {
         try {
             let addressFormat = 0;
             if (this.isLedger) {
+
+                if (!this.ledgerApp) {
+                    await this.createLedger(localStorage.getItem('ledgerTransportType') || 'hid');
+                }
+
                 const toAddress_ = new Address(toAddress);
                 if (toAddress_.isUserFriendly) {
                     addressFormat += this.ledgerApp.ADDRESS_FORMAT_USER_FRIENDLY;
@@ -638,10 +643,6 @@ class Controller {
             }
 
             if (this.isLedger) {
-
-                if (!this.ledgerApp) {
-                    await this.createLedger(localStorage.getItem('ledgerTransportType') || 'hid');
-                }
 
                 const wallet = await this.getWallet(this.myAddress);
                 let seqno = wallet.seqno;
