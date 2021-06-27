@@ -752,6 +752,8 @@ class View {
                         $('#sendConfirmAmount').innerText = formatNanograms(new BN(params.amount)) + ' TON';
                         $('#sendConfirmAddr').innerHTML = formatAddr(params.toAddress);
                         $('#sendConfirmFee').innerText = params.fee ? 'Fee: ~' + formatNanograms(new BN(params.fee)) + ' TON' : '';
+                        toggle($('#sendConfirm .popup-footer'), !this.isLedger);
+                        toggle($('#sendConfirm_closeBtn'), !this.isLedger);
                         break;
                 }
                 break;

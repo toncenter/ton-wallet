@@ -574,8 +574,13 @@ class Controller {
 
         if (this.isLedger) {
 
-            this.sendToView('showPopup', {name: 'processing'}); // todo: show popup with amount, dest address in hex form, and label 'Please approve on device'
-            this.processingVisible = true;
+            this.sendToView('showPopup', {
+                name: 'sendConfirm',
+                amount: amount.toString(),
+                toAddress: toAddress,
+                fee: fee.toString()
+            }, needQueue);
+
             this.send(toAddress, amount, comment, null);
 
         } else {
@@ -639,6 +644,10 @@ class Controller {
 
                 const query = await this.ledgerApp.transfer(ACCOUNT_NUMBER, this.walletContract, toAddress, amount, seqno, addressFormat);
                 this.sendingData = {toAddress: toAddress, amount: amount, comment: comment, query: query};
+
+                this.sendToView('showPopup', {name: 'processing'}); // todo: show popup with amount, dest address in hex form, and label 'Please approve on device'
+                this.processingVisible = true;
+
                 await this.sendQuery(query);
 
             } else {
