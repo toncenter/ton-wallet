@@ -578,10 +578,6 @@ button {
     height: 42px;
 }
 
-#receive .my-addr.hex {
-    font-size: 14px;
-}
-
 #receive .btn-lite {
     text-align: center;
     width: 100%;

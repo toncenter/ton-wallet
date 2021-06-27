@@ -1,5 +1,3 @@
-import {FakeTransport} from "./FakeLedgerTransport.js";
-
 let contentScriptPort = null;
 let popupPort = null;
 const queueToPopup = [];
@@ -118,7 +116,7 @@ class Controller {
             window.view.controller = this;
         }
 
-        const mainnetRpc = 'https://toncenter.com/api/test/v2/jsonRPC';
+        const mainnetRpc = 'https://toncenter.com/api/v2/jsonRPC';
         const testnetRpc = 'https://testnet.toncenter.com/api/v2/jsonRPC';
         this.sendToView('setIsTestnet', IS_TESTNET)
 
@@ -230,15 +228,6 @@ class Controller {
     }
 
     /**
-     * @param privateKey    {String}  Base64 private key
-     * @return Promise<{send: Function, estimateFee: Function}>
-     */
-    deployContract(privateKey) {
-        const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
-        return this.walletContract.deploy(keyPair.secretKey);
-    }
-
-    /**
      * @param toAddress {String}  Destination address in any format
      * @param amount    {BN}  Transfer value in nanograms
      * @param comment   {String}  Transfer comment
@@ -248,7 +237,7 @@ class Controller {
     async sign(toAddress, amount, comment, keyPair) {
         const wallet = await this.getWallet(this.myAddress);
         let seqno = wallet.seqno;
-        if (!seqno) seqno = 1; // if contract not initialized, use seqno = 1
+        if (!seqno) seqno = 0;
 
         const secretKey = keyPair ? keyPair.secretKey : null;
         return this.walletContract.methods.transfer({
@@ -311,7 +300,6 @@ class Controller {
 
         switch (transportType) {
             case 'hid':
-                // transport = new FakeTransport(this.ton);
                 transport = await TonWeb.ledger.TransportWebHID.create();
                 break;
             case 'ble':
@@ -324,9 +312,22 @@ class Controller {
         transport.setDebugMode(true);
         this.isLedger = true;
         this.ledgerApp = new TonWeb.ledger.AppTon(transport, this.ton);
-        console.log('ledgerAppConfig=', await this.ledgerApp.getAppConfiguration());
-        const {address, wallet, publicKey} = await this.ledgerApp.getAddress(ACCOUNT_NUMBER, false); // todo: можно сохранять publicKey и не запрашивать это
+        const ledgerVersion = (await this.ledgerApp.getAppConfiguration()).version;
+        console.log('ledgerAppConfig=', ledgerVersion);
+        if (!ledgerVersion.startsWith('2')) {
+            alert('Please update your Ledger TON-app to v2.0.0 or upper or use old wallet version https://tonwallet.me/prev/')
+            throw new Error('outdated ledger ton-app version');
+        }
+        const {publicKey} = await this.ledgerApp.getPublicKey(ACCOUNT_NUMBER, false); // todo: можно сохранять publicKey и не запрашивать это
+
+        const WalletClass = this.ton.wallet.all['v3R1'];
+        const wallet = new WalletClass(this.ton.provider, {
+            publicKey: publicKey,
+            wc: 0
+        });
         this.walletContract = wallet;
+
+        const address = await wallet.getAddress();
         this.myAddress = address.toString(true, true, true);
         this.publicKeyHex = TonWeb.utils.bytesToHex(publicKey);
     }
@@ -440,7 +441,6 @@ class Controller {
     showMain() {
         this.sendToView('showScreen', {name: 'main', myAddress: this.myAddress});
         this.sendToView('setPasswordHash', localStorage.getItem('pwdHash'));
-        this.sendToView('setPublicKey', this.publicKeyHex);
         if (!this.walletContract) {
             const walletVersion = localStorage.getItem('walletVersion');
             const walletClass = walletVersion ? this.ton.wallet.all[walletVersion] : this.ton.wallet.default;
@@ -468,7 +468,6 @@ class Controller {
                 this.sendToView('setBalance', {balance: this.balance.toString(), txs: this.transactions});
             }
             this.sendToView('setPasswordHash', localStorage.getItem('pwdHash'));
-            this.sendToView('setPublicKey', this.publicKeyHex);
         }
     }
 
@@ -484,10 +483,6 @@ class Controller {
 
             if (!this.isContractInitialized && isContractInitialized) {
                 this.isContractInitialized = true;
-                if (this.sendingData) {
-                    console.log('try to send', this.sendingData);
-                    this.sendQuery(this.sendingData.query);
-                }
             }
 
             if (isBalanceChanged) {
@@ -529,9 +524,8 @@ class Controller {
         if (!this.ledgerApp) {
             await this.createLedger(localStorage.getItem('ledgerTransportType') || 'hid');
         }
-        const {publicKey} = await this.ledgerApp.getAddress(ACCOUNT_NUMBER, true);
-        const hex = TonWeb.utils.bytesToHex(publicKey);
-        this.sendToView('setPublicKey', hex);
+        const {address} = await this.ledgerApp.getAddress(ACCOUNT_NUMBER, true, this.ledgerApp.ADDRESS_FORMAT_USER_FRIENDLY + this.ledgerApp.ADDRESS_FORMAT_URL_SAFE + this.ledgerApp.ADDRESS_FORMAT_BOUNCEABLE);
+        console.log(address.toString(true, true, true));
     }
 
     // SEND GRAMS
@@ -585,8 +579,13 @@ class Controller {
 
         if (this.isLedger) {
 
-            this.sendToView('showPopup', {name: 'processing'}); // todo: show popup with amount, dest address in hex form, and label 'Please approve on device'
-            this.processingVisible = true;
+            this.sendToView('showPopup', {
+                name: 'sendConfirm',
+                amount: amount.toString(),
+                toAddress: toAddress,
+                fee: fee.toString()
+            }, needQueue);
+
             this.send(toAddress, amount, comment, null);
 
         } else {
@@ -617,6 +616,23 @@ class Controller {
      */
     async send(toAddress, amount, comment, privateKey) {
         try {
+            let addressFormat = 0;
+            if (this.isLedger) {
+                const toAddress_ = new Address(toAddress);
+                if (toAddress_.isUserFriendly) {
+                    addressFormat += this.ledgerApp.ADDRESS_FORMAT_USER_FRIENDLY;
+                    if (toAddress_.isUrlSafe) {
+                        addressFormat += this.ledgerApp.ADDRESS_FORMAT_URL_SAFE;
+                    }
+                    if (toAddress_.isBounceable) {
+                        addressFormat += this.ledgerApp.ADDRESS_FORMAT_BOUNCEABLE;
+                    }
+                    if (toAddress_.isTestOnly) {
+                        addressFormat += this.ledgerApp.ADDRESS_FORMAT_TEST_ONLY;
+                    }
+                }
+            }
+
             if (!this.checkContractInitialized(await this.ton.provider.getWalletInfo(toAddress))) {
                 toAddress = (new Address(toAddress)).toString(true, true, false);
             }
@@ -629,39 +645,25 @@ class Controller {
 
                 const wallet = await this.getWallet(this.myAddress);
                 let seqno = wallet.seqno;
-                if (!seqno) seqno = 1; // if contract not initialized, use seqno = 1
+                if (!seqno) seqno = 0;
 
                 console.log('QQQ', {toAddress, amount: amount.toString(), seqno, selfAddress: await this.walletContract.getAddress()});
 
-                const query = await this.ledgerApp.transfer(ACCOUNT_NUMBER, this.walletContract, toAddress, amount, seqno);
+                const query = await this.ledgerApp.transfer(ACCOUNT_NUMBER, this.walletContract, toAddress, amount, seqno, addressFormat);
                 this.sendingData = {toAddress: toAddress, amount: amount, comment: comment, query: query};
 
-                if (this.checkContractInitialized(await this.getWallet())) {
-                    this.sendQuery(query);
-                } else {
-                    console.log('Deploy contract');
-                    const result = await this.ledgerApp.deploy(ACCOUNT_NUMBER, this.walletContract);
-                    await this.sendQuery(result);
-                    // wait for initialization, then send transfer
-                }
+                this.sendToView('showPopup', {name: 'processing'});
+                this.processingVisible = true;
+
+                await this.sendQuery(query);
+
             } else {
 
                 const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
                 const query = await this.sign(toAddress, amount, comment, keyPair);
                 this.sendingData = {toAddress: toAddress, amount: amount, comment: comment, query: query};
+                await this.sendQuery(query);
 
-                if (this.checkContractInitialized(await this.getWallet())) {
-                    this.sendQuery(query);
-                } else {
-                    console.log('Deploy contract');
-                    const response = await this.deployContract(privateKey).send();
-                    if (response["@type"] === "ok") {
-                        // wait for initialization, then send transfer
-                    } else {
-                        this.sendToView('closePopup');
-                        alert('Deploy contract error');
-                    }
-                }
             }
         } catch (e) {
             console.error(e);

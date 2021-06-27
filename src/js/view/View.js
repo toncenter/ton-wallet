@@ -51,8 +51,6 @@ class View {
         this.balance = null;
         /** @type   {string} */
         this.currentScreenName = null;
-        /** @type   {string} */
-        this.publicKeyHex = null;
 
         this.createImportInputs();
 
@@ -110,7 +108,7 @@ class View {
             this.showPopup('connectLedger');
             this.sendMessage('showScreen', {name: 'importLedger', transportType: 'hid'})
         });
-        $("#start_importLedgerBleBtn").addEventListener('click', () => this.sendMessage('showScreen', {name: 'importLedger', transportType: 'ble'}));
+        // $("#start_importLedgerBleBtn").addEventListener('click', () => this.sendMessage('showScreen', {name: 'importLedger', transportType: 'ble'}));
 
         $('#import_alertBtn').addEventListener('click', () => alert('Too Bad. Without the secret words, you can\'t restore access to your wallet.'));
         $('#import_continueBtn').addEventListener('click', () => this.sendMessage('import', {words: this.getImportWords()}));
@@ -139,7 +137,6 @@ class View {
         $('#main_settingsButton').addEventListener('click', () => this.onSettingsClick());
 
         $('#main_receiveBtn').addEventListener('click', () => {
-            this.updateReceiveAddress(false);
             toggle($('#receive_showAddressOnDeviceBtn'), !!this.isLedger);
             this.showPopup('receive');
         });
@@ -570,6 +567,7 @@ class View {
     // RECEIVE POPUP
 
     setMyAddress(address) {
+        $('#receive .addr').innerHTML = formatAddr(address);
         $('#qr').innerHTML = '';
         const options = {
             text: 'ton://transfer/' + address,
@@ -583,16 +581,6 @@ class View {
         new QRCode($('#qr'), options);
     }
 
-    updateReceiveAddress(showPublicKey) {
-        if (showPublicKey) {
-            $('#receive .addr').innerHTML = formatAddr(this.publicKeyHex);
-            $('#receive .addr').classList.add('hex');
-        } else {
-            $('#receive .addr').innerHTML = formatAddr(this.myAddress);
-            $('#receive .addr').classList.remove('hex');
-        }
-    };
-
     onShareAddressClick() {
         $('#notify').innerText = copyToClipboard('ton://transfer/' + this.myAddress) ? 'Transfer link copied to clipboard' : 'Can\'t copy link';
         toggle($('#notify'), true);
@@ -600,9 +588,8 @@ class View {
     }
 
     onShowAddressOnDevice() {
-        this.updateReceiveAddress(true);
         this.sendMessage('showAddressOnDevice');
-        $('#notify').innerText = 'Please check the public key on your device';
+        $('#notify').innerText = 'Please check the address on your device';
         toggle($('#notify'), true);
         setTimeout(() => toggle($('#notify'), false), 2000);
     }
@@ -691,10 +678,6 @@ class View {
                 this.passwordHash = params;
                 break;
 
-            case 'setPublicKey':
-                this.publicKeyHex = params;
-                break;
-
             case 'setIsLedger':
                 this.isLedger = params;
                 break;
@@ -769,6 +752,9 @@ class View {
                         $('#sendConfirmAmount').innerText = formatNanograms(new BN(params.amount)) + ' TON';
                         $('#sendConfirmAddr').innerHTML = formatAddr(params.toAddress);
                         $('#sendConfirmFee').innerText = params.fee ? 'Fee: ~' + formatNanograms(new BN(params.fee)) + ' TON' : '';
+                        toggle($('#sendConfirm .popup-footer'), !this.isLedger);
+                        toggle($('#sendConfirm_closeBtn'), !this.isLedger);
+                        // todo: show label 'Please approve on device'
                         break;
                 }
                 break;
