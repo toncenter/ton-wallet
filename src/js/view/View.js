@@ -754,6 +754,7 @@ class View {
                         $('#sendConfirmFee').innerText = params.fee ? 'Fee: ~' + formatNanograms(new BN(params.fee)) + ' TON' : '';
                         toggle($('#sendConfirm .popup-footer'), !this.isLedger);
                         toggle($('#sendConfirm_closeBtn'), !this.isLedger);
+                        // todo: show label 'Please approve on device'
                         break;
                 }
                 break;

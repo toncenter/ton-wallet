@@ -312,7 +312,12 @@ class Controller {
         transport.setDebugMode(true);
         this.isLedger = true;
         this.ledgerApp = new TonWeb.ledger.AppTon(transport, this.ton);
-        console.log('ledgerAppConfig=', await this.ledgerApp.getAppConfiguration());
+        const ledgerVersion = (await this.ledgerApp.getAppConfiguration()).version;
+        console.log('ledgerAppConfig=', ledgerVersion);
+        if (!ledgerVersion.startsWith('2')) {
+            alert('Please update your Ledger TON-app to v2.0.0 or upper or use old wallet version https://tonwallet.me/prev/')
+            throw new Error('outdated ledger ton-app version');
+        }
         const {publicKey} = await this.ledgerApp.getPublicKey(ACCOUNT_NUMBER, false); // todo: можно сохранять publicKey и не запрашивать это
 
         const WalletClass = this.ton.wallet.all['v3R1'];
@@ -611,6 +616,23 @@ class Controller {
      */
     async send(toAddress, amount, comment, privateKey) {
         try {
+            let addressFormat = 0;
+            if (this.isLedger) {
+                const toAddress_ = new Address(toAddress);
+                if (toAddress_.isUserFriendly) {
+                    addressFormat += this.ledgerApp.ADDRESS_FORMAT_USER_FRIENDLY;
+                    if (toAddress_.isUrlSafe) {
+                        addressFormat += this.ledgerApp.ADDRESS_FORMAT_URL_SAFE;
+                    }
+                    if (toAddress_.isBounceable) {
+                        addressFormat += this.ledgerApp.ADDRESS_FORMAT_BOUNCEABLE;
+                    }
+                    if (toAddress_.isTestOnly) {
+                        addressFormat += this.ledgerApp.ADDRESS_FORMAT_TEST_ONLY;
+                    }
+                }
+            }
+
             if (!this.checkContractInitialized(await this.ton.provider.getWalletInfo(toAddress))) {
                 toAddress = (new Address(toAddress)).toString(true, true, false);
             }
@@ -627,25 +649,10 @@ class Controller {
 
                 console.log('QQQ', {toAddress, amount: amount.toString(), seqno, selfAddress: await this.walletContract.getAddress()});
 
-                let addressFormat = 0;
-                const toAddress_ = new Address(toAddress);
-                if (toAddress_.isUserFriendly) {
-                    addressFormat += this.ledgerApp.ADDRESS_FORMAT_USER_FRIENDLY;
-                    if (toAddress_.isUrlSafe) {
-                        addressFormat += this.ledgerApp.ADDRESS_FORMAT_URL_SAFE;
-                    }
-                    if (toAddress_.isBounceable) {
-                        addressFormat += this.ledgerApp.ADDRESS_FORMAT_BOUNCEABLE;
-                    }
-                    if (toAddress_.isTestOnly) {
-                        addressFormat += this.ledgerApp.ADDRESS_FORMAT_TEST_ONLY;
-                    }
-                }
-
                 const query = await this.ledgerApp.transfer(ACCOUNT_NUMBER, this.walletContract, toAddress, amount, seqno, addressFormat);
                 this.sendingData = {toAddress: toAddress, amount: amount, comment: comment, query: query};
 
-                this.sendToView('showPopup', {name: 'processing'}); // todo: show popup with amount, dest address in hex form, and label 'Please approve on device'
+                this.sendToView('showPopup', {name: 'processing'});
                 this.processingVisible = true;
 
                 await this.sendQuery(query);
