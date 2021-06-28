@@ -315,7 +315,7 @@ class Controller {
         const ledgerVersion = (await this.ledgerApp.getAppConfiguration()).version;
         console.log('ledgerAppConfig=', ledgerVersion);
         if (!ledgerVersion.startsWith('2')) {
-            alert('Please update your Ledger TON-app to v2.0.0 or upper or use old wallet version https://tonwallet.me/prev/')
+            alert('Please update your Ledger TON-app to v2.0.1 or upper or use old wallet version https://tonwallet.me/prev/')
             throw new Error('outdated ledger ton-app version');
         }
         const {publicKey} = await this.ledgerApp.getPublicKey(ACCOUNT_NUMBER, false); // todo: можно сохранять publicKey и не запрашивать это
