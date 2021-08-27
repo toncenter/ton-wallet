@@ -167,7 +167,7 @@ class Controller {
     }
 
     checkContractInitialized(getWalletResponse) {
-        return (getWalletResponse.account_state == "active") && getWalletResponse.seqno;
+        return getWalletResponse.account_state === "active";
     }
 
     /**
@@ -477,7 +477,7 @@ class Controller {
             const isBalanceChanged = (this.balance === null) || (this.balance.cmp(balance) !== 0);
             this.balance = balance;
 
-            const isContractInitialized = this.checkContractInitialized(response);
+            const isContractInitialized = this.checkContractInitialized(response) && getWalletResponse.seqno;
             console.log('isBalanceChanged', isBalanceChanged);
             console.log('isContractInitialized', isContractInitialized);
 
@@ -648,8 +648,6 @@ class Controller {
                 let seqno = wallet.seqno;
                 if (!seqno) seqno = 0;
 
-                console.log('QQQ', {toAddress, amount: amount.toString(), seqno, selfAddress: await this.walletContract.getAddress()});
-
                 const query = await this.ledgerApp.transfer(ACCOUNT_NUMBER, this.walletContract, toAddress, amount, seqno, addressFormat);
                 this.sendingData = {toAddress: toAddress, amount: amount, comment: comment, query: query};
 
@@ -816,7 +814,7 @@ class Controller {
 
 const controller = new Controller();
 
-if (chrome.runtime.onConnect) {
+if (chrome.runtime && chrome.runtime.onConnect) {
     chrome.runtime.onConnect.addListener(port => {
         if (port.name === 'gramWalletContentScript') {
             contentScriptPort = port;
