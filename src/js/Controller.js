@@ -90,6 +90,9 @@ const IS_TESTNET = window.location.href.indexOf('testnet') > -1;
 
 const ACCOUNT_NUMBER = 0;
 
+const DEFAULT_WALLET_VERSION = 'v3R2';
+const DEFAULT_LEDGER_WALLET_VERSION = 'v3R1';
+
 class Controller {
     constructor() {
         /** @type {string} */
@@ -258,7 +261,7 @@ class Controller {
         this.myMnemonicWords = await TonWeb.mnemonic.generateMnemonic();
         const privateKey = await Controller.wordsToPrivateKey(this.myMnemonicWords);
         const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
-        const walletVersion = 'v3R2';
+        const walletVersion = DEFAULT_WALLET_VERSION;
         const WalletClass = this.ton.wallet.all[walletVersion];
         this.walletContract = new WalletClass(this.ton.provider, {
             publicKey: keyPair.publicKey,
@@ -322,7 +325,7 @@ class Controller {
         }
         const {publicKey} = await this.ledgerApp.getPublicKey(ACCOUNT_NUMBER, false); // todo: можно сохранять publicKey и не запрашивать это
 
-        const WalletClass = this.ton.wallet.all['v3R1'];
+        const WalletClass = this.ton.wallet.all[DEFAULT_LEDGER_WALLET_VERSION];
         const wallet = new WalletClass(this.ton.provider, {
             publicKey: publicKey,
             wc: 0
@@ -375,7 +378,7 @@ class Controller {
                 console.log(wallet.getName(), walletAddress, walletInfo, walletBalance.toString());
             }
 
-            let walletClass = this.ton.wallet.default;
+            let walletClass = this.ton.wallet.all[DEFAULT_WALLET_VERSION];
 
             if (hasBalance.length > 0) {
                 hasBalance.sort((a, b) => {
