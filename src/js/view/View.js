@@ -17,7 +17,6 @@ import DropDown from "./DropDown.js";
 const toNano = TonWeb.utils.toNano;
 const formatNanograms = TonWeb.utils.fromNano;
 const BN = TonWeb.utils.BN;
-
 /**
  * todo: duplicate
  * @return  String
@@ -35,6 +34,8 @@ function toggleLottie(lottie, visible) {
         lottie.ctx.clearRect(0, 0, 1000, 1000);
     }
 }
+
+const IS_EXTENSION = Boolean(chrome && chrome.runtime);
 
 class View {
     constructor(mnemonicWords) {
@@ -62,6 +63,8 @@ class View {
                 toggleLottie(lottie, true);
             }
         });
+
+        toggle($('#menu_extension'), !IS_EXTENSION);
 
         function resetErrors(e) {
             const input = e.target;
