@@ -657,6 +657,10 @@ button {
     margin-bottom: 4px;
 }
 
+#transactionComment {
+    word-break: break-all;
+}
+
 #transactionAmount {
     font-size: 28px;
     text-align: center;
