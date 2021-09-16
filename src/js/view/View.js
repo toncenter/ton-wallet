@@ -51,6 +51,8 @@ class View {
         this.balance = null;
         /** @type   {string} */
         this.currentScreenName = null;
+        /** @type   {boolean} */
+        this.isTestnet = false;
 
         this.createImportInputs();
 
@@ -121,7 +123,11 @@ class View {
             const password = $('#createPassword_input').value;
             const passwordRepeat = $('#createPassword_repeatInput').value;
 
-            if (password !== passwordRepeat) {
+            const isEmpty = password.length === 0 && !this.isTestnet;
+
+            if (isEmpty) {
+                $('#createPassword_input').classList.add('error');
+            } else if (password !== passwordRepeat) {
                 $('#createPassword_repeatInput').classList.add('error');
             } else {
                 this.sendMessage('passwordCreated', {password});
@@ -198,8 +204,15 @@ class View {
             const newPassword = $('#changePassword_newInput').value;
             const passwordRepeat = $('#changePassword_repeatInput').value;
 
+            const isEmpty = newPassword.length === 0 && !this.isTestnet;
+
             if (await hash(oldPassword) !== this.passwordHash) {
                 $('#changePassword_oldInput').classList.add('error');
+                return;
+            }
+
+            if (isEmpty) {
+                $('#changePassword_newInput').classList.add('error');
                 return;
             }
 
@@ -667,6 +680,7 @@ class View {
                 break;
 
             case 'setIsTestnet':
+                this.isTestnet = params;
                 $('.your-balance').innerHTML = params ? 'Your testnet balance' : 'Your mainnet balance';
                 break;
 
