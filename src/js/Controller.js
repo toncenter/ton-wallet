@@ -258,12 +258,14 @@ class Controller {
         this.myMnemonicWords = await TonWeb.mnemonic.generateMnemonic();
         const privateKey = await Controller.wordsToPrivateKey(this.myMnemonicWords);
         const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
-        this.walletContract = this.ton.wallet.create({
+        const walletVersion = 'v3R2';
+        const WalletClass = this.ton.wallet.all[walletVersion];
+        this.walletContract = new WalletClass(this.ton.provider, {
             publicKey: keyPair.publicKey,
             wc: 0
         });
         this.myAddress = (await this.walletContract.getAddress()).toString(true, true, true);
-        localStorage.setItem('walletVersion', this.ton.wallet.defaultVersion);
+        localStorage.setItem('walletVersion', walletVersion);
         this.sendToView('disableCreated', false);
     }
 
