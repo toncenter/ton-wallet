@@ -17,6 +17,7 @@ import DropDown from "./DropDown.js";
 const toNano = TonWeb.utils.toNano;
 const formatNanograms = TonWeb.utils.fromNano;
 const BN = TonWeb.utils.BN;
+
 /**
  * todo: duplicate
  * @return  String
@@ -116,7 +117,7 @@ class View {
         // $("#start_importLedgerBleBtn").addEventListener('click', () => this.sendMessage('showScreen', {name: 'importLedger', transportType: 'ble'}));
 
         $('#import_alertBtn').addEventListener('click', () => alert('Too Bad. Without the secret words, you can\'t restore access to your wallet.'));
-        $('#import_continueBtn').addEventListener('click', () => this.sendMessage('import', {words: this.getImportWords()}));
+        $('#import_continueBtn').addEventListener('click', async () => this.sendMessage('import', {words: await this.getImportWords()}));
 
         $('#createdContinueButton').addEventListener('click', () => this.sendMessage('createPrivateKey'));
 
@@ -433,7 +434,7 @@ class View {
         }
     }
 
-    getImportWords() {
+    async getImportWords() {
         let isValid = true;
         const words = [];
         for (let i = 0; i < IMPORT_WORDS_COUNT; i++) {
@@ -445,6 +446,17 @@ class View {
             }
             words.push(value);
         }
+
+        if (isValid) {
+            isValid = await TonWeb.mnemonic.validateMnemonic(words);
+            if (!isValid) {
+                for (let i = 0; i < IMPORT_WORDS_COUNT; i++) {
+                    const input = $('#importInput' + i);
+                    input.classList.add('error');
+                }
+            }
+        }
+
         return isValid ? words : null;
     }
 
