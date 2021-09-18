@@ -36,7 +36,7 @@ function toggleLottie(lottie, visible) {
     }
 }
 
-const IS_EXTENSION = Boolean(chrome && chrome.runtime);
+const IS_EXTENSION = Boolean(window.chrome && window.chrome.runtime);
 
 class View {
     constructor(mnemonicWords) {
