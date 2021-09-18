@@ -15,7 +15,7 @@ Go to chrome://extensions/
 
 Enable "Developer Mode" in top right corner
 
-Click "Load unpacked extension" and specify ton-wallet/client/src (or build/) folder
+Click "Load unpacked extension" and specify ton-wallet/client/build folder
 
 # Build
 

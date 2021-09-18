@@ -676,3 +676,13 @@ button {
     margin-top: 20px;
     margin-bottom: 10px;
 }
+
+/* EXTENSION */
+
+.plugin #menu_extension {
+    display: none;
+}
+
+.plugin #start_importLedgerHidBtn {
+    display: none;
+}
