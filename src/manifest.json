@@ -9,10 +9,6 @@
     "default_icon": "assets/icon_32x32.png",
     "default_popup": "popup.html"
   },
-
-  "permissions": [
-    "activeTab"
-  ],
   "background": {
     "scripts": [
       "libs/tonweb-0.0.20.js",
