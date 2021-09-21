@@ -719,6 +719,21 @@ button {
 
 #menu_proxy {
     display: block;
+    pointer-events: none;
+}
+
+#menu_proxy:after {
+    position: absolute;
+    top: 4px;
+    line-height: 8px;
+    right: 70px;
+    width: 14px;
+    height: 8px;
+    font-size: 10px;
+    color: #1d98dc;
+    border-radius: 4px;
+    padding: 4px;
+    content: 'Soon';
 }
 
 .plugin #menu_magic {
