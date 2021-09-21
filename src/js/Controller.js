@@ -137,6 +137,13 @@ class Controller {
 
             this.showMain();
         }
+
+        const isMagic = localStorage.getItem('magic') === 'true';
+        this.sendToView('setIsMagic', isMagic);
+        this.doMagic(isMagic);
+        const isProxy = localStorage.getItem('proxy') === 'true';
+        this.sendToView('setIsProxy', isProxy);
+        this.doProxy(isMagic);
     }
 
     /**
@@ -711,6 +718,18 @@ class Controller {
         this.sendToDapp('ton_accounts', []);
     }
 
+    // MAGIC
+
+    doMagic(enabled) {
+        this.sendToDapp('ton_doMagic', enabled);
+    }
+
+    // PROXY
+
+    doProxy(enabled) {
+
+    }
+
     // TRANSPORT WITH VIEW
 
     sendToView(method, params, needQueue) {
@@ -781,6 +800,14 @@ class Controller {
                 break;
             case 'onClosePopup':
                 this.processingVisible = false;
+                break;
+            case 'onMagicClick':
+                localStorage.setItem('magic', params ? 'true' : 'false');
+                this.doMagic(params);
+                break;
+            case 'onProxyClick':
+                localStorage.setItem('proxy', params ? 'true' : 'false');
+                this.doProxy(params);
                 break;
         }
     }

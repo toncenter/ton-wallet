@@ -150,6 +150,16 @@ class View {
 
         $('#modal').addEventListener('click', () => this.closePopup());
 
+        $('#menu_magic').addEventListener('click', () => {
+            $('#menu_magic .dropdown-toggle').classList.toggle('toggle-on');
+            this.sendMessage('onMagicClick', $('#menu_magic .dropdown-toggle').classList.contains('toggle-on'));
+        });
+
+        $('#menu_proxy').addEventListener('click', () => {
+            $('#menu_proxy .dropdown-toggle').classList.toggle('toggle-on');
+            this.sendMessage('onProxyClick', $('#menu_proxy .dropdown-toggle').classList.contains('toggle-on'));
+        });
+
         $('#menu_about').addEventListener('click', () => this.showPopup('about'));
         $('#menu_changePassword').addEventListener('click', () => this.onMessage('showPopup', {name: 'changePassword'}));
         $('#menu_backupWallet').addEventListener('click', () => this.sendMessage('onBackupWalletClick'));
@@ -705,6 +715,22 @@ class View {
 
             case 'setIsLedger':
                 this.isLedger = params;
+                break;
+
+            case 'setIsMagic':
+                if (params) {
+                    $('#menu_magic .dropdown-toggle').classList.add('toggle-on');
+                } else {
+                    $('#menu_magic .dropdown-toggle').classList.remove('toggle-on');
+                }
+                break;
+
+            case 'setIsProxy':
+                if (params) {
+                    $('#menu_proxy .dropdown-toggle').classList.add('toggle-on');
+                } else {
+                    $('#menu_proxy .dropdown-toggle').classList.remove('toggle-on');
+                }
                 break;
 
             case 'showScreen':
