@@ -137,13 +137,6 @@ class Controller {
 
             this.showMain();
         }
-
-        const isMagic = localStorage.getItem('magic') === 'true';
-        this.sendToView('setIsMagic', isMagic);
-        this.doMagic(isMagic);
-        const isProxy = localStorage.getItem('proxy') === 'true';
-        this.sendToView('setIsProxy', isProxy);
-        this.doProxy(isMagic);
     }
 
     /**
@@ -469,6 +462,8 @@ class Controller {
 
     initDapp() {
         this.sendToDapp('ton_accounts', this.myAddress ? [this.myAddress] : []);
+        this.doMagic(localStorage.getItem('magic') === 'true');
+        this.doProxy(localStorage.getItem('proxy') === 'true');
     }
 
     initView() {
@@ -481,6 +476,8 @@ class Controller {
             }
             this.sendToView('setPasswordHash', localStorage.getItem('pwdHash'));
         }
+        this.sendToView('setIsMagic', localStorage.getItem('magic') === 'true');
+        this.sendToView('setIsProxy', localStorage.getItem('proxy') === 'true');
     }
 
     update() {
