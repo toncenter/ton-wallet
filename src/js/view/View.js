@@ -75,14 +75,27 @@ class View {
         onInput($('#changePassword_oldInput'), resetErrors);
         onInput($('#changePassword_repeatInput'), resetErrors);
 
+        function getClipboardData(e) {
+            const s = (e.clipboardData || window.clipboardData).getData('text');
+            try {
+                return decodeURI(s).replaceAll(/%23/g, '#');
+            } catch (e) { // URIError
+                return s;
+            }
+        }
+
         $('#toWalletInput').addEventListener('paste', e => {
             // ton://transfer/EQA0i8-CdGnF_DhUHHf92R1ONH6sIA9vLZ_WLcCIhfBBXwtG
             // ton://transfer/EQA0i8-CdGnF_DhUHHf92R1ONH6sIA9vLZ_WLcCIhfBBXwtG?amount=1000000000
             // ton://transfer/EQA0i8-CdGnF_DhUHHf92R1ONH6sIA9vLZ_WLcCIhfBBXwtG?amount=1000000000&text=data
 
-            const url = (e.clipboardData || window.clipboardData).getData('text');
+            const url = getClipboardData(e);
 
             if (url.startsWith('ton://transfer/')) {
+                if (!(url.length === 63 || url[63] === '?')) {
+                    e.preventDefault();
+                    return;
+                }
                 let s = url.substring('ton://transfer/'.length);
                 $('#toWalletInput').value = s.substring(0, 48);
                 s = s.substring(49);
