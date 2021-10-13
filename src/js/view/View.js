@@ -170,7 +170,8 @@ class View {
 
         $('#receive_showAddressOnDeviceBtn').addEventListener('click', () => this.onShowAddressOnDevice());
         $('#receive_invoiceBtn').addEventListener('click', () => this.onCreateInvoiceClick());
-        $('#receive_shareBtn').addEventListener('click', () => this.onShareAddressClick());
+        $('#receive_shareBtn').addEventListener('click', () => this.onShareAddressClick(false));
+        $('#receive .addr').addEventListener('click', () => this.onShareAddressClick(true));
         $('#receive_closeBtn').addEventListener('click', () => this.closePopup());
 
         $('#invoice_qrBtn').addEventListener('click', () => this.onCreateInvoiceQrClick());
@@ -618,8 +619,10 @@ class View {
         new QRCode($('#qr'), options);
     }
 
-    onShareAddressClick() {
-        $('#notify').innerText = copyToClipboard('ton://transfer/' + this.myAddress) ? 'Transfer link copied to clipboard' : 'Can\'t copy link';
+    onShareAddressClick(onyAddress) {
+        const data = onyAddress ? this.myAddress : 'ton://transfer/' + this.myAddress;
+        const text = onyAddress ? 'Wallet address copied to clipboard' : 'Transfer link copied to clipboard';
+        $('#notify').innerText = copyToClipboard(data) ? text : 'Can\'t copy link';
         toggle($('#notify'), true);
         setTimeout(() => toggle($('#notify'), false), 2000);
     }
