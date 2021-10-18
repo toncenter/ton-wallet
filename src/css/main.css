@@ -610,6 +610,7 @@ button {
     margin-top: -4px;
     max-width: 280px;
     height: 42px;
+    cursor: pointer;
 }
 
 #receive .btn-lite {
