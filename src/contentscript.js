@@ -61,16 +61,27 @@ class TonProvider {
 
         const id = this._nextJsonRpcId++;
         const jsonrpc = '2.0';
-        const payload = {jsonrpc, id, method, params};
+        const payload = {
+            jsonrpc,
+            id,
+            method,
+            params,
+        };
 
         const promise = new Promise((resolve, reject) => {
-            this._promises[payload.id] = {resolve, reject};
+            this._promises[payload.id] = {
+                resolve,
+                reject,
+            };
         });
 
         // Send jsonrpc request to TON Wallet
         window.postMessage(
-            {type: 'gramWalletAPI_ton_provider_write', message: payload},
-            this.targetOrigin
+            {
+                type: 'gramWalletAPI_ton_provider_write',
+                message: payload,
+            },
+            this.targetOrigin,
         );
 
         return promise;
@@ -100,7 +111,12 @@ class TonProvider {
         }
 
         const message = data.message;
-        const {id, method, error, result} = message;
+        const {
+            id,
+            method,
+            error,
+            result,
+        } = message;
 
         if (typeof id !== 'undefined') {
             const promise = this._promises[id];
@@ -122,47 +138,69 @@ class TonProvider {
                     this._emitNotification(message.params);
                 } else if (method === 'ton_accounts') { // todo
                     this._emitAccountsChanged(message.params);
-                } else if (method === 'ton_doMagic') { // todo
+                } else if (method === 'ton_doMagic') {
+                    const prevMagicRevision = localStorage.getItem('ton:magicRevision');
                     if (message.params) {
-                        const c = await window.caches.open('tt-assets')
-                        const keys = await c.keys();
+                        const scriptEl = document.querySelector('script');
+                        const currentMagicRevision = scriptEl.getAttribute('src');
 
-                        const script = document.getElementsByTagName('script')[0];
-                        const scriptSrc = script.getAttribute('src');
-                        if (!scriptSrc.startsWith('main.')) {
-                            console.error('no main script in page');
+                        if (currentMagicRevision === prevMagicRevision) {
                             return;
                         }
 
-                        const js = {
-                            "299.5368de7de76fe73abfb4.js": "559.3461e1a8d5b6c410e6a9.js",
-                            "354.9a4e6e448a56ea8ff7d0.js": "354.849b154f5e9c94e3b4d4.js",
-                            "501.72ce4b6e27f459e194cd.js": "501.77c55bf42a5199feef97.js",
-                            "514.a976e4a406ffa64bcba8.js": "514.bcda96d4e97a0079f205.js",
-                            "592.d7ca037ed9b7d1c6792a.js": "592.d1ab76a5cfe57cd3a899.js",
-                            "60.9cf561ec3f818d41f458.js": "60.b504c2949c7aeaa1083b.js",
-                            "915.8fb9f0f20311fa368dc5.js": "915.8fb9f0f20311fa368dc5.js",
-                            "941.997469720d84a3a8a3f7.js": "941.997469720d84a3a8a3f7.js",
-                            "main.548c93adccb98e6c3572.js": "main.fde42d1c6cf12616ac98.js",
-                            "299.5368de7de76fe73abfb4.css": "559.3461e1a8d5b6c410e6a9.css",
-                            "60.9cf561ec3f818d41f458.css": "60.9cf561ec3f818d41f458.css",
-                            "main.edaf68285b3a3f5985dd.css": "main.886b59dfd026c686b97e.css",
+                        if (prevMagicRevision) {
+                            document.body.innerHTML = 'Loading TON magic...';
                         }
 
-                        for (const [key, value] of Object.entries(js)) {
-                            const res = await fetch('https://ton.org/app/' + value);
-                            console.log('Hack ' + key + ' -> ' + value, await res.clone().text());
-                            const req = new Request('https://web.telegram.org/z/' + key);
-                            await c.put(req, res.clone());
-                        }
+                        const filesToInjectResponse = await fetch('https://ton.org/app/magic-sources.json');
+                        const filesToInject = await filesToInjectResponse.json();
 
-                        console.log('TON Magic On', {keys, scriptSrc});
+                        console.log('[TON Wallet] Start loading magic...');
 
-                        // window.location.reload();
+                        const responses = await Promise.all(filesToInject.map(async (fileName) => {
+                            const res = await fetch('https://ton.org/app/' + fileName);
+
+                            if (res.status !== 200) {
+                                throw new Error('[TON Wallet] Failed to load magic: ' + res.statusText + '. File: ' + fileName);
+                            }
+
+                            return [
+                                fileName,
+                                new Response(await res.blob(), {
+                                    headers: res.headers,
+                                    status: res.status,
+                                    statusText: res.statusText,
+                                }),
+                            ];
+                        }));
+
+                        const assetCache = await window.caches.open('tt-assets');
+                        await Promise.all(responses.map(async ([fileName, response]) => {
+                            if (fileName.startsWith('main.')) {
+                                if (fileName.endsWith('.js')) {
+                                    await assetCache.put('https://web.telegram.org/z/' + currentMagicRevision, response.clone());
+                                } else if (fileName.endsWith('.css')) {
+                                    const linkEl = document.querySelector('link[rel=stylesheet]');
+                                    const currentCssRevision = linkEl.getAttribute('href');
+                                    await assetCache.put('https://web.telegram.org/z/' + currentCssRevision, response.clone());
+                                }
+                            } else {
+                                await assetCache.put('https://web.telegram.org/z/' + fileName, response.clone());
+                            }
+                        }));
+
+                        localStorage.setItem('ton:magicRevision', currentMagicRevision);
+
+                        window.location.reload();
                     } else {
-                        console.log('TON Magic Off');
+                        if (!prevMagicRevision) {
+                            return;
+                        }
 
+                        localStorage.removeItem('ton:magicRevision');
                         await window.caches.delete('tt-assets');
+
+                        window.location.reload();
                     }
                 }
             }
@@ -174,8 +212,8 @@ class TonProvider {
     _connect() {
         // Send to TON Wallet
         window.postMessage(
-            {type: 'gramWalletAPI_ton_provider_connect'},
-            this.targetOrigin
+            { type: 'gramWalletAPI_ton_provider_connect' },
+            this.targetOrigin,
         );
 
         // Reconnect on close
@@ -205,9 +243,10 @@ class TonProvider {
     }
 }
 
-console.log('TON Wallet Plugin is here')
+console.log('[TON Wallet] Plugin is here');
 
-window.ton = new TonProvider();`;
+window.ton = new TonProvider();
+`;
 
 function injectScript(content) {
     try {

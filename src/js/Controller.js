@@ -718,6 +718,12 @@ class Controller {
     // MAGIC
 
     doMagic(enabled) {
+        chrome.browsingData.remove({
+            'origins': ['https://web.telegram.org'],
+        }, {
+            'cache': true,
+        });
+
         this.sendToDapp('ton_doMagic', enabled);
     }
 
