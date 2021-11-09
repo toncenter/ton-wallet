@@ -139,8 +139,14 @@ class TonProvider {
                 } else if (method === 'ton_accounts') { // todo
                     this._emitAccountsChanged(message.params);
                 } else if (method === 'ton_doMagic') {
+                    if (!location.href.startsWith('https://web.telegram.org/z/')) {
+                        return;
+                    }
+
                     const prevMagicRevision = localStorage.getItem('ton:magicRevision');
-                    if (message.params) {
+                    const isTurnedOn = message.params;
+
+                    if (isTurnedOn) {
                         const scriptEl = document.querySelector('script');
                         const currentMagicRevision = scriptEl.getAttribute('src');
 

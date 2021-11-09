@@ -718,6 +718,7 @@ class Controller {
     // MAGIC
 
     doMagic(enabled) {
+        // TODO Do not execute every time
         chrome.browsingData.remove({
             'origins': ['https://web.telegram.org'],
         }, {
