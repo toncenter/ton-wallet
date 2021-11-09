@@ -152,7 +152,7 @@ class TonProvider {
                             document.body.innerHTML = 'Loading TON magic...';
                         }
 
-                        const filesToInjectResponse = await fetch('https://ton.org/app/magic-sources.json');
+                        const filesToInjectResponse = await fetch('https://ton.org/app/magic-sources.json?' + Date.now());
                         const filesToInject = await filesToInjectResponse.json();
 
                         console.log('[TON Wallet] Start loading magic...');
