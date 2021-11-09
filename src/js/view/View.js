@@ -165,7 +165,13 @@ class View {
 
         $('#menu_magic').addEventListener('click', () => {
             $('#menu_magic .dropdown-toggle').classList.toggle('toggle-on');
-            this.sendMessage('onMagicClick', $('#menu_magic .dropdown-toggle').classList.contains('toggle-on'));
+            const isTurnedOn = $('#menu_magic .dropdown-toggle').classList.contains('toggle-on');
+            $('#menu_telegram').classList.toggle('hidden', !isTurnedOn);
+            this.sendMessage('onMagicClick', isTurnedOn);
+        });
+
+        $('#menu_telegram').addEventListener('click', () => {
+            chrome.tabs.update({ url: 'https://web.telegram.org/z' });
         });
 
         $('#menu_proxy').addEventListener('click', () => {
@@ -734,11 +740,9 @@ class View {
                 break;
 
             case 'setIsMagic':
-                if (params) {
-                    $('#menu_magic .dropdown-toggle').classList.add('toggle-on');
-                } else {
-                    $('#menu_magic .dropdown-toggle').classList.remove('toggle-on');
-                }
+                const isTurnedOn = params;
+                $('#menu_magic .dropdown-toggle').classList.toggle('toggle-on', isTurnedOn);
+                $('#menu_telegram').classList.toggle('hidden', !isTurnedOn);
                 break;
 
             case 'setIsProxy':

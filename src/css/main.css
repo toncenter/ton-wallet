@@ -752,3 +752,7 @@ button {
 .plugin #start_importLedgerHidBtn {
     display: none;
 }
+
+.hidden {
+    display: none;
+}
