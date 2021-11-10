@@ -540,6 +540,18 @@ button {
     line-height: 18px;
 }
 
+.about-magic {
+    text-align: left;
+}
+
+.about-magic h4 {
+    margin-bottom: 12px;
+}
+
+.about-magic p {
+    margin-top: 12px;
+}
+
 .popup-grey-text {
     line-height: 18px;
     color: #999999;
