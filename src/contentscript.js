@@ -139,12 +139,17 @@ class TonProvider {
                 } else if (method === 'ton_accounts') { // todo
                     this._emitAccountsChanged(message.params);
                 } else if (method === 'ton_doMagic') {
+                    const isTurnedOn = message.params;
+
                     if (!location.href.startsWith('https://web.telegram.org/z/')) {
+                        if (location.href.startsWith('https://web.telegram.org/k/')) {
+                            toggleMagicBadge(isTurnedOn);
+                        }
+
                         return;
                     }
 
                     const prevMagicRevision = localStorage.getItem('ton:magicRevision');
-                    const isTurnedOn = message.params;
 
                     if (isTurnedOn) {
                         const scriptEl = document.querySelector('script');
@@ -252,6 +257,35 @@ class TonProvider {
 console.log('[TON Wallet] Plugin is here');
 
 window.ton = new TonProvider();
+
+function toggleMagicBadge(isTurnedOn) {
+    if (isTurnedOn) {
+        const badge = document.createElement('div');
+        badge.id = 'ton-magic-badge';
+        badge.style.position = 'fixed';
+        badge.style.top = '0';
+        badge.style.background = '#0072ab';
+        badge.style.width = '100%';
+        badge.style.height = '28px';
+        badge.style.lineHeight = '28px';
+        badge.style.textAlign = 'center';
+        badge.style.fontSize = '14px';
+        badge.style.color = 'white';
+        badge.innerHTML = 'Switch to <strong>Z version</strong> in the menu to take advantage of <strong>TON magic</strong>.';
+        document.body.prepend(badge);
+
+        // handle shallow screen layout
+        document.getElementById('column-left').style.top = '28px';
+        document.getElementById('column-center').style.top = '28px';
+    } else {
+        const badge = document.getElementById('ton-magic-badge');
+        if (badge) {
+            badge.remove();
+            document.getElementById('column-left').style.top = '';
+            document.getElementById('column-center').style.top = '';
+        }
+    }
+}
 `;
 
 function injectScript(content) {
