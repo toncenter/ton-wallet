@@ -17,6 +17,9 @@
     ],
     "persistent": true
   },
+  "permissions": [
+    "browsingData"
+  ],
   "content_scripts": [
     {
       "matches": [

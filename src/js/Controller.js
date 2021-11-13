@@ -462,6 +462,8 @@ class Controller {
 
     initDapp() {
         this.sendToDapp('ton_accounts', this.myAddress ? [this.myAddress] : []);
+        this.doMagic(localStorage.getItem('magic') === 'true');
+        this.doProxy(localStorage.getItem('proxy') === 'true');
     }
 
     initView() {
@@ -474,6 +476,8 @@ class Controller {
             }
             this.sendToView('setPasswordHash', localStorage.getItem('pwdHash'));
         }
+        this.sendToView('setIsMagic', localStorage.getItem('magic') === 'true');
+        this.sendToView('setIsProxy', localStorage.getItem('proxy') === 'true');
     }
 
     update() {
@@ -711,6 +715,25 @@ class Controller {
         this.sendToDapp('ton_accounts', []);
     }
 
+    // MAGIC
+
+    doMagic(enabled) {
+        // TODO Do not execute every time
+        chrome.browsingData.remove({
+            'origins': ['https://web.telegram.org'],
+        }, {
+            'cache': true,
+        });
+
+        this.sendToDapp('ton_doMagic', enabled);
+    }
+
+    // PROXY
+
+    doProxy(enabled) {
+
+    }
+
     // TRANSPORT WITH VIEW
 
     sendToView(method, params, needQueue) {
@@ -781,6 +804,14 @@ class Controller {
                 break;
             case 'onClosePopup':
                 this.processingVisible = false;
+                break;
+            case 'onMagicClick':
+                localStorage.setItem('magic', params ? 'true' : 'false');
+                this.doMagic(params);
+                break;
+            case 'onProxyClick':
+                localStorage.setItem('proxy', params ? 'true' : 'false');
+                this.doProxy(params);
                 break;
         }
     }

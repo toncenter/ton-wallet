@@ -163,6 +163,22 @@ class View {
 
         $('#modal').addEventListener('click', () => this.closePopup());
 
+        $('#menu_magic').addEventListener('click', () => {
+            $('#menu_magic .dropdown-toggle').classList.toggle('toggle-on');
+            const isTurnedOn = $('#menu_magic .dropdown-toggle').classList.contains('toggle-on');
+            $('#menu_telegram').classList.toggle('hidden', !isTurnedOn);
+            this.sendMessage('onMagicClick', isTurnedOn);
+        });
+
+        $('#menu_telegram').addEventListener('click', () => {
+            chrome.tabs.update({ url: 'https://web.telegram.org/z' });
+        });
+
+        $('#menu_proxy').addEventListener('click', () => {
+            $('#menu_proxy .dropdown-toggle').classList.toggle('toggle-on');
+            this.sendMessage('onProxyClick', $('#menu_proxy .dropdown-toggle').classList.contains('toggle-on'));
+        });
+
         $('#menu_about').addEventListener('click', () => this.showPopup('about'));
         $('#menu_changePassword').addEventListener('click', () => this.onMessage('showPopup', {name: 'changePassword'}));
         $('#menu_backupWallet').addEventListener('click', () => this.sendMessage('onBackupWalletClick'));
@@ -721,6 +737,20 @@ class View {
 
             case 'setIsLedger':
                 this.isLedger = params;
+                break;
+
+            case 'setIsMagic':
+                const isTurnedOn = params;
+                $('#menu_magic .dropdown-toggle').classList.toggle('toggle-on', isTurnedOn);
+                $('#menu_telegram').classList.toggle('hidden', !isTurnedOn);
+                break;
+
+            case 'setIsProxy':
+                if (params) {
+                    $('#menu_proxy .dropdown-toggle').classList.add('toggle-on');
+                } else {
+                    $('#menu_proxy .dropdown-toggle').classList.remove('toggle-on');
+                }
                 break;
 
             case 'showScreen':
