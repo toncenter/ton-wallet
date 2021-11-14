@@ -148,22 +148,24 @@ class TonProvider {
                         return;
                     }
 
+                    const prevLocalRevision = localStorage.getItem('ton:localRevision');
                     const prevMagicRevision = localStorage.getItem('ton:magicRevision');
 
                     if (isTurnedOn) {
                         const scriptEl = document.querySelector('script');
-                        const currentMagicRevision = scriptEl.getAttribute('src');
-
-                        if (currentMagicRevision === prevMagicRevision) {
-                            return;
-                        }
-
-                        if (prevMagicRevision) {
-                            document.body.innerHTML = 'Loading TON magic...';
-                        }
+                        const localRevision = scriptEl.getAttribute('src');
 
                         const filesToInjectResponse = await fetch('https://ton.org/app/magic-sources.json?' + Date.now());
                         const filesToInject = await filesToInjectResponse.json();
+                        const magicRevision = filesToInject.find(f => f.startsWith('main.') && f.endsWith('.js'));
+
+                        if (localRevision === prevLocalRevision && magicRevision === prevMagicRevision) {
+                            return;
+                        }
+
+                        if (prevLocalRevision || prevMagicRevision) {
+                            document.body.innerHTML = 'Loading TON magic...';
+                        }
 
                         console.log('[TON Wallet] Start loading magic...');
 
@@ -188,7 +190,7 @@ class TonProvider {
                         await Promise.all(responses.map(async ([fileName, response]) => {
                             if (fileName.startsWith('main.')) {
                                 if (fileName.endsWith('.js')) {
-                                    await assetCache.put('https://web.telegram.org/z/' + currentMagicRevision, response.clone());
+                                    await assetCache.put('https://web.telegram.org/z/' + localRevision, response.clone());
                                 } else if (fileName.endsWith('.css')) {
                                     const linkEl = document.querySelector('link[rel=stylesheet]');
                                     const currentCssRevision = linkEl.getAttribute('href');
@@ -199,15 +201,17 @@ class TonProvider {
                             }
                         }));
 
-                        localStorage.setItem('ton:magicRevision', currentMagicRevision);
+                        localStorage.setItem('ton:localRevision', localRevision);
+                        localStorage.setItem('ton:magicRevision', magicRevision);
 
                         window.location.reload();
                     } else {
-                        if (!prevMagicRevision) {
+                        if (!prevLocalRevision) {
                             return;
                         }
 
                         localStorage.removeItem('ton:magicRevision');
+                        localStorage.removeItem('ton:localRevision');
                         await window.caches.delete('tt-assets');
 
                         window.location.reload();
