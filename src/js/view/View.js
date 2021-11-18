@@ -575,13 +575,16 @@ class View {
             `<div class="tx-item">
             <div>${fistLine}</div>
             <div class="tx-addr addr">${formatAddr(addr)}</div>
-            ${tx.comment ? `<div class="tx-comment"">${tx.comment}</div>` : ''}
+            ${tx.comment ? `<div class="tx-comment"></div>` : ''}
             <div class="tx-fee">blockchain fees: ${formatNanograms(tx.fee)}</div>
             <div class="tx-item-date">
                 ${formatTime(tx.date)}
             </div>
         </div>`
         );
+        if (tx.comment) {
+            item.querySelector('.tx-comment').innerText = tx.comment;
+        }
 
         item.addEventListener('click', () => this.onTransactionClick(tx));
 

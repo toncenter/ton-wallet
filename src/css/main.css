@@ -541,7 +541,12 @@ button {
 }
 
 .about-magic {
+    display: none;
     text-align: left;
+}
+
+.plugin .about-magic {
+    display: block;
 }
 
 .about-magic h4 {
@@ -727,12 +732,16 @@ button {
 /* EXTENSION */
 
 #menu_magic {
-    display: block;
+    display: none;
 }
 
 #menu_proxy {
-    display: block;
+    display: none;
     pointer-events: none;
+}
+
+#menu_telegram {
+    display: none;
 }
 
 #menu_proxy:after {

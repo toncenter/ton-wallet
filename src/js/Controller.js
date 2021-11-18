@@ -718,14 +718,18 @@ class Controller {
     // MAGIC
 
     doMagic(enabled) {
-        // TODO Do not execute every time
-        chrome.browsingData.remove({
-            'origins': ['https://web.telegram.org'],
-        }, {
-            'cache': true,
-        });
+        try {
+            // TODO Do not execute every time
+            chrome.browsingData.remove({
+                'origins': ['https://web.telegram.org'],
+            }, {
+                'cache': true,
+            });
 
-        this.sendToDapp('ton_doMagic', enabled);
+            this.sendToDapp('ton_doMagic', enabled);
+        } catch (e) {
+
+        }
     }
 
     // PROXY
