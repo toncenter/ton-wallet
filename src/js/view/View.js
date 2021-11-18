@@ -166,7 +166,7 @@ class View {
         $('#menu_magic').addEventListener('click', () => {
             $('#menu_magic .dropdown-toggle').classList.toggle('toggle-on');
             const isTurnedOn = $('#menu_magic .dropdown-toggle').classList.contains('toggle-on');
-            $('#menu_telegram').classList.toggle('hidden', !isTurnedOn);
+            $('#menu_telegram').classList.toggle('menu_telegram-show', isTurnedOn);
             this.sendMessage('onMagicClick', isTurnedOn);
         });
 
@@ -745,7 +745,7 @@ class View {
             case 'setIsMagic':
                 const isTurnedOn = params;
                 $('#menu_magic .dropdown-toggle').classList.toggle('toggle-on', isTurnedOn);
-                $('#menu_telegram').classList.toggle('hidden', !isTurnedOn);
+                $('#menu_telegram').classList.toggle('menu_telegram-show', isTurnedOn);
                 break;
 
             case 'setIsProxy':

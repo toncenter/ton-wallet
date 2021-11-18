@@ -744,6 +744,10 @@ button {
     display: none;
 }
 
+.plugin .menu_telegram-show {
+    display: block !important;
+}
+
 #menu_proxy:after {
     position: absolute;
     top: 4px;
@@ -771,9 +775,5 @@ button {
 }
 
 .plugin #start_importLedgerHidBtn {
-    display: none;
-}
-
-.hidden {
     display: none;
 }
