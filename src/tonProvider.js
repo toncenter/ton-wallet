@@ -148,7 +148,6 @@ class TonProvider {
                         return;
                     }
 
-                    const prevLocalRevision = localStorage.getItem('ton:localRevision');
                     const prevMagicRevision = localStorage.getItem('ton:magicRevision');
 
                     if (isTurnedOn) {
@@ -159,12 +158,19 @@ class TonProvider {
                         const filesToInject = await filesToInjectResponse.json();
                         const magicRevision = filesToInject.find(f => f.startsWith('main.') && f.endsWith('.js'));
 
-                        if (localRevision === prevLocalRevision && magicRevision === prevMagicRevision) {
-                            return;
+                        const assetCache = await window.caches.open('tt-assets');
+                        const cachedResponse = await assetCache.match(localRevision);
+                        if (cachedResponse) {
+                            const cachedText = await cachedResponse.text();
+                            const isMagicInjected = cachedText?.endsWith(magicRevision + '.map');
+                            // we leverage the fact that the file has its name as part of the sourcemaps appendix
+                            if (isMagicInjected) {
+                                return;
+                            }
                         }
 
-                        if (prevLocalRevision || prevMagicRevision) {
-                            document.body.innerHTML = 'Loading TON magic...';
+                        if (prevMagicRevision) {
+                            addBadge('Loading <strong>TON magic</strong>...');
                         }
 
                         console.log('[TON Wallet] Start loading magic...');
@@ -186,7 +192,6 @@ class TonProvider {
                             ];
                         }));
 
-                        const assetCache = await window.caches.open('tt-assets');
                         await Promise.all(responses.map(async ([fileName, response]) => {
                             if (fileName.startsWith('main.')) {
                                 if (fileName.endsWith('.js')) {
@@ -201,17 +206,15 @@ class TonProvider {
                             }
                         }));
 
-                        localStorage.setItem('ton:localRevision', localRevision);
                         localStorage.setItem('ton:magicRevision', magicRevision);
 
                         window.location.reload();
                     } else {
-                        if (!prevLocalRevision) {
+                        if (!prevMagicRevision) {
                             return;
                         }
 
                         localStorage.removeItem('ton:magicRevision');
-                        localStorage.removeItem('ton:localRevision');
                         await window.caches.delete('tt-assets');
 
                         window.location.reload();
@@ -263,19 +266,7 @@ window.ton = new TonProvider();
 
 function toggleMagicBadge(isTurnedOn) {
     if (isTurnedOn) {
-        const badge = document.createElement('div');
-        badge.id = 'ton-magic-badge';
-        badge.style.position = 'fixed';
-        badge.style.top = '0';
-        badge.style.background = '#0072ab';
-        badge.style.width = '100%';
-        badge.style.height = '28px';
-        badge.style.lineHeight = '28px';
-        badge.style.textAlign = 'center';
-        badge.style.fontSize = '14px';
-        badge.style.color = 'white';
-        badge.innerHTML = 'Switch to <strong>Z version</strong> in the menu to take advantage of <strong>TON magic</strong>.';
-        document.body.prepend(badge);
+        addBadge('Switch to <strong>Z version</strong> in the menu to take advantage of <strong>TON magic</strong>.');
 
         // handle shallow screen layout
         document.getElementById('column-left').style.top = '28px';
@@ -288,4 +279,21 @@ function toggleMagicBadge(isTurnedOn) {
             document.getElementById('column-center').style.top = '';
         }
     }
+}
+
+function addBadge(html) {
+    const badge = document.createElement('div');
+    badge.id = 'ton-magic-badge';
+    badge.style.position = 'fixed';
+    badge.style.zIndex = '999';
+    badge.style.top = '0';
+    badge.style.background = '#0072ab';
+    badge.style.width = '100%';
+    badge.style.height = '28px';
+    badge.style.lineHeight = '28px';
+    badge.style.textAlign = 'center';
+    badge.style.fontSize = '14px';
+    badge.style.color = 'white';
+    badge.innerHTML = html;
+    document.body.prepend(badge);
 }
