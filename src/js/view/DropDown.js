@@ -1,4 +1,4 @@
-import {$, htmlToElement, toggle} from "./Utils.js";
+import {clearElement, createElement, toggle} from "./Utils.js";
 
 export default class DropDown {
     constructor(container, onEnter, mnemonicWords) {
@@ -8,7 +8,7 @@ export default class DropDown {
     }
 
     show(input, text) {
-        this.container.innerHTML = '';
+        clearElement(this.container);
 
         const onMouseDown = e => {
             input.value = e.target.innerText;
@@ -21,7 +21,7 @@ export default class DropDown {
         this.mnemonicWords
             .filter(w => w.indexOf(text) === 0)
             .forEach(w => {
-                const item = htmlToElement('<div class="words-popup-item">' + w + '</div>');
+                const item = createElement({tag: 'div', clazz: 'words-popup-item', text: w});
                 item.addEventListener('mousedown', onMouseDown);
                 this.container.appendChild(item);
             });
@@ -36,7 +36,7 @@ export default class DropDown {
 
     hide() {
         toggle(this.container, false);
-        this.container.innerHTML = '';
+        clearElement(this.container);
         this.selectedI = -1;
     }
 

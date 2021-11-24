@@ -16,10 +16,45 @@ function toggle(div, visible) {
     div.style.display = d;
 }
 
-function htmlToElement(html) {
-    const div = document.createElement('div');
-    div.innerHTML = html;
-    return div.firstChild;
+function createElement(params) {
+    const item = document.createElement(params.tag);
+    if (params.clazz) {
+        if (Array.isArray(params.clazz)) {
+            for (let c of params.clazz) {
+                if (c) {
+                    item.classList.add(c);
+                }
+            }
+        } else {
+            item.classList.add(params.clazz);
+        }
+    }
+    if (params.text) item.innerText = params.text;
+    if (params.child) {
+        for (let c of params.child) {
+            if (c) {
+                item.appendChild(c);
+            }
+        }
+    }
+    if (params.style) {
+        for (let key in params.style) {
+            item.style[key] = params.style[key];
+        }
+    }
+    return item;
+}
+
+function setAddr(el, s) {
+    el.innerHTML = '';
+    el.appendChild(document.createTextNode(s.substring(0, s.length / 2)));
+    el.appendChild(document.createElement('wbr'));
+    el.appendChild(document.createTextNode(s.substring(s.length / 2)));
+    return el;
+}
+
+function clearElement(el) {
+    el.innerHTML = '';
 }
 
 function onInput(input, handler) {
@@ -27,10 +62,6 @@ function onInput(input, handler) {
     input.addEventListener('input', handler);
     input.addEventListener('cut', handler);
     input.addEventListener('paste', handler);
-}
-
-function formatAddr(s) {
-    return s.substring(0, s.length / 2) + '<wbr>' + s.substring(s.length / 2);
 }
 
 function doubleZero(n) {
@@ -77,9 +108,10 @@ export {
     $,
     $$,
     toggle,
-    htmlToElement,
+    createElement,
+    clearElement,
     onInput,
-    formatAddr,
+    setAddr,
     doubleZero,
     formatTime,
     formatDate,

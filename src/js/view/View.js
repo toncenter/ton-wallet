@@ -1,13 +1,12 @@
 import {
-    $,
+    $, clearElement,
     copyToClipboard,
-    formatAddr,
+    createElement,
     formatDate,
     formatDateFull,
     formatTime,
-    htmlToElement,
     IMPORT_WORDS_COUNT,
-    onInput,
+    onInput, setAddr,
     toggle,
 } from "./Utils.js";
 
@@ -171,7 +170,7 @@ class View {
         });
 
         $('#menu_telegram').addEventListener('click', () => {
-            chrome.tabs.update({ url: 'https://web.telegram.org/z' });
+            chrome.tabs.update({url: 'https://web.telegram.org/z'});
         });
 
         $('#menu_proxy').addEventListener('click', () => {
@@ -319,13 +318,28 @@ class View {
     setBackupWords(words) {
         const createBackupWord = n => {
             $('#createWords').appendChild(
-                htmlToElement(
-                    `<div class="create-word-item"><span class="word-num">${n + 1}.</span> <span style="font-weight: bold">${words[n]}</span>`
-                )
+                createElement({
+                    tag: 'div',
+                    clazz: 'create-word-item',
+                    child: [
+                        createElement({
+                            tag: 'span',
+                            clazz: 'word-num',
+                            text: (n + 1) + '.'
+                        }),
+                        createElement({
+                            tag: 'span',
+                            style: {
+                                'font-weight': 'bold'
+                            },
+                            text: words[n]
+                        })
+                    ]
+                })
             );
         };
 
-        $('#createWords').innerHTML = '';
+        clearElement($('#createWords'));
         for (let i = 0; i < words.length / 2; i++) {
             createBackupWord(i);
             createBackupWord(i + 12);
@@ -333,7 +347,7 @@ class View {
     }
 
     clearBackupWords() {
-        $('#createWords').innerHTML = '';
+        clearElement($('#createWords'));
     }
 
     // IMPORT SCREEN
@@ -430,10 +444,13 @@ class View {
         }
 
         const createInput = (n) => {
-            const inputContainer = htmlToElement(`<div class="word-item"></div>`);
-            const span = htmlToElement(`<span class="word-num">${n + 1}.</span>`);
+            const inputContainer = createElement({tag: 'div', clazz: 'word-item'});
+            const span = createElement({tag: 'span', clazz: 'word-num', text: (n + 1) + '.'});
             inputContainer.appendChild(span);
-            const input = htmlToElement(`<input id="importInput${n}" type="text" tabindex="${n + 1}">`);
+            const input = createElement({tag: 'input'});
+            input.id = 'importInput' + n;
+            input.type = 'text';
+            input.tabIndex = n + 1;
             inputContainer.appendChild(input);
 
             input.addEventListener('focusin', onFocusIn);
@@ -515,8 +532,9 @@ class View {
     }
 
     clearBalance() {
-        $('#balance').innerHTML = '💎';
-        $('#transactionsList').innerHTML = '';
+        clearElement($('#balance'));
+        $('#balance').innerText = '💎';
+        clearElement($('#transactionsList'));
         toggle($('#walletCreated'), false);
     }
 
@@ -528,15 +546,19 @@ class View {
         const first = s.substring(0, i);
         const last = s.substring(i);
 
-        $('#balance').innerHTML = first + '<span style="font-size: 24px">' + last + '</span> 💎';
-        $('#sendBalance').innerHTML = 'Balance: ' + s + ' 💎';
+        clearElement($('#balance'));
+        $('#balance').appendChild(createElement({tag: 'span', text: first}));
+        $('#balance').appendChild(createElement({tag: 'span', style: {'font-size': '24px'}, text: last}));
+        $('#balance').appendChild(createElement({tag: 'span', text: ' 💎'}));
+
+        $('#sendBalance').innerText = 'Balance: ' + s + ' 💎';
         toggle($('#sendButton'), balance.gt(new BN(0)) ? 'inline-block' : 'none');
         this.setTransactions(txs);
         this.setUpdating(false);
     }
 
     setTransactions(txs) {
-        $('#transactionsList').innerHTML = '';
+        clearElement($('#transactionsList'));
         let date = '';
 
         toggle($('#walletCreated'), txs.length === 0);
@@ -558,33 +580,35 @@ class View {
     }
 
     addDateSeparator(dateString) {
-        $('#transactionsList').appendChild(htmlToElement(
-            `<div class="date-separator">${dateString}</div>`
-        ));
+        $('#transactionsList').appendChild(createElement({tag: 'div', clazz: 'date-separator', text: dateString}));
     }
 
     addTx(tx) {
         const isReceive = !tx.amount.isNeg();
         const amountFormatted = formatNanograms(tx.amount);
-        const fistLine = isReceive ?
-            `<span class="tx-amount tx-amount-green">+${amountFormatted}</span> 💎<span class="tx-from"> from:</span>` :
-            `<span class="tx-amount">${amountFormatted}</span> 💎<span class="tx-from"> to:</span>`;
         const addr = isReceive ? tx.from_addr : tx.to_addr;
 
-        const item = htmlToElement(
-            `<div class="tx-item">
-            <div>${fistLine}</div>
-            <div class="tx-addr addr">${formatAddr(addr)}</div>
-            ${tx.comment ? `<div class="tx-comment"></div>` : ''}
-            <div class="tx-fee">blockchain fees: ${formatNanograms(tx.fee)}</div>
-            <div class="tx-item-date">
-                ${formatTime(tx.date)}
-            </div>
-        </div>`
-        );
-        if (tx.comment) {
-            item.querySelector('.tx-comment').innerText = tx.comment;
-        }
+        const item = createElement({
+            tag: 'div',
+            clazz: 'tx-item',
+            child: [
+                createElement({
+                    tag: 'div',
+                child: isReceive ? [
+                    createElement({tag: 'span', clazz: ['tx-amount', 'tx-amount-green'], text: '+' + amountFormatted}),
+                    createElement({tag: 'span', text: ' 💎'}),
+                    createElement({tag: 'span', clazz: 'tx-from', text: ' from:'})
+                ] : [
+                    createElement({tag: 'span', clazz: 'tx-amount', text: amountFormatted}),
+                    createElement({tag: 'span', text: ' 💎'}),
+                    createElement({tag: 'span', clazz: 'tx-from', text: ' to:'})
+                ]}),
+                setAddr(createElement({tag: 'div', clazz: ['tx-addr', 'addr']}), addr),
+                tx.comment ? createElement({tag: 'div', clazz: 'tx-comment', text: tx.comment}) : undefined,
+                createElement({tag: 'div', clazz: 'tx-fee', text: `blockchain fees: ${formatNanograms(tx.fee)}` }),
+                createElement({tag: 'div', clazz: 'tx-item-date', text: formatTime(tx.date)})
+            ]
+        })
 
         item.addEventListener('click', () => this.onTransactionClick(tx));
 
@@ -599,11 +623,11 @@ class View {
         const addr = isReceive ? tx.from_addr : tx.to_addr;
         this.currentTransactionAddr = addr;
         const amountFormatted = formatNanograms(tx.amount);
-        $('#transactionAmount').innerHTML = (isReceive ? '+' + amountFormatted : amountFormatted) + '💎';
-        $('#transactionFee').innerHTML = formatNanograms(tx.otherFee) + ' transaction fee';
-        $('#transactionStorageFee').innerHTML = formatNanograms(tx.storageFee) + ' storage fee';
-        $('#transactionSenderLabel').innerHTML = isReceive ? 'Sender' : 'Recipient';
-        $('#transactionSender').innerHTML = formatAddr(addr);
+        $('#transactionAmount').innerText = (isReceive ? '+' + amountFormatted : amountFormatted) + ' 💎';
+        $('#transactionFee').innerText = formatNanograms(tx.otherFee) + ' transaction fee';
+        $('#transactionStorageFee').innerText = formatNanograms(tx.storageFee) + ' storage fee';
+        $('#transactionSenderLabel').innerText = isReceive ? 'Sender' : 'Recipient';
+        setAddr($('#transactionSender'), addr);
         toggle($('#transactionCommentLabel'), !!tx.comment);
         $('#transactionComment').innerText = tx.comment;
         $('#transactionDate').innerText = formatDateFull(tx.date);
@@ -624,8 +648,8 @@ class View {
     // RECEIVE POPUP
 
     setMyAddress(address) {
-        $('#receive .addr').innerHTML = formatAddr(address);
-        $('#qr').innerHTML = '';
+        setAddr($('#receive .addr'), address);
+        clearElement($('#qr'));
         const options = {
             text: 'ton://transfer/' + address,
             width: 185 * window.devicePixelRatio,
@@ -694,7 +718,7 @@ class View {
     }
 
     drawInvoiceQr(link) {
-        $('#invoiceQrImg').innerHTML = '';
+        clearElement($('#invoiceQrImg'));
         const options = {
             text: link,
             width: 185 * window.devicePixelRatio,
@@ -727,7 +751,7 @@ class View {
 
             case 'setIsTestnet':
                 this.isTestnet = params;
-                $('.your-balance').innerHTML = params ? 'Your testnet balance' : 'Your mainnet balance';
+                $('.your-balance').innerText = params ? 'Your testnet balance' : 'Your mainnet balance';
                 break;
 
             case 'setBalance':
@@ -824,7 +848,7 @@ class View {
                         break;
                     case 'sendConfirm':
                         $('#sendConfirmAmount').innerText = formatNanograms(new BN(params.amount)) + ' TON';
-                        $('#sendConfirmAddr').innerHTML = formatAddr(params.toAddress);
+                        setAddr($('#sendConfirmAddr'), params.toAddress);
                         $('#sendConfirmFee').innerText = params.fee ? 'Fee: ~' + formatNanograms(new BN(params.fee)) + ' TON' : '';
                         toggle($('#sendConfirm .popup-footer'), !this.isLedger);
                         toggle($('#sendConfirm_closeBtn'), !this.isLedger);
