@@ -11,7 +11,7 @@
   },
   "background": {
     "scripts": [
-      "libs/tonweb-0.0.20.js",
+      "libs/tonweb-0.0.25.js",
       "libs/tonweb-mnemonic-0.0.2.js",
       "js/Controller.js"
     ],
