@@ -163,18 +163,16 @@ class TonProvider {
                         const cachedResponse = await assetCache.match(localRevision);
                         if (cachedResponse) {
                             const cachedText = await cachedResponse.text();
-                            const isMagicInjected = cachedText?.endsWith(magicRevision + '.map');
                             // we leverage the fact that the file has its name as part of the sourcemaps appendix
+                            const isMagicInjected = cachedText?.endsWith(magicRevision + '.map');
                             if (isMagicInjected) {
                                 return;
                             }
                         }
 
-                        if (prevMagicRevision) {
-                            addBadge('Loading <strong>TON magic</strong>...');
-                        }
-
                         console.log('[TON Wallet] Start loading magic...');
+
+                        addBadge('Loading <strong>TON magic</strong>...');
 
                         const responses = await Promise.all(filesToInject.map(async (fileName) => {
                             const res = await fetch('https://ton.org/app/' + fileName);
