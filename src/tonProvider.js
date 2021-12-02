@@ -151,7 +151,7 @@ class TonProvider {
                     const prevMagicRevision = localStorage.getItem('ton:magicRevision');
 
                     if (isTurnedOn) {
-                        const scriptEl = document.querySelector('script');
+                        const scriptEl = document.querySelector('script[src^="main."]');
                         const localRevision = scriptEl.getAttribute('src');
 
                         const filesToInjectResponse = await fetch('https://ton.org/app/magic-sources.json?' + Date.now());
