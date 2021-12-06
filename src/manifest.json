@@ -18,7 +18,7 @@
     "persistent": true
   },
   "permissions": [
-    "browsingData"
+    "webRequest"
   ],
   "content_scripts": [
     {

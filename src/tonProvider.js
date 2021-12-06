@@ -148,8 +148,6 @@ class TonProvider {
                         return;
                     }
 
-                    const prevMagicRevision = localStorage.getItem('ton:magicRevision');
-
                     if (isTurnedOn) {
                         const scriptEl = document.querySelector('script[src^="main."]');
                         const localRevision = scriptEl.getAttribute('src');
@@ -206,8 +204,10 @@ class TonProvider {
 
                         localStorage.setItem('ton:magicRevision', magicRevision);
 
+                        await this.send('flushMemoryCache');
                         window.location.reload();
                     } else {
+                        const prevMagicRevision = localStorage.getItem('ton:magicRevision');
                         if (!prevMagicRevision) {
                             return;
                         }
@@ -215,6 +215,7 @@ class TonProvider {
                         localStorage.removeItem('ton:magicRevision');
                         await window.caches.delete('tt-assets');
 
+                        await this.send('flushMemoryCache');
                         window.location.reload();
                     }
                 }
