@@ -1,0 +1,37 @@
+{
+  "manifest_version": 2,
+
+  "name": "TON Wallet",
+  "description": "Set up your own TON Wallet on The Open Network.",
+  "version": "1.1.18",
+
+  "browser_action": {
+    "default_icon": "assets/icon_32x32.png",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "scripts": [
+      "libs/tonweb-0.0.25.js",
+      "libs/tonweb-mnemonic-0.0.2.js",
+      "js/Controller.js"
+    ],
+    "persistent": true
+  },
+  "permissions": [
+    "browsingData"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "file://*/*",
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "contentscript.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ]
+}

@@ -778,3 +778,7 @@ button {
 .plugin #start_importLedgerHidBtn {
     display: none;
 }
+
+#start_importLedgerHidBtn {
+    display: none;
+}
