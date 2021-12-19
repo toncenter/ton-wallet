@@ -122,6 +122,8 @@ class Controller {
         const testnetRpc = 'https://testnet.toncenter.com/api/v2/jsonRPC';
         this.sendToView('setIsTestnet', IS_TESTNET)
 
+        localStorage.removeItem('pwdHash');
+
         this.ton = new TonWeb(new TonWeb.HttpProvider(IS_TESTNET ? testnetRpc : mainnetRpc));
         this.myAddress = localStorage.getItem('address');
         if (!this.myAddress || !localStorage.getItem('words')) {

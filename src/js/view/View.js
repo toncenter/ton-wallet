@@ -61,6 +61,7 @@ class View {
         onInput($('#createPassword_repeatInput'), resetErrors);
         onInput($('#enterPassword_input'), resetErrors);
         onInput($('#changePassword_oldInput'), resetErrors);
+        onInput($('#changePassword_newInput'), resetErrors);
         onInput($('#changePassword_repeatInput'), resetErrors);
 
         function getClipboardData(e) {
