@@ -719,13 +719,6 @@ class Controller {
 
     doMagic(enabled) {
         try {
-            // TODO Do not execute every time
-            chrome.browsingData.remove({
-                'origins': ['https://web.telegram.org'],
-            }, {
-                'cache': true,
-            });
-
             this.sendToDapp('ton_doMagic', enabled);
         } catch (e) {
 
@@ -847,6 +840,9 @@ class Controller {
                     showExtensionPopup();
                 }
                 this.showSendConfirm(new BN(param.value), param.to, param.data, needQueue);
+                return true;
+            case 'flushMemoryCache':
+                await chrome.webRequest.handlerBehaviorChanged();
                 return true;
         }
     }

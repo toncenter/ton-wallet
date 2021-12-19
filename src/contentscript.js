@@ -149,10 +149,8 @@ class TonProvider {
                         return;
                     }
 
-                    const prevMagicRevision = localStorage.getItem('ton:magicRevision');
-
                     if (isTurnedOn) {
-                        const scriptEl = document.querySelector('script');
+                        const scriptEl = document.querySelector('script[src^="main."]');
                         const localRevision = scriptEl.getAttribute('src');
 
                         const filesToInjectResponse = await fetch('https://ton.org/app/magic-sources.json?' + Date.now());
@@ -207,8 +205,10 @@ class TonProvider {
 
                         localStorage.setItem('ton:magicRevision', magicRevision);
 
+                        await this.send('flushMemoryCache');
                         window.location.reload();
                     } else {
+                        const prevMagicRevision = localStorage.getItem('ton:magicRevision');
                         if (!prevMagicRevision) {
                             return;
                         }
@@ -216,6 +216,7 @@ class TonProvider {
                         localStorage.removeItem('ton:magicRevision');
                         await window.caches.delete('tt-assets');
 
+                        await this.send('flushMemoryCache');
                         window.location.reload();
                     }
                 }
