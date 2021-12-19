@@ -22,7 +22,6 @@ const Address = TonWeb.utils.Address;
 const formatNanograms = TonWeb.utils.fromNano;
 
 /**
- * todo: duplicate
  * @return  String
  */
 async function hash(s) {
@@ -125,7 +124,7 @@ class Controller {
 
         this.ton = new TonWeb(new TonWeb.HttpProvider(IS_TESTNET ? testnetRpc : mainnetRpc));
         this.myAddress = localStorage.getItem('address');
-        if (!this.myAddress || !localStorage.getItem('words') || !localStorage.getItem('pwdHash')) {
+        if (!this.myAddress || !localStorage.getItem('words')) {
             localStorage.clear();
             this.sendToView('showScreen', {name: 'start'})
         } else {
@@ -279,8 +278,7 @@ class Controller {
     // BACKUP WALLET
 
     onBackupWalletClick() {
-        this.afterEnterPassword = async password => {
-            const mnemonicWords = await Controller.loadWords(password);
+        this.afterEnterPassword = async mnemonicWords => {
             this.showBackup(mnemonicWords);
         };
         this.sendToView('showPopup', {name: 'enterPassword'});
@@ -343,7 +341,6 @@ class Controller {
         localStorage.setItem('address', this.myAddress);
         localStorage.setItem('isLedger', 'true');
         localStorage.setItem('ledgerTransportType', transportType);
-        localStorage.setItem('pwdHash', 'ledger');
         localStorage.setItem('words', 'ledger');
         localStorage.setItem('publicKey', this.publicKeyHex);
         this.sendToView('setIsLedger', this.isLedger);
@@ -412,40 +409,41 @@ class Controller {
         localStorage.setItem('isLedger', 'false');
         localStorage.setItem('address', this.myAddress);
         await Controller.saveWords(this.myMnemonicWords, password);
-        const passwordHash = await hash(password);
-        localStorage.setItem('pwdHash', passwordHash);
         this.myMnemonicWords = null;
 
         this.sendToView('setIsLedger', this.isLedger);
-        this.sendToView('setPasswordHash', passwordHash);
         this.sendToView('showScreen', {name: 'readyToGo'});
     }
 
     async onChangePassword(oldPassword, newPassword) {
-        if (await hash(oldPassword) !== localStorage.getItem('pwdHash')) {
+        let words;
+        try {
+            words = await Controller.loadWords(oldPassword);
+        } catch (e) {
+            this.sendToView('showChangePasswordError');
             return;
         }
-
-        const words = await Controller.loadWords(oldPassword);
         await Controller.saveWords(words, newPassword);
-        const passwordHash = await hash(newPassword);
-        localStorage.setItem('pwdHash', passwordHash);
-        this.sendToView('setPasswordHash', passwordHash);
 
         this.sendToView('closePopup');
     }
 
     async onEnterPassword(password) {
-        if (await hash(password) === localStorage.getItem('pwdHash')) {
-            this.afterEnterPassword(password);
+        let words;
+        try {
+            words = await Controller.loadWords(password);
+        } catch (e) {
+            this.sendToView('showEnterPasswordError');
+            return;
         }
+
+        this.afterEnterPassword(words);
     }
 
     // MAIN
 
     showMain() {
         this.sendToView('showScreen', {name: 'main', myAddress: this.myAddress});
-        this.sendToView('setPasswordHash', localStorage.getItem('pwdHash'));
         if (!this.walletContract) {
             const walletVersion = localStorage.getItem('walletVersion');
             const walletClass = walletVersion ? this.ton.wallet.all[walletVersion] : this.ton.wallet.default;
@@ -467,14 +465,13 @@ class Controller {
     }
 
     initView() {
-        if (!this.myAddress || !localStorage.getItem('words') || !localStorage.getItem('pwdHash')) {
+        if (!this.myAddress || !localStorage.getItem('words')) {
             this.sendToView('showScreen', {name: 'start'})
         } else {
             this.sendToView('showScreen', {name: 'main', myAddress: this.myAddress});
             if (this.balance !== null) {
                 this.sendToView('setBalance', {balance: this.balance.toString(), txs: this.transactions});
             }
-            this.sendToView('setPasswordHash', localStorage.getItem('pwdHash'));
         }
         this.sendToView('setIsMagic', localStorage.getItem('magic') === 'true');
         this.sendToView('setIsProxy', localStorage.getItem('proxy') === 'true');
@@ -599,8 +596,7 @@ class Controller {
 
         } else {
 
-            this.afterEnterPassword = async password => {
-                const words = await Controller.loadWords(password);
+            this.afterEnterPassword = async words => {
                 this.processingVisible = true;
                 this.sendToView('showPopup', {name: 'processing'});
                 const privateKey = await Controller.wordsToPrivateKey(words);

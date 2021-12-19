@@ -17,15 +17,6 @@ const toNano = TonWeb.utils.toNano;
 const formatNanograms = TonWeb.utils.fromNano;
 const BN = TonWeb.utils.BN;
 
-/**
- * todo: duplicate
- * @return  String
- */
-async function hash(s) {
-    const bytes = new TextEncoder().encode(s);
-    return TonWeb.utils.bytesToBase64(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)));
-}
-
 function toggleLottie(lottie, visible) {
     if (visible) {
         lottie.player.play();
@@ -44,8 +35,6 @@ class View {
         this.port = null;
         /** @type   {string} */
         this.myAddress = null;
-        /** @type   {string} */
-        this.passwordHash = null;
         /** @type   {BN} */
         this.balance = null;
         /** @type   {string} */
@@ -235,11 +224,6 @@ class View {
 
             const isEmpty = newPassword.length === 0 && !this.isTestnet;
 
-            if (await hash(oldPassword) !== this.passwordHash) {
-                $('#changePassword_oldInput').classList.add('error');
-                return;
-            }
-
             if (isEmpty) {
                 $('#changePassword_newInput').classList.add('error');
                 return;
@@ -256,11 +240,8 @@ class View {
         $('#enterPassword_cancelBtn').addEventListener('click', () => this.closePopup());
         $('#enterPassword_okBtn').addEventListener('click', async () => {
             const password = $('#enterPassword_input').value;
-            if (await hash(password) === this.passwordHash) {
-                this.sendMessage('onEnterPassword', {password})
-            } else {
-                $('#enterPassword_input').classList.add('error');
-            }
+
+            this.sendMessage('onEnterPassword', {password})
         });
 
         $('#delete_cancelBtn').addEventListener('click', () => this.closePopup());
@@ -758,10 +739,6 @@ class View {
                 this.setBalance(new BN(params.balance), params.txs);
                 break;
 
-            case 'setPasswordHash':
-                this.passwordHash = params;
-                break;
-
             case 'setIsLedger':
                 this.isLedger = params;
                 break;
@@ -778,6 +755,14 @@ class View {
                 } else {
                     $('#menu_proxy .dropdown-toggle').classList.remove('toggle-on');
                 }
+                break;
+
+            case 'showChangePasswordError':
+                $('#changePassword_oldInput').classList.add('error');
+                break;
+
+            case 'showEnterPasswordError':
+                $('#enterPassword_input').classList.add('error');
                 break;
 
             case 'showScreen':
