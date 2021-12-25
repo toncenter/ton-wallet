@@ -456,7 +456,7 @@ class Controller {
             });
         }
         this.updateIntervalId = setInterval(() => this.update(), 5000);
-        this.update();
+        this.update(true);
         this.sendToDapp('ton_accounts', [this.myAddress]);
     }
 
@@ -479,7 +479,11 @@ class Controller {
         this.sendToView('setIsProxy', localStorage.getItem('proxy') === 'true');
     }
 
-    update() {
+    update(force) {
+        const needUpdate = (this.processingVisible && this.sendingData) || (this.balance === null) || force;
+
+        if (!needUpdate) return;
+
         this.getWallet().then(response => {
             const balance = this.getBalance(response);
             const isBalanceChanged = (this.balance === null) || (this.balance.cmp(balance) !== 0);
@@ -771,7 +775,7 @@ class Controller {
                 this.savePrivateKey(params.password);
                 break;
             case 'update':
-                this.update();
+                this.update(true);
                 break;
             case 'showAddressOnDevice':
                 this.showAddressOnDevice();
