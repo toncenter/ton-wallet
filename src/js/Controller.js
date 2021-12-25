@@ -83,14 +83,15 @@ async function decrypt(ciphertext, password) {
     return plaintext;                                                                   // return the plaintext
 }
 
-// CONTROLLER
-
-const IS_TESTNET = window.location.href.indexOf('testnet') > -1;
-
 const ACCOUNT_NUMBER = 0;
 
 const DEFAULT_WALLET_VERSION = 'v3R2';
 const DEFAULT_LEDGER_WALLET_VERSION = 'v3R1';
+
+
+const MAINNET_RPC = 'https://toncenter.com/api/v2/jsonRPC';
+const TESTNET_RPC = 'https://testnet.toncenter.com/api/v2/jsonRPC';
+
 
 class Controller {
     constructor() {
@@ -110,6 +111,7 @@ class Controller {
         this.isContractInitialized = false;
         this.sendingData = null;
         this.processingVisible = false;
+        this.isTestnet = localStorage.getItem('testnet') || window.location.href.indexOf('testnet') > -1;
 
         this.ledgerApp = null;
         this.isLedger = false;
@@ -118,13 +120,12 @@ class Controller {
             window.view.controller = this;
         }
 
-        const mainnetRpc = 'https://toncenter.com/api/v2/jsonRPC';
-        const testnetRpc = 'https://testnet.toncenter.com/api/v2/jsonRPC';
-        this.sendToView('setIsTestnet', IS_TESTNET)
+        // Send current testnet state to View
+        this.sendToView('setIsTestnet', this.isTestnet);
 
         localStorage.removeItem('pwdHash');
 
-        this.ton = new TonWeb(new TonWeb.HttpProvider(IS_TESTNET ? testnetRpc : mainnetRpc));
+        this.ton = new TonWeb(new TonWeb.HttpProvider(this.isTestnet ? TESTNET_RPC : MAINNET_RPC));
         this.myAddress = localStorage.getItem('address');
         if (!this.myAddress || !localStorage.getItem('words')) {
             localStorage.clear();
@@ -476,6 +477,7 @@ class Controller {
             }
         }
         this.sendToView('setIsMagic', localStorage.getItem('magic') === 'true');
+        this.sendToView('setIsTestnet', localStorage.getItem('testnet') === 'true');
         this.sendToView('setIsProxy', localStorage.getItem('proxy') === 'true');
     }
 
@@ -807,6 +809,14 @@ class Controller {
             case 'onMagicClick':
                 localStorage.setItem('magic', params ? 'true' : 'false');
                 this.doMagic(params);
+                break;
+            case 'onTestnetClick':
+                localStorage.setItem('testnet', params ? 'true' : 'false');
+                this.isTestnet = params;
+
+                // Reinit ton with testnet param
+                this.ton = new TonWeb(new TonWeb.HttpProvider(this.isTestnet ? TESTNET_RPC : MAINNET_RPC));
+
                 break;
             case 'onProxyClick':
                 localStorage.setItem('proxy', params ? 'true' : 'false');

@@ -159,6 +159,21 @@ class View {
             this.sendMessage('onMagicClick', isTurnedOn);
         });
 
+        $('#menu_testnet').addEventListener('click', () => {
+            $('#menu_testnet .dropdown-toggle').classList.toggle('toggle-on');
+            const isTurnedOn = $('#menu_testnet .dropdown-toggle').classList.contains('toggle-on');
+            this.isTestnet = isTurnedOn;
+            $('.your-balance').innerText = isTurnedOn ? 'Your testnet balance' : 'Your mainnet balance';
+            $('#menu_testnet').classList.toggle('menu_telegram-show', isTurnedOn);
+
+            // Update controller
+            this.sendMessage('onTestnetClick', isTurnedOn);
+
+            // Update balance, etc.
+            this.setUpdating(true);
+            this.sendMessage('update')
+        });
+
         $('#menu_telegram').addEventListener('click', () => {
             chrome.tabs.update({url: 'https://web.telegram.org/z'});
         });
@@ -733,6 +748,7 @@ class View {
 
             case 'setIsTestnet':
                 this.isTestnet = params;
+                $('#menu_testnet .dropdown-toggle').classList.toggle('toggle-on', params);
                 $('.your-balance').innerText = params ? 'Your testnet balance' : 'Your mainnet balance';
                 break;
 
