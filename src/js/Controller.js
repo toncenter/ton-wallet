@@ -480,6 +480,9 @@ class Controller {
     }
 
     update() {
+        if (!document.hasFocus()) {
+            return;
+        }
         this.getWallet().then(response => {
             const balance = this.getBalance(response);
             const isBalanceChanged = (this.balance === null) || (this.balance.cmp(balance) !== 0);
