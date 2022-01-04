@@ -660,7 +660,7 @@ button {
 }
 
 
-#sendConfirm .addr {
+#sendConfirm .addr, #signConfirm .addr {
     font-family: monospace;
     text-align: center;
     font-size: 18px;

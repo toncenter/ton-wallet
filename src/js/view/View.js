@@ -213,6 +213,10 @@ class View {
         $('#sendConfirm_cancelBtn').addEventListener('click', () => this.closePopup());
         $('#sendConfirm_okBtn').addEventListener('click', () => this.onMessage('showPopup', {name: 'enterPassword'}));
 
+        $('#signConfirm_closeBtn').addEventListener('click', () => this.closePopup());
+        $('#signConfirm_cancelBtn').addEventListener('click', () => this.closePopup());
+        $('#signConfirm_okBtn').addEventListener('click', () => this.onMessage('showPopup', {name: 'enterPassword'}));
+
         $('#processing_closeBtn').addEventListener('click', () => this.closePopup());
         $('#done_closeBtn').addEventListener('click', () => this.closePopup());
         $('#about_closeBtn').addEventListener('click', () => this.closePopup());
@@ -275,7 +279,7 @@ class View {
 
         toggle($('#modal'), name !== '');
 
-        const popups = ['receive', 'invoice', 'invoiceQr', 'send', 'sendConfirm', 'processing', 'done', 'menuDropdown', 'about', 'delete', 'changePassword', 'enterPassword', 'transaction', 'connectLedger'];
+        const popups = ['receive', 'invoice', 'invoiceQr', 'send', 'sendConfirm', 'signConfirm', 'processing', 'done', 'menuDropdown', 'about', 'delete', 'changePassword', 'enterPassword', 'transaction', 'connectLedger'];
 
         popups.forEach(popup => {
             toggle($('#' + popup), name === popup);
@@ -839,6 +843,10 @@ class View {
                         toggle($('#sendConfirm .popup-footer'), !this.isLedger);
                         toggle($('#sendConfirm_closeBtn'), !this.isLedger);
                         // todo: show label 'Please approve on device'
+                        break;
+                    case 'signConfirm':
+                        const hex = params.data.length > 48 ? params.data.substring(0, 47) + '…' : params.data;
+                        setAddr($('#signConfirmData'), hex);
                         break;
                 }
                 break;
