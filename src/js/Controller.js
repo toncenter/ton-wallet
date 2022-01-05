@@ -882,9 +882,9 @@ class Controller {
                     showExtensionPopup();
                 }
                 if (param.dataType === 'hex') {
-                    params.data = TonWeb.utils.hexToBytes(params.data);
+                    param.data = TonWeb.utils.hexToBytes(param.data);
                 } else if (param.dataType === 'base64') {
-                    params.data = TonWeb.utils.base64ToBytes(params.data);
+                    param.data = TonWeb.utils.base64ToBytes(param.data);
                 }
                 this.showSendConfirm(new BN(param.value), param.to, param.data, needQueue);
                 return true;
