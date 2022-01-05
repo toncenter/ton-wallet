@@ -885,6 +885,8 @@ class Controller {
                     param.data = TonWeb.utils.hexToBytes(param.data);
                 } else if (param.dataType === 'base64') {
                     param.data = TonWeb.utils.base64ToBytes(param.data);
+                } else if (param.dataType === 'boc') {
+                    param.data = TonWeb.boc.Cell.fromBoc(TonWeb.utils.base64ToBytes(param.data))[0];
                 }
                 this.showSendConfirm(new BN(param.value), param.to, param.data, needQueue);
                 return true;
