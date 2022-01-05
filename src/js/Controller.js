@@ -577,7 +577,7 @@ class Controller {
     /**
      * @param amount    {BN} in nanograms
      * @param toAddress {string}
-     * @param comment?  {string}
+     * @param comment?  {string | Uint8Array}
      * @param needQueue {boolean}
      */
     async showSendConfirm(amount, toAddress, comment, needQueue) {
@@ -880,6 +880,11 @@ class Controller {
                 const param = params[0];
                 if (!popupPort) {
                     showExtensionPopup();
+                }
+                if (param.dataType === 'hex') {
+                    params.data = TonWeb.utils.hexToBytes(params.data);
+                } else if (param.dataType === 'base64') {
+                    params.data = TonWeb.utils.base64ToBytes(params.data);
                 }
                 this.showSendConfirm(new BN(param.value), param.to, param.data, needQueue);
                 return true;
