@@ -579,7 +579,8 @@ class Controller {
     /**
      * @param amount    {BN} in nanograms
      * @param toAddress {string}
-     * @param comment?  {string}
+     * @param comment?  {string | Uint8Array}
+     * @param needQueue {boolean}
      */
     async showSendConfirm(amount, toAddress, comment, needQueue) {
         if (amount.lte(0) || this.balance.lt(amount)) {
@@ -619,6 +620,34 @@ class Controller {
             }, needQueue);
 
         }
+    }
+
+    /**
+     * @param hexToSign  {string} hex data to sign
+     * @param needQueue {boolean}
+     * @returns {Promise<string>} signature in hex
+     */
+    showSignConfirm(hexToSign, needQueue) {
+        return new Promise((resolve, reject) => {
+            if (this.isLedger) {
+                alert('sign not supported by Ledger');
+                reject();
+            } else {
+
+                this.afterEnterPassword = async words => {
+                    this.sendToView('closePopup');
+                    const privateKey = await Controller.wordsToPrivateKey(words);
+                    const signature = this.rawSign(hexToSign, privateKey);
+                    resolve(signature);
+                };
+
+                this.sendToView('showPopup', {
+                    name: 'signConfirm',
+                    data: hexToSign,
+                }, needQueue);
+
+            }
+        });
     }
 
     /**
@@ -682,6 +711,17 @@ class Controller {
             this.sendToView('closePopup');
             alert('Error sending');
         }
+    }
+
+    /**
+     * @param hex   {string} hex to sign
+     * @param privateKey    {string}
+     * @returns {Promise<string>} signature in hex
+     */
+    rawSign(hex, privateKey) {
+        const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
+        const signature = nacl.sign.detached(TonWeb.utils.hexToBytes(hex), keyPair.secretKey);
+        return TonWeb.utils.bytesToHex(signature);
     }
 
     /**
@@ -839,6 +879,7 @@ class Controller {
     async onDappMessage(method, params) {
         // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md
         // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1102.md
+        const needQueue = !popupPort;
 
         switch (method) {
             case 'ton_requestAccounts':
@@ -847,12 +888,24 @@ class Controller {
                 return (this.balance ? this.balance.toString() : '');
             case 'ton_sendTransaction':
                 const param = params[0];
-                const needQueue = !popupPort;
                 if (!popupPort) {
                     showExtensionPopup();
                 }
+                if (param.dataType === 'hex') {
+                    param.data = TonWeb.utils.hexToBytes(param.data);
+                } else if (param.dataType === 'base64') {
+                    param.data = TonWeb.utils.base64ToBytes(param.data);
+                } else if (param.dataType === 'boc') {
+                    param.data = TonWeb.boc.Cell.fromBoc(TonWeb.utils.base64ToBytes(param.data))[0];
+                }
                 this.showSendConfirm(new BN(param.value), param.to, param.data, needQueue);
                 return true;
+            case 'ton_rawSign':
+                const signParam = params[0];
+                if (!popupPort) {
+                    showExtensionPopup();
+                }
+                return this.showSignConfirm(signParam.data, needQueue);
             case 'flushMemoryCache':
                 await chrome.webRequest.handlerBehaviorChanged();
                 return true;

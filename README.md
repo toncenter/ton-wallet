@@ -30,8 +30,6 @@ https://chrome.google.com/webstore/detail/ton-wallet/nphplpgoakhhjchkkhmiggakijn
 
 `npm install`
 
-`npm install natives@1.1.6`
-
 `gulp`
 
 `npx webpack --mode=none`
