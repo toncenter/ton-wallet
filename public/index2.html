@@ -11,240 +11,11 @@
 
     <link rel="icon" href="assets/favicon.ico">
 
-    <link rel="stylesheet" href="css/main.css?45">
+    <link rel="stylesheet" href="../src/styles/index.scss?45">
 </head>
 <body>
 
 <div class="body-container">
-
-    <!-- Start Screen -->
-
-    <div id="start" class="screen" style="display: none">
-        <div class="middle">
-            <tgs-player data-name="start" src="assets/lottie/intro.tgs"
-                        width="120" height="120"
-                        class="screen-lottie">
-            </tgs-player>
-
-            <div class="screen-title">TON Wallet</div>
-            <div class="screen-text">
-                TON wallet allows you to make fast and<br>
-                secure blockchain-based payments<br>
-                without intermediaries.
-            </div>
-
-            <div style="margin-top: 95px">
-                <button id="start_createBtn" class="btn-blue screen-btn">Create My Wallet</button>
-            </div>
-            <div style="margin-top: 20px">
-                <button id="start_importBtn" class="btn-lite" style="font-weight: normal">Import existing wallet
-                </button>
-            </div>
-            <div style="margin-top: 10px">
-                <button id="start_importLedgerHidBtn" class="btn-lite" style="font-weight: normal">Connect Ledger
-                </button>
-            </div>
-
-<!--            <div style="margin-top: 10px">-->
-<!--                <button id="start_importLedgerBleBtn" class="btn-lite" style="font-weight: normal">Connect Ledger via Bluetooth-->
-<!--                </button>-->
-<!--            </div>-->
-        </div>
-
-        <div class="screen-text"
-             style="font-size: 12px; position: absolute; width: 100%; left: 0; bottom: 0; text-align: center">
-        </div>
-    </div>
-
-    <!-- Import Screen -->
-
-    <div id="import" class="screen" style="text-align: center; display: none">
-        <div class="screen-title" style="margin-top: 80px">24 Secret Words</div>
-        <div class="screen-text" style="margin-bottom: 10px">
-            Please restore access to your <b>non-hardware</b> wallet by<br>
-            entering the 24 secret words you wrote<br>
-            down when creating the wallet.
-        </div>
-
-        <button id="import_alertBtn" class="btn-lite">I don't have them</button>
-
-        <div id="importWords">
-
-        </div>
-
-        <div id="wordsPopup" style="display: none">
-        </div>
-
-        <div style="clear: both">
-            <button id="import_continueBtn" class="btn-blue screen-btn" style="margin-top: 30px; margin-bottom: 20px">
-                Continue
-            </button>
-        </div>
-    </div>
-
-    <!-- Created Screen -->
-
-    <div id="created" class="screen" style="display: none">
-        <div class="middle">
-            <tgs-player data-name="created" src="assets/lottie/created.tgs"
-                        width="120" height="120"
-                        class="screen-lottie">
-            </tgs-player>
-
-            <div class="screen-title">Congratulations</div>
-
-            <div class="screen-text">
-                Your TON wallet has just been created.<br>
-                Only you control it.
-            </div>
-
-            <div class="screen-text">
-                To be able to always have access to it,<br>
-                please set up a secure password and write<br>
-                down secret words.
-            </div>
-
-            <div>
-                <button id="createdContinueButton" class="btn-blue screen-btn"
-                        style="margin-top: 18px; margin-bottom: 20px">Continue
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Backup Screen -->
-
-    <div id="backup" class="screen" style="text-align: center; display: none">
-        <tgs-player data-name="backup" src="assets/lottie/paper.tgs"
-                    width="120" height="120"
-                    class="screen-lottie" style="margin-top: 30px">
-        </tgs-player>
-
-        <div class="screen-title">24 secret words</div>
-
-        <div class="screen-text">
-            Write down these 24 words in the correct<br>
-            order and store them in secret place.
-        </div>
-
-        <div class="screen-text">
-            Use these secret words to restore access to<br>
-            your wallet if you lose your password or<br>
-            access to this device.
-        </div>
-
-        <div id="createWords">
-
-        </div>
-
-        <div style="clear: both">
-            <button id="backup_continueBtn" class="btn-blue screen-btn" style="margin-top: 26px; margin-bottom: 20px">
-                Continue
-            </button>
-        </div>
-    </div>
-
-    <!-- Create Password Screen -->
-
-    <div id="createPassword" class="screen" style="display: none">
-        <div class="middle">
-            <tgs-player data-name="createPassword" src="assets/lottie/lock.tgs"
-                        width="120" height="120"
-                        class="screen-lottie">
-            </tgs-player>
-
-            <div class="screen-title">Secure Password</div>
-
-            <div class="screen-text">
-                Please choose a secure password<br>
-                for confirming your payments
-            </div>
-
-            <div style="margin-top: 54px">
-                <input id="createPassword_input" placeholder="Enter your password" type="password">
-            </div>
-            <div>
-                <input id="createPassword_repeatInput" placeholder="Repeat your password" type="password">
-            </div>
-
-            <div>
-                <button id="createPassword_continueBtn" class="btn-blue screen-btn"
-                        style="margin-top: 38px; margin-bottom: 20px">Continue
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Ready To Go Screen -->
-
-    <div id="readyToGo" class="screen" style="display: none">
-        <div class="middle">
-            <tgs-player data-name="readyToGo" src="assets/lottie/done.tgs"
-                        width="120" height="120"
-                        class="screen-lottie">
-            </tgs-player>
-
-            <div class="screen-title">Ready to go!</div>
-
-            <div class="screen-text">
-                You're all set. Now you have a wallet that<br>
-                only you control - directly, without<br>
-                middlemen or bankers.
-            </div>
-
-            <div>
-                <button id="readyToGo_continueBtn" class="btn-blue screen-btn"
-                        style="margin-top: 170px; margin-bottom: 20px">View My Wallet
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Screen -->
-
-    <div id="main" class="screen" style="display: none">
-        <div class="head">
-            <div class="head-row">
-                <button id="main_refreshBtn" class="btn-round"
-                        style="background-image: url('assets/refresh.svg')">
-                </button>
-
-                <div id="updateLabel"></div>
-
-                <button id="main_settingsButton" class="btn-round"
-                        style="background-image: url('assets/menu.svg')">
-                </button>
-            </div>
-
-            <div id="balance">💎</div>
-            <div class="your-balance">Your balance</div>
-
-            <button id="main_receiveBtn" class="btn-blue">
-                <div class="btn-icon" style="background-image: url('assets/down-left.svg')"></div>
-                Receive
-            </button>
-
-            <button id="sendButton" class="btn-blue" style="display: none">
-                <div class="btn-icon"
-                     style="background-image: url('assets/down-left.svg'); transform: rotate(180deg)"></div>
-                Send
-            </button>
-        </div>
-
-        <div id="transactionsContainer">
-            <div id="transactionsList">
-            </div>
-            <div id="walletCreated" style="display: none">
-                <tgs-player data-name="main"
-                            width="150" height="150"
-                            src="assets/lottie/empty.tgs">
-                </tgs-player>
-                <div>Wallet Created</div>
-            </div>
-        </div>
-
-    </div>
-
     <!-- Modal -->
 
     <div id="modal" style="display: none"></div>
@@ -339,35 +110,6 @@
 
     <!-- Transaction Popup -->
 
-    <div id="transaction" class="popup" style="display: none">
-        <div class="popup-title">Transaction</div>
-
-        <div id="transactionAmount">+0.1 TON</div>
-        <div id="transactionFee">0.1 transaction fee</div>
-        <div id="transactionStorageFee">0.1 storage fee</div>
-
-        <div id="transactionSenderLabel" class="input-label" style="margin-top: 20px">Sender</div>
-
-        <div id="transactionSender" class="addr">
-
-        </div>
-
-        <div class="input-label">Date</div>
-
-        <div id="transactionDate" class="popup-black-text">
-
-        </div>
-
-        <div id="transactionCommentLabel" class="input-label">Comment</div>
-
-        <div id="transactionComment" class="popup-black-text">
-
-        </div>
-
-        <button id="transaction_sendBtn" class="btn-blue" style="margin-top: 20px">Send TON to this address</button>
-
-        <button id="transaction_closeBtn" class="popup-close-btn"></button>
-    </div>
 
     <!-- Send Popup -->
 
@@ -570,15 +312,15 @@
 
 <!-- Scripts -->
 
-<script type="text/javascript" src="libs/pako/1.0.10/pako_inflate.min.js"></script>
-<script type="text/javascript" src="libs/lottie-web/5.6.3/lottie_canvas.min.js"></script>
-<script type="text/javascript" src="libs/EasyQRcodeJS.js"></script>
+<script type="text/javascript" src="../src/libs/pako/1.0.10/pako_inflate.min.js"></script>
+<script type="text/javascript" src="../src/libs/lottie-web/5.6.3/lottie_canvas.min.js"></script>
+<script type="text/javascript" src="../src/libs/EasyQRcodeJS.js"></script>
 
-<script type="text/javascript" src="libs/tonweb-0.0.25.js"></script>
-<script type="text/javascript" src="libs/tonweb-mnemonic-0.0.2.js"></script>
+<script type="text/javascript" src="../src/libs/tonweb-0.0.25.js"></script>
+<script type="text/javascript" src="../src/libs/tonweb-mnemonic-0.0.2.js"></script>
 
-<script src="js/view/View.js?45" type="module"></script>
-<script src="js/Controller.js?45" type="module"></script> <!-- For Plugin we need to delete this line-->
+<script src="../src/js/view/View.js?45" type="module"></script>
+<script src="../src/js/Controller.js?45" type="module"></script> <!-- For Plugin we need to delete this line-->
 
 </body>
 </html>

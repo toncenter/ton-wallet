@@ -2,24 +2,51 @@
   "name": "ton-wallet",
   "version": "1.0.0",
   "description": "TON Wallet",
-  "main": "index.js",
+  "dependencies": {
+    "@reduxjs/toolkit": "^1.6.2",
+    "@testing-library/jest-dom": "^5.11.4",
+    "@testing-library/react": "^11.1.0",
+    "@testing-library/user-event": "^12.1.10",
+    "@types/jest": "^26.0.15",
+    "@types/node": "^12.0.0",
+    "@types/pako": "^1.0.3",
+    "@types/react": "^17.0.0",
+    "@types/react-dom": "^17.0.0",
+    "bignumber.js": "^9.0.1",
+    "buffer": "^6.0.3",
+    "easyqrcodejs": "^4.4.10",
+    "i18next": "^21.5.3",
+    "lottie-web": "^5.8.1",
+    "node-sass": "^7.0.1",
+    "pako": "^2.0.4",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "react-i18next": "^11.14.3",
+    "react-redux": "^7.2.6",
+    "react-router-dom": "6",
+    "react-scripts": "^5.0.0",
+    "redux-thunk": "^2.4.0",
+    "tonweb": "^0.0.26",
+    "tonweb-mnemonic": "^1.0.0",
+    "typescript": "^4.1.2",
+    "web-vitals": "^1.0.1"
+  },
   "devDependencies": {
-    "del": "^3.0.0",
-    "gulp": "^4.0.2",
-    "gulp-concat": "^2.6.1",
-    "gulp-concat-css": "^2.3.0",
-    "gulp-cssmin": "^0.2.0",
-    "gulp-delete-lines": "^0.0.7",
-    "gulp-rename": "^2.0.0",
-    "gulp-replace": "^1.0.0",
-    "webpack": "^4.41.6",
-    "webpack-cli": "^3.3.11",
-    "natives": "^1.1.6"
+    "i18next-scanner": "^3.1.0",
+    "i18next-scanner-typescript": "^1.0.6",
+    "source-map-explorer": "^2.5.2"
   },
   "scripts": {
-    "build:contentscript": "sed -e \"/%%PROVIDER_CODE%%/r src/tonProvider.js\" -e \"//d\" src/contentscript.js.tpl > src/contentscript.js",
-    "build": "npm run build:contentscript && gulp && npx webpack --mode=none",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "test:coverage": "yarn test --coverage --watchAll=false",
+    "docker:build": "docker build -f Dockerfile.prod -t  ton-swap:prod .",
+    "docker:build:dev": "docker build -t ton-swap:dev .",
+    "docker:run": "docker run -it --rm -p 1337:80 ton-swap:prod",
+    "docker:run:dev": "docker run -it --rm -v ${PWD}:/app -v /app/node_modules -p 3001:3000 -e CHOKIDAR_USEPOLLING=true ton-swap:dev",
+    "i18n": "i18next-scanner",
+    "analyze": "source-map-explorer 'build/static/js/*.js'"
   },
   "repository": {
     "type": "git",
@@ -31,5 +58,23 @@
   "bugs": {
     "url": "https://github.com/toncenter/ton-wallet/issues"
   },
-  "homepage": "https://tonwallet.me"
+  "homepage": "https://tonwallet.me",
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
 }

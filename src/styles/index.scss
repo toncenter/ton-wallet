@@ -732,12 +732,7 @@ button {
 
 /* EXTENSION */
 
-#menu_magic {
-    display: none;
-}
-
 #menu_proxy {
-    display: none;
     pointer-events: none;
 }
 
@@ -781,4 +776,16 @@ button {
 
 #start_importLedgerHidBtn {
     display: none;
+}
+
+.plugin #start_importLedgerBleBtn {
+  display: none;
+}
+
+#start_importLedgerBleBtn {
+  display: none;
+}
+
+#main {
+  display: flex;
 }
