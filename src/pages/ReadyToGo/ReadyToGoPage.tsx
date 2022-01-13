@@ -1,14 +1,16 @@
 import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import TgsPlayer from 'components/TgsPlayer';
+import { useAppDispatch } from 'store/hooks';
+import { setScreen } from 'store/app/appSlice';
+import { ScreenEnum } from 'enums/screenEnum';
 
 function ReadyToGoPage() {
-    const navigate = useNavigate();
+    const dispatch = useAppDispatch();
 
-    const navigateTo = useCallback((route: string) => {
-        navigate(route);
-    }, [navigate]);
+    const navigateTo = useCallback((screen: ScreenEnum) => {
+        dispatch(setScreen(screen));
+    }, [dispatch]);
 
     return (
         <div id="readyToGo"
@@ -32,7 +34,7 @@ function ReadyToGoPage() {
                     <button id="readyToGo_continueBtn"
                             className="btn-blue screen-btn"
                             style={{"marginTop":"170px","marginBottom":"20px"}}
-                            onClick={navigateTo.bind(null, "/")}
+                            onClick={navigateTo.bind(null, ScreenEnum.main)}
                     >
                         View My Wallet
                     </button>

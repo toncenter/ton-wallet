@@ -58,7 +58,7 @@ function TgsPlayer({name, src, width, height, className, style}: TgsPlayerProps)
     }, [width, height, name, src])
 
     return (
-        <div className={className} style={style} ref={ref}/>
+        <div className={`tgs-player ${className}`} style={style} ref={ref}/>
     )
 }
 

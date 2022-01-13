@@ -1,23 +1,22 @@
 import { useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import TgsPlayer from 'components/TgsPlayer';
 import { useAppDispatch, useAppSelector } from 'store/hooks';
 import { createWallet } from 'store/app/appThunks';
-import { selectMyAddress } from 'store/app/appSlice';
+import { selectMyAddress, setScreen } from 'store/app/appSlice';
+import { ScreenEnum } from 'enums/screenEnum';
 
 function CreatedPage() {
     const dispatch = useAppDispatch();
     const myAddress = useAppSelector(selectMyAddress);
-    const navigate = useNavigate();
 
     useEffect(() => {
         dispatch(createWallet());
     }, [dispatch]);
 
-    const navigateTo = useCallback((route: string) => {
-        navigate(route);
-    }, [navigate]);
+    const showScreen = useCallback((screen: ScreenEnum) => {
+        dispatch(setScreen(screen));
+    }, [dispatch]);
 
     return (
         <div id="created" className="screen">
@@ -46,7 +45,7 @@ function CreatedPage() {
                             className="btn-blue screen-btn"
                             style={{"marginTop":"18px","marginBottom":"20px"}}
                             disabled={!myAddress}
-                            onClick={navigateTo.bind(null, "/backup")}
+                            onClick={showScreen.bind(null, ScreenEnum.backup)}
                     >
                         Continue
                     </button>

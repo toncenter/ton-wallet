@@ -1,25 +1,31 @@
-import React, { useCallback } from 'react';
+import { ReactNode, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 
+import { useAppDispatch } from 'store/hooks';
+import { setPopup } from 'store/app/appSlice';
+import { PopupEnum } from 'enums/popupEnum';
+
 interface ModalProps {
-    children: React.ReactNode;
-    onClose: Function;
+    children: ReactNode;
+    onClose?: Function;
 }
 
 function Modal({ children, onClose }: ModalProps) {
-    const el = React.useMemo(() => {
+    const dispatch = useAppDispatch();
+
+    const el = useMemo(() => {
         const element = document.createElement("div");
         element.setAttribute('id', 'modal');
-        element.addEventListener('click', (event) => {
-            event.preventDefault();
+        element.addEventListener('mousedown', (event) => {
             if(event.target === event.currentTarget) {
-                onClose();
+                dispatch(setPopup({popup: PopupEnum.void}));
+                onClose && onClose();
             }
         });
         return element;
-    }, [onClose]);
+    }, [dispatch, onClose]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         const target = document.body;
         target.appendChild(el);
         return () => {

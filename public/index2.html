@@ -22,288 +22,35 @@
 
     <!-- Menu Dropdown -->
 
-    <div id="menuDropdown" style="display: none">
-        <div id="menu_extension" class="dropdown-item" onclick="window.open('https://chrome.google.com/webstore/detail/ton-wallet/nphplpgoakhhjchkkhmiggakijnkhfnd', '_blank')">Chrome Extension</div>
-        <div id="menu_about" class="dropdown-item">About</div>
-        <div id="menu_magic" class="dropdown-item">TON Magic <div class="dropdown-toggle"></div></div>
-        <div id="menu_telegram" class="dropdown-item">Open Telegram Web »</div>
-        <div id="menu_proxy" class="dropdown-item">TON Proxy <div class="dropdown-toggle"></div></div>
-        <div id="menu_changePassword" class="dropdown-item">Change password</div>
-        <div id="menu_backupWallet" class="dropdown-item">Back up wallet</div>
-        <div id="menu_delete" class="dropdown-item">Delete wallet</div>
-    </div>
-
     <!-- Receive Popup-->
-
-    <div id="receive" class="popup" style="display: none">
-        <div class="popup-title">Receive TON</div>
-        <div class="popup-text">Share this address to receive TON.
-        </div>
-
-        <div class="qr-container">
-            <div id="qr"></div>
-        </div>
-
-        <div class="my-addr addr"></div>
-
-        <button id="receive_showAddressOnDeviceBtn" class="btn-lite btn-lite-first">Show Address on Device</button>
-
-        <button id="receive_invoiceBtn" class="btn-lite">Create Invoice</button>
-
-        <button id="receive_shareBtn" class="btn-blue">Share Wallet Address</button>
-
-        <button id="receive_closeBtn" class="popup-close-btn"></button>
-    </div>
 
     <!-- Invoice Popup -->
 
-    <div id="invoice" class="popup" style="display: none">
-        <div class="popup-title">Create Invoice</div>
-
-        <div>
-            <div class="input-label">Amount</div>
-        </div>
-
-        <input id="invoice_amountInput" type="number" placeholder="Amount in TON you expect to receive">
-        <input id="invoice_commentInput" type="text" placeholder="Comment (optional)">
-
-        <div class="popup-grey-text">
-            You can specify the amount and purpose of<br>
-            the payment to save the sender some time.
-        </div>
-
-        <div class="input-label" style="margin-top: 24px; margin-bottom: 18px">Invoice URL</div>
-
-        <div id="invoice_link" class="popup-black-text">
-            ton://transfer/
-        </div>
-
-        <div class="popup-grey-text" style="margin-top: 24px">
-            Share this address to receive TON.
-        </div>
-
-        <button id="invoice_qrBtn" class="btn-lite">Generate QR Code</button>
-        <button id="invoice_shareBtn" class="btn-blue">Share Invoice URL</button>
-
-        <button id="invoice_closeBtn" class="popup-close-btn"></button>
-    </div>
-
     <!-- Invoice QR Popup-->
-
-    <div id="invoiceQr" class="popup" style="display: none">
-        <div class="popup-title">Invoice QR</div>
-
-        <div class="qr-container">
-            <div id="invoiceQrImg"></div>
-        </div>
-
-        <div class="input-label">Expected Amount</div>
-
-        <div id="invoiceQrAmount" class="popup-black-text">
-            1
-        </div>
-
-        <button id="invoiceQr_shareBtn" class="btn-blue">Share QR Code</button>
-
-        <button id="invoiceQr_closeBtn" class="popup-close-btn"></button>
-    </div>
 
     <!-- Transaction Popup -->
 
 
     <!-- Send Popup -->
 
-    <div id="send" class="popup" style="display: none">
-        <div class="popup-title">Send TON</div>
-
-        <div class="input-label">Recipient wallet address</div>
-        <input id="toWalletInput" type="text" placeholder="Enter wallet address">
-
-        <div class="popup-grey-text">
-            Copy the 48-letter wallet address of the
-            recipient here or ask them to send you a
-            ton:// link
-        </div>
-
-        <div style="position: relative; width: 100%">
-            <div class="input-label">Amount</div>
-            <div id="sendBalance">Balance:</div>
-        </div>
-
-        <input id="amountInput" type="number" placeholder="0.0">
-        <input id="commentInput" type="text" placeholder="Comment (optional)">
-
-        <button id="send_btn" class="btn-blue">Send TON</button>
-
-        <button id="send_closeBtn" class="popup-close-btn"></button>
-    </div>
-
     <!-- Send Confirm Popup -->
-
-    <div id="sendConfirm" class="popup" style="display: none; padding-bottom: 10px">
-        <div class="popup-title">Confirmation</div>
-        <div class="popup-black-text">Do you want to send <b id="sendConfirmAmount">x TON</b> to:</div>
-
-        <div id="sendConfirmAddr" class="addr"></div>
-
-        <div id="sendConfirmFee" class="popup-grey-text" style="text-align: center">Fee: ~x TON</div>
-
-        <div class="popup-grey-text" style="text-align: center">Note: Your comment will not be <b>encrypted</b></div>
-
-        <button id="sendConfirm_closeBtn" class="popup-close-btn"></button>
-
-        <div class="popup-footer">
-            <button id="sendConfirm_cancelBtn" class="btn-lite">CANCEL</button>
-            <button id="sendConfirm_okBtn" class="btn-lite">SEND TON</button>
-        </div>
-    </div>
 
     <!-- Sign Confirm Popup -->
 
-    <div id="signConfirm" class="popup" style="display: none; padding-bottom: 10px">
-        <div class="popup-title">Confirmation</div>
-        <div class="popup-black-text">Do you want to sign:</div>
-
-        <div id="signConfirmData" class="addr"></div>
-
-        <div class="popup-grey-text" style="text-align: center; font-weight: bold; color: #D74D4D">Signing custom data is very dangerous. Use only if you know what you are doing.</div>
-
-        <button id="signConfirm_closeBtn" class="popup-close-btn"></button>
-
-        <div class="popup-footer">
-            <button id="signConfirm_cancelBtn" class="btn-lite">CANCEL</button>
-            <button id="signConfirm_okBtn" class="btn-lite">SIGN</button>
-        </div>
-    </div>
-
     <!-- Processing Popup -->
-
-    <div id="processing" class="popup" style="display: none; text-align: center">
-        <tgs-player data-name="processing" src="assets/lottie/money.tgs" width="150" height="150"></tgs-player>
-        <div class="popup-title">Sending TON</div>
-        <div class="popup-grey-text">Please wait a few seconds for your<br>transaction to be processed..</div>
-
-        <button id="processing_closeBtn" class="popup-close-btn"></button>
-    </div>
 
     <!-- Done Popup -->
 
-    <div id="done" class="popup" style="display: none; text-align: center; padding-bottom: 10px">
-        <tgs-player data-name="done" src="assets/lottie/done.tgs" width="150" height="150"></tgs-player>
-        <div class="popup-title">Done!</div>
-        <div class="popup-grey-text">1 TON have been send</div>
-
-        <div class="popup-footer">
-            <button id="done_closeBtn" class="btn-lite">CLOSE</button>
-        </div>
-    </div>
-
     <!-- About Popup -->
 
-    <div id="about" class="popup" style="display: none; text-align: center; padding-bottom: 10px">
-        <div class="popup-title">TON Wallet</div>
-        <div class="popup-grey-text">
-            Version: 1.1.23
-        </div>
-        <tgs-player data-name="about" src="assets/lottie/intro.tgs" width="150" height="150"></tgs-player>
-
-        <div class="popup-grey-text" style="line-height: 24px">
-            API provider: <a href="https://toncenter.com" target="_blank">toncenter.com</a><br>
-            <a href="https://github.com/toncenter/ton-wallet" target="_blank">GitHub</a>,
-            <a href="https://github.com/toncenter/ton-wallet/issues" target="_blank">Issue Tracker</a>
-        </div>
-
-        <div class="popup-black-text about-magic">
-            <h4>What is TON Magic?</h4>
-            <p>
-                TON Magic provides native <b>Telegram integration</b> by patching the official Telegram web app (Z version).
-            </p>
-            <p>
-                Turn it on to send and receive Toncoins from any Telegram user. <a href="https://telegra.ph/Telegram--TON-11-10" id="about-magic-video" target="_blank">More info and demo</a>.
-            </p>
-        </div>
-
-        <div class="popup-footer">
-            <button id="about_closeBtn" class="btn-lite">CLOSE</button>
-        </div>
-    </div>
 
     <!-- Change Password Popup -->
 
-    <div id="changePassword" class="popup" style="display: none; padding-bottom: 10px">
-        <div class="popup-title">Change Password</div>
-
-        <tgs-player data-name="changePassword" src="assets/lottie/lock.tgs" width="150" height="150"></tgs-player>
-
-        <input id="changePassword_oldInput" placeholder="Enter your old password" type="password"
-               style="text-align: center; width: 200px; margin-left: 40px; font-size: 15px">
-        <input id="changePassword_newInput" placeholder="Enter a new password" type="password"
-               style="text-align: center; width: 200px; margin-left: 40px; font-size: 15px;margin-top: 20px">
-        <input id="changePassword_repeatInput" placeholder="Repeat the new password" type="password"
-               style="text-align: center; width: 200px; margin-left: 40px; font-size: 15px">
-
-        <div class="popup-footer">
-            <button id="changePassword_cancelBtn" class="btn-lite">CANCEL</button>
-            <button id="changePassword_okBtn" class="btn-lite">SAVE</button>
-        </div>
-    </div>
-
     <!-- Enter Password Popup -->
-
-    <div id="enterPassword" class="popup" style="display: none; padding-bottom: 10px">
-        <div class="popup-title">Password</div>
-
-        <tgs-player data-name="enterPassword" src="assets/lottie/lock.tgs" width="150" height="150"></tgs-player>
-        <input id="enterPassword_input" placeholder="Enter your password" type="password"
-               style="text-align: center; width: 200px; margin-left: 40px; font-size: 15px">
-
-        <div class="popup-footer">
-            <button id="enterPassword_cancelBtn" class="btn-lite">CANCEL</button>
-            <button id="enterPassword_okBtn" class="btn-lite">NEXT</button>
-        </div>
-    </div>
 
     <!-- Delete Wallet Popup -->
 
-    <div id="delete" class="popup" style="display: none; padding-bottom: 10px">
-        <div class="popup-title">Delete Wallet</div>
-        <div class="popup-black-text">
-            This will disconnect the wallet from this<br>
-            app. You will be able to restore your<br>
-            wallet using <b>24 secret words</b> - or import<br>
-            another wallet.
-        </div>
-        <div class="popup-black-text" style="margin-top: 20px">
-            Wallets are located in the decentralized<br>
-            TON Blockchain. If you want the wallet to<br>
-            be deleted simply transfer all the TON<br>
-            from it and leave it empty.
-        </div>
-
-        <div class="popup-footer">
-            <button id="delete_cancelBtn" class="btn-lite">CANCEL</button>
-            <button id="delete_okBtn" class="btn-lite btn-lite-red">DISCONNECT</button>
-        </div>
-    </div>
-
     <!-- Connect Ledger Popup -->
-
-    <div id="connectLedger" class="popup" style="display: none; padding-bottom: 10px">
-        <div class="popup-title">Connect Ledger</div>
-        <div class="popup-black-text">
-            Please use Edge/Google Chrome v89 or later.
-        </div>
-        <div class="popup-black-text" style="margin-top: 20px">
-            Turn off Ledger Live.
-        </div>
-        <div class="popup-black-text" style="margin-top: 20px">
-            If it does not connect, then try reconnecting the device.
-        </div>
-
-        <div class="popup-footer">
-            <button id="connectLedger_cancelBtn" class="btn-lite">OK</button>
-        </div>
-    </div>
 
     <!-- Notify-->
 

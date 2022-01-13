@@ -7,7 +7,7 @@ import { getTransactions, wordsToPrivateKey } from 'utils/tonWebUtils';
 import { encrypt } from 'utils/cryptUtils';
 import { RootState } from 'store/store';
 import { DEFAULT_WALLET_VERSION, MAINNET_RPC, TESTNET_RPC } from 'constants/app';
-import { withToastForError } from 'utils/storeUtils';
+import { withError } from 'utils/storeUtils';
 
 
 const IS_TESTNET = window.location.href.indexOf('testnet') > -1;
@@ -16,7 +16,7 @@ const ton = new TonWeb(new TonWeb.HttpProvider(IS_TESTNET ? TESTNET_RPC : MAINNE
 
 export const createWallet = createAsyncThunk(
     'app/wallet/create',
-    withToastForError<void, any, any>(async () => {
+    withError<void, any, any>(async () => {
         const myMnemonicWords = await tonMnemonic.generateMnemonic();
         const privateKey = await wordsToPrivateKey(myMnemonicWords);
         const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
@@ -38,7 +38,7 @@ export const createWallet = createAsyncThunk(
 
 export const createWalletContract = createAsyncThunk(
     'app/wallet/contract/create',
-    withToastForError<void, any, any>(async (empty, thunkAPI) => {
+    withError<void, any, any>(async (empty, thunkAPI) => {
         const state = thunkAPI.getState() as RootState;
         const walletVersion = localStorage.getItem('walletVersion');
         const walletClass = walletVersion ? ton.wallet.all[walletVersion] : ton.wallet.default;
@@ -54,7 +54,7 @@ export const createWalletContract = createAsyncThunk(
 
 export const savePrivateKey = createAsyncThunk(
     'app/wallet/privateKey',
-    withToastForError<string, any, any>(async (password: string, thunkAPI) => {
+    withError<string, any, any>(async (password: string, thunkAPI) => {
         const state = thunkAPI.getState() as RootState;
         const encryptedWords = await encrypt(state.app.myMnemonicWords.join(','), password);
         return {
@@ -63,16 +63,26 @@ export const savePrivateKey = createAsyncThunk(
     }),
 )
 
+export const saveWords = createAsyncThunk(
+    'app/wallet/words',
+    withError<{ words: string[], password: string }, any, any>(async ({words, password}) => {
+        const encryptedWords = await encrypt(words.join(','), password);
+        return {
+            encryptedWords
+        };
+    }),
+)
+
 export const updateWallet = createAsyncThunk(
     'app/wallet/update',
-    withToastForError<void, any, any>(async (empty, thunkAPI) => {
+    withError<void, any, any>(async (empty, thunkAPI) => {
         const state = thunkAPI.getState() as RootState;
         const walletInfo = await ton.provider.getWalletInfo(state.app.myAddress);
         const balance = new TonWeb.utils.BN(walletInfo.balance);
         const isBalanceChanged = (state.app.balance === null) || (state.app.balance.cmp(balance) !== 0);
         const isContractInitialized = walletInfo.account_state === "active" && walletInfo.seqno;
 
-        if (isBalanceChanged) {
+        if (isBalanceChanged || (!balance.eq(new TonWeb.utils.BN(0)) && state.app.transactions.length === 0)) {
             thunkAPI.dispatch(getWalletTransactions());
         }
 
@@ -85,7 +95,7 @@ export const updateWallet = createAsyncThunk(
 
 export const getWalletTransactions = createAsyncThunk(
     'app/wallet/transactions',
-    withToastForError<void, any, any>(async (empty, thunkAPI) => {
+    withError<void, any, any>(async (empty, thunkAPI) => {
         const state = thunkAPI.getState() as RootState;
         let transactions = state.app.transactions;
         let lastTransactionTime = state.app.lastTransactionTime;
@@ -112,7 +122,7 @@ export const getWalletTransactions = createAsyncThunk(
 
 export const importWallet = createAsyncThunk(
     'app/wallet/import',
-    withToastForError<string[], any, any>(async (myMnemonicWords: string[]) => {
+    withError<string[], any, any>(async (myMnemonicWords) => {
         const privateKey = await wordsToPrivateKey(myMnemonicWords);
         const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
         let hasBalance = [];

@@ -1,15 +1,17 @@
 import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import TgsPlayer from 'components/TgsPlayer';
+import { useAppDispatch } from 'store/hooks';
+import { ScreenEnum } from 'enums/screenEnum';
+import { setScreen } from 'store/app/appSlice';
 
 
 function StartPage() {
-    const navigate = useNavigate();
+    const dispatch = useAppDispatch();
 
-    const navigateTo = useCallback((route: string) => {
-        navigate(route);
-    }, [navigate]);
+    const navigateTo = useCallback((screen: ScreenEnum) => {
+        dispatch(setScreen(screen));
+    }, [dispatch]);
 
     return (
         <div id="start" className="screen">
@@ -30,7 +32,7 @@ function StartPage() {
                 <div style={{"marginTop": "95px"}}>
                     <button id="start_createBtn"
                             className="btn-blue screen-btn"
-                            onClick={navigateTo.bind(null, "/created")}
+                            onClick={navigateTo.bind(null, ScreenEnum.created)}
                     >
                         Create My Wallet
                     </button>
@@ -39,7 +41,7 @@ function StartPage() {
                     <button id="start_importBtn"
                             className="btn-lite"
                             style={{"fontWeight": "normal"}}
-                            onClick={navigateTo.bind(null, "/import")}
+                            onClick={navigateTo.bind(null, ScreenEnum.import)}
                     >
                         Import existing wallet
                     </button>

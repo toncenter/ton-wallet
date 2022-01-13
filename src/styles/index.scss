@@ -187,6 +187,7 @@ button {
     color: white;
     font-size: 14px;
     text-align: center;
+    z-index: 1;
 }
 
 /* SET PASSWORD */
@@ -351,7 +352,7 @@ button {
     font-size: 20px;
 }
 
-#walletCreated tgs-player {
+#walletCreated .tgs-player {
     display: block;
     width: 150px;
     height: 150px;
@@ -542,12 +543,8 @@ button {
 }
 
 .about-magic {
-    display: none;
-    text-align: left;
-}
-
-.plugin .about-magic {
     display: block;
+    text-align: left;
 }
 
 .about-magic h4 {
@@ -588,7 +585,7 @@ button {
     width: 100%;
 }
 
-.popup tgs-player {
+.popup .tgs-player {
     display: block;
     width: 150px;
     height: 150px;
@@ -607,6 +604,9 @@ button {
 .qr-container {
     text-align: center;
     margin: 20px 0px 20px 0px;
+    canvas {
+      display: none;
+    }
 }
 
 #qr, #invoiceQrImg {

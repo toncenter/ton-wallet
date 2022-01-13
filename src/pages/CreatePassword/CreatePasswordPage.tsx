@@ -1,24 +1,26 @@
 import { ChangeEvent, useCallback, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import TgsPlayer from 'components/TgsPlayer';
 import { useAppDispatch } from 'store/hooks';
 import { savePrivateKey } from 'store/app/appThunks';
+import { setScreen } from 'store/app/appSlice';
+import { ScreenEnum } from 'enums/screenEnum';
 
 function CreatePasswordPage() {
     const dispatch = useAppDispatch();
-    const navigate = useNavigate();
     const [submitted, setSubmitted] = useState(false);
     const [password, setPassword] = useState("");
     const [repeatPassword, setRepeatPassword] = useState("");
 
-    const navigateTo = useCallback((route: string) => {
+    const showScreen = useCallback((screen: ScreenEnum) => {
         setSubmitted(true);
         if (password && password === repeatPassword) {
-            dispatch(savePrivateKey(password));
-            navigate(route);
+            dispatch(savePrivateKey({
+                payload: password,
+                onSuccess: () => dispatch(setScreen(screen)),
+            }));
         }
-    }, [dispatch, navigate, password, repeatPassword]);
+    }, [dispatch, password, repeatPassword]);
 
     const onChangePasswordHandler = useCallback((event: ChangeEvent<HTMLInputElement>) => {
         setPassword(event.target.value);
@@ -68,7 +70,7 @@ function CreatePasswordPage() {
                     <button id="createPassword_continueBtn"
                             className="btn-blue screen-btn"
                             style={{"marginTop":"38px","marginBottom":"20px"}}
-                            onClick={navigateTo.bind(null, "/ready")}
+                            onClick={showScreen.bind(null, ScreenEnum.readyToGo)}
                     >
                         Continue
                     </button>

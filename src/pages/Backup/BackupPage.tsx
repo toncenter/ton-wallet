@@ -1,20 +1,32 @@
-import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useMemo } from 'react';
 
 import TgsPlayer from 'components/TgsPlayer';
-import { useAppSelector } from 'store/hooks';
-import { selectMyMnemonicWords } from 'store/app/appSlice';
+import { useAppDispatch, useAppSelector } from 'store/hooks';
+import { selectMyMnemonicWords, selectPopupState, setPopup, setScreen } from 'store/app/appSlice';
+import { ScreenEnum } from 'enums/screenEnum';
+import { PopupEnum } from '../../enums/popupEnum';
 
 function BackupPage() {
-    const navigate = useNavigate();
-    const myMnemonicWords = useAppSelector(selectMyMnemonicWords);
+    const dispatch = useAppDispatch();
+    let myMnemonicWords = useAppSelector(selectMyMnemonicWords);
+    const popupState = useAppSelector(selectPopupState);
+
+    const words = useMemo(() => {
+        return myMnemonicWords.length ? myMnemonicWords : popupState.myMnemonicWords;
+    }, [myMnemonicWords, popupState.myMnemonicWords])
 
     const navigateTo = useCallback(() => {
-        if (localStorage.getItem('words')) {
-            return navigate('/main');
+        if (popupState.myMnemonicWords.length) {
+            dispatch(setScreen(ScreenEnum.main));
+            return dispatch(setPopup({
+                popup: PopupEnum.void,
+                state: {
+                    myMnemonicWords: [],
+                }
+            }))
         }
-        return navigate('/password');
-    }, [navigate]);
+        return dispatch(setScreen(ScreenEnum.createPassword));
+    }, [dispatch, popupState.myMnemonicWords]);
 
     return (
         <div id="backup"
@@ -41,7 +53,7 @@ function BackupPage() {
 
             <div id="createWords">
                 {
-                    myMnemonicWords.slice(0, 12).map((word, index) => {
+                    words.slice(0, 12).map((word, index) => {
                         return (
                             <>
                                 <div className="create-word-item">
@@ -50,7 +62,7 @@ function BackupPage() {
                                 </div>
                                 <div className="create-word-item">
                                     <span className="word-num">{(index + 13) + '.'}</span>
-                                    <span style={{"fontWeight": "bold"}}>{myMnemonicWords[index + 12]}</span>
+                                    <span style={{"fontWeight": "bold"}}>{words[index + 12]}</span>
                                 </div>
                             </>
                         )

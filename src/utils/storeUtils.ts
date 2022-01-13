@@ -1,11 +1,20 @@
 import { AsyncThunkPayloadCreator } from '@reduxjs/toolkit';
 
-export function withToastForError<Args, Returned, ThunkApiConfig>(payloadCreator: AsyncThunkPayloadCreator<Returned, Args, ThunkApiConfig>) {
-    return async (args: Args , thunkAPI: any) => {
+interface GenericSuccessArgs<T> {
+    payload: T;
+    onSuccess?: Function;
+}
+
+export function withError<Args, Returned, ThunkApiConfig>(payloadCreator: AsyncThunkPayloadCreator<Returned, Args, ThunkApiConfig>) {
+    return async (args: GenericSuccessArgs<Args> = { payload: null as any }, thunkAPI: any) => {
         try {
-            return await payloadCreator(args, thunkAPI);
+            const result = await payloadCreator(args.payload, thunkAPI);
+            if (args && args.onSuccess) {
+                args.onSuccess();
+            }
+            return result;
         } catch (err) {
-            alert(JSON.stringify(err));
+            alert(err);
             throw err; // throw error so createAsyncThunk will dispatch '/rejected'-action
         }
     };

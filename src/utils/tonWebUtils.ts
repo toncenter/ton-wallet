@@ -1,7 +1,8 @@
 import TonWeb from "tonweb";
+import * as tonMnemonic from "tonweb-mnemonic";
 
 export async function wordsToPrivateKey(words: string[]) {
-    const keyPair = await TonWeb.mnemonic.mnemonicToKeyPair(words);
+    const keyPair = await tonMnemonic.mnemonicToKeyPair(words);
     return TonWeb.utils.bytesToBase64(keyPair.secretKey.slice(0, 32));
 }
 

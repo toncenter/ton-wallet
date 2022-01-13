@@ -3,11 +3,11 @@ import React, { useCallback, useState } from 'react';
 import MnemonicWordInput from 'components/MnemonicWordInput';
 import { useAppDispatch } from 'store/hooks';
 import { importWallet } from 'store/app/appThunks';
-import { useNavigate } from 'react-router-dom';
+import { setScreen } from 'store/app/appSlice';
+import { ScreenEnum } from 'enums/screenEnum';
 
 function ImportPage() {
     const dispatch = useAppDispatch();
-    const navigate = useNavigate();
     const [words, setWords] = useState<string[]>([]);
 
     const importAlertHandler = useCallback(() => {
@@ -23,9 +23,11 @@ function ImportPage() {
     }, [words]);
 
     const importHandler = useCallback(() => {
-        dispatch(importWallet(words));
-        navigate('/password');
-    }, [dispatch, navigate, words]);
+        dispatch(importWallet({
+            payload: words,
+            onSuccess: () => dispatch(setScreen(ScreenEnum.createPassword))
+        }));
+    }, [dispatch, words]);
 
 
     return (
