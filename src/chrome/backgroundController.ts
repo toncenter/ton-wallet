@@ -1,28 +1,67 @@
 import '../pollyfill';
 import { Store } from '@reduxjs/toolkit';
-import { store, createStore } from 'store/store';
+import { createStore, RootState } from 'store/store';
+import { Unsubscribe } from 'redux';
 
 let contentScriptPort: chrome.runtime.Port | null;
 let popupPort: chrome.runtime.Port | null;
 const queueToPopup: string[] = [];
 
 class BackgroundController {
-    private _store: Store<ReturnType<typeof store.getState>>;
+    private store: Store<RootState>;
+    private currentState: RootState;
+    private unsubscribe: Unsubscribe;
 
     constructor(_store: Store) {
-        this._store = _store;
+        this.store = _store;
+        this.currentState = this.store.getState();
+        this.unsubscribe = this.subscribe();
     }
 
-    setStore(newStore: Store<ReturnType<typeof store.getState>>) {
-        this._store = newStore;
+    setStore(newStore: Store<RootState>) {
+        this.store = newStore;
+        this.unsubscribe();
+        this.unsubscribe = this.subscribe();
     }
 
     getStore() {
-        return this._store;
+        return this.store;
+    }
+
+    subscribe() {
+        return this.store.subscribe(() => {
+            let prevState = this.currentState;
+            this.currentState = this.store.getState();
+            if (prevState.app.myAddress !== this.currentState.app.myAddress) {
+                this.sendToDapp('ton_accounts', this.currentState.app.myAddress ? [this.currentState.app.myAddress] : []);
+            }
+            if (prevState.app.isMagic !== this.currentState.app.isMagic) {
+                this.sendToDapp("ton_doMagic", this.currentState.app.isMagic);
+            }
+            if (prevState.app.isProxy !== this.currentState.app.isProxy) {
+                //this.sendToDapp("ton_doProxy", this.currentState.app.isProxy);
+            }
+        });
+    }
+
+    public initDapp() {
+        const myAddress = this.currentState.app.myAddress;
+        this.sendToDapp('ton_accounts', myAddress ? [myAddress] : []);
+        this.sendToDapp("ton_doMagic", this.currentState.app.isMagic);
+        //this.sendToDapp("ton_doProxy", this.currentState.app.isProxy);
+    }
+
+    private sendToDapp(method: string, params: any) {
+        if (contentScriptPort) {
+            contentScriptPort.postMessage(JSON.stringify({
+                type: 'gramWalletAPI',
+                message: {jsonrpc: '2.0', method: method, params: params}
+            }));
+        }
     }
 }
 
-const controller = (window as any).controller = new BackgroundController(store);
+const controller = (window as any).controller = new BackgroundController(createStore());
 
 if (chrome.runtime && chrome.runtime.onConnect) {
     chrome.runtime.onConnect.addListener(port => {
@@ -41,7 +80,7 @@ if (chrome.runtime && chrome.runtime.onConnect) {
             contentScriptPort.onDisconnect.addListener(() => {
                 contentScriptPort = null;
             });
-            //controller.initDapp()
+            controller.initDapp()
         } else if (port.name === 'gramWalletPopup') {
             popupPort = port;
             popupPort.onMessage.addListener(function (msg) {

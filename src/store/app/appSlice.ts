@@ -15,6 +15,7 @@ import { ScreenEnum } from 'enums/screenEnum';
 import { PopupEnum } from 'enums/popupEnum';
 
 export interface AppState {
+    isPlugin: boolean,
     screen: ScreenEnum;
     popup: PopupEnum;
     popupState: {
@@ -40,9 +41,12 @@ export interface AppState {
     lastTransactionTime: number;
     ledgerApp: any;
     sendingData: any;
+    isMagic: boolean;
+    isProxy: boolean;
 }
 
 const initialState = (): AppState => ({
+    isPlugin: !!(chrome.runtime && chrome.runtime.onConnect),
     screen: ScreenEnum.main,
     popup: PopupEnum.void,
     popupState: {
@@ -69,6 +73,8 @@ const initialState = (): AppState => ({
     lastTransactionTime: 0,
     ledgerApp: null,
     sendingData: null,
+    isMagic: localStorage.getItem('isMagic') === 'true',
+    isProxy: localStorage.getItem('isProxy') === 'true',
 })
 
 export const appSlice = createSlice({
@@ -132,6 +138,14 @@ export const appSlice = createSlice({
         setNotification: (state, action: PayloadAction<string>) => {
             state.notification = action.payload;
         },
+        setMagic: (state, action: PayloadAction<boolean>) => {
+            state.isMagic = action.payload;
+            localStorage.setItem('magic', state.isMagic ? 'true' : 'false');
+        },
+        setProxy: (state, action: PayloadAction<boolean>) => {
+            state.isProxy = action.payload;
+            localStorage.setItem('proxy', state.isProxy ? 'true' : 'false');
+        },
         disconnect: () => {
             localStorage.clear();
             return initialState();
@@ -183,7 +197,14 @@ export const appSlice = createSlice({
     },
 })
 
-export const {setScreen, setPopup, setNotification, disconnect} = appSlice.actions
+export const {
+    setScreen,
+    setPopup,
+    setNotification,
+    disconnect,
+    setMagic,
+    setProxy
+} = appSlice.actions
 
 export const selectScreen = (state: RootState) => state.app.screen;
 export const selectPopup = (state: RootState) => state.app.popup;
@@ -196,5 +217,8 @@ export const selectTransactions = (state: RootState) => state.app.transactions;
 export const selectIsLedger = (state: RootState) => state.app.isLedger;
 export const selectNotification = (state: RootState) => state.app.notification;
 export const selectIsTestnet = (state: RootState) => state.app.isTestnet;
+export const selectIsMagic = (state: RootState) => state.app.isMagic;
+export const selectIsProxy = (state: RootState) => state.app.isProxy;
+export const selectIsPlugin = (state: RootState) => state.app.isPlugin;
 
 export default appSlice.reducer;

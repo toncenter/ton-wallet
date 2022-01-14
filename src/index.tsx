@@ -8,8 +8,7 @@ import { Store } from '@reduxjs/toolkit';
 import './styles/index.scss';
 import './pollyfill';
 import App from './App';
-import { store as localStore } from './store/store';
-import * as serviceWorkerRegistration from './serviceWorkerRegistration';
+import { createStore } from './store/store';
 import translationEN from 'i18n/en/translation.json';
 
 const isPlugin = chrome.runtime && chrome.runtime.onConnect;
@@ -54,19 +53,5 @@ if (isPlugin) {
     const port = chrome.runtime.connect({name: 'gramWalletPopup'});
     render(store);
 } else {
-    render(localStore);
-}
-
-if (!isPlugin) {
-    serviceWorkerRegistration.register({
-        onUpdate: registration => {
-            alert('New version available!  Ready to update?');
-            if (registration && registration.waiting) {
-                registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-            }
-            setTimeout(() => {
-                (window.location as any).reload(true);
-            }, 300);
-        }
-    });
+    render(createStore());
 }

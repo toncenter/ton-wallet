@@ -14,8 +14,7 @@
     "persistent": true
   },
   "permissions": [
-    "webRequest",
-    "activeTab"
+    "webRequest"
   ],
   "content_scripts": [
     {
