@@ -726,7 +726,7 @@ class Controller {
      * @param query - return by sign()
      * @return {Promise<void>}
      */
-    async sendQuery(query) {
+    async fsendQuery(query) {
         console.log('Send');
         const sendResponse = await query.send();
         if (sendResponse["@type"] === "ok") {

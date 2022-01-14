@@ -7,18 +7,15 @@
 
   "browser_action": {
     "default_icon": "assets/icon_32x32.png",
-    "default_popup": "popup.html"
+    "default_popup": "index.html"
   },
   "background": {
-    "scripts": [
-      "libs/tonweb-0.0.25.js",
-      "libs/tonweb-mnemonic-0.0.2.js",
-      "js/Controller.js"
-    ],
+    "scripts": ["static/js/backgroundController.js"],
     "persistent": true
   },
   "permissions": [
-    "webRequest"
+    "webRequest",
+    "activeTab"
   ],
   "content_scripts": [
     {
@@ -28,10 +25,11 @@
         "https://*/*"
       ],
       "js": [
-        "contentscript.js"
+        "static/js/contentscript.js"
       ],
       "run_at": "document_start",
       "all_frames": true
     }
-  ]
+  ],
+  "web_accessible_resources": ["static/js/tonProvider.js"]
 }

@@ -1,15 +1,24 @@
-import { configureStore } from '@reduxjs/toolkit'
-import appReducer from './app/appSlice';
+import { configureStore, Store } from '@reduxjs/toolkit'
+import appReducer, { AppState } from './app/appSlice';
 
-export const store = configureStore({
-    reducer: {
-        app: appReducer,
-    },
-    middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware({
-            serializableCheck: false,
-    }),
-})
+interface RootStateInterface {
+    app: AppState,
+}
 
-export type RootState = ReturnType<typeof store.getState>
+export let store = createStore();
+
+export function createStore(state?: RootStateInterface): Store<RootStateInterface, any> {
+    return store = configureStore({
+        reducer: {
+            app: appReducer,
+        },
+        preloadedState: state,
+        middleware: (getDefaultMiddleware) =>
+            getDefaultMiddleware({
+                serializableCheck: false,
+            }),
+    });
+}
+
+export type RootState = RootStateInterface;
 export type AppDispatch = typeof store.dispatch

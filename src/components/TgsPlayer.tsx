@@ -53,7 +53,9 @@ function TgsPlayer({name, src, width, height, className, style}: TgsPlayerProps)
             if (lottieInstance) {
                 lottieInstance.stop();
             }
-            element?.removeChild(canvas)
+            if (element && canvas && canvas.parentNode === element) {
+                element.removeChild(canvas);
+            }
         }
     }, [width, height, name, src])
 

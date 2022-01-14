@@ -7,6 +7,7 @@ import { selectIsLedger, selectPopupState, setNotification, setPopup } from 'sto
 import React, { useCallback } from 'react';
 import { PopupEnum } from 'enums/popupEnum';
 import { copyToClipboard } from 'utils/domUtils';
+import TonAddress from 'components/TonAddress';
 
 function ReceiveModal() {
     const dispatch = useAppDispatch();
@@ -50,11 +51,7 @@ function ReceiveModal() {
                     correctLevel: QRCodeImpl.CorrectLevel.L
                 }}/>
 
-                <div className="my-addr addr" onClick={shareAddressHandler}>
-                    {address.substring(0, address.length / 2)}
-                    <wbr/>
-                    {address.substring(address.length / 2)}
-                </div>
+                <TonAddress address={address} className={"my-addr"} onSelect={shareAddressHandler}/>
 
                 {
                     isLedger &&

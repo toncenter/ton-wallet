@@ -5,8 +5,8 @@ import Modal from 'components/Modal';
 import { selectIsTestnet, selectMyMnemonicEncryptedWords, setPopup } from 'store/app/appSlice';
 import { PopupEnum } from 'enums/popupEnum';
 import { useAppDispatch, useAppSelector } from 'store/hooks';
-import { decrypt } from '../../utils/cryptUtils';
-import { saveWords } from '../../store/app/appThunks';
+import { decrypt } from 'utils/cryptUtils';
+import { saveWords } from 'store/app/appThunks';
 
 function ChangePasswordModal() {
     const dispatch = useAppDispatch();

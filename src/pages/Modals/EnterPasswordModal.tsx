@@ -20,12 +20,12 @@ function EnterPasswordModal() {
     const nextHandler = useCallback(async () => {
         try {
             const words = await decrypt(myMnemonicEncryptedWords, password);
-            onSuccess && onSuccess();
             dispatch(setPopup({
                 popup: PopupEnum.void, state: {
                     myMnemonicWords: words.split(',')
                 }
             }));
+            onSuccess && onSuccess(words.split(','));
         } catch (e) {
             return setHasPasswordError(true);
         }

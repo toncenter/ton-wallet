@@ -4,7 +4,7 @@ import TgsPlayer from 'components/TgsPlayer';
 import { useAppDispatch, useAppSelector } from 'store/hooks';
 import { selectMyMnemonicWords, selectPopupState, setPopup, setScreen } from 'store/app/appSlice';
 import { ScreenEnum } from 'enums/screenEnum';
-import { PopupEnum } from '../../enums/popupEnum';
+import { PopupEnum } from 'enums/popupEnum';
 
 function BackupPage() {
     const dispatch = useAppDispatch();

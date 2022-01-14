@@ -6,13 +6,14 @@ import Modal from 'components/Modal';
 import { useAppDispatch, useAppSelector } from 'store/hooks';
 import { selectPopupState, setPopup } from 'store/app/appSlice';
 import { PopupEnum } from 'enums/popupEnum';
+import TonAddress from 'components/TonAddress';
 
 function TransactionModal() {
     const dispatch = useAppDispatch();
     const { tx } = useAppSelector(selectPopupState);
 
     const isReceive = useMemo(() => {
-        return !tx.amount.isNeg();
+        return !new TonWeb.utils.BN(tx.amount).isNeg();
     }, [tx]);
 
     const addr = useMemo(() => {
@@ -46,15 +47,11 @@ function TransactionModal() {
 
                 <div id="transactionSenderLabel" className="input-label" style={{'marginTop': '20px'}}>
                     {
-                        !tx.amount.isNeg() ? 'Sender' : 'Recipient'
+                        isReceive ? 'Sender' : 'Recipient'
                     }
                 </div>
 
-                <div id="transactionSender" className="addr">
-                    {addr.substring(0, addr.length / 2)}
-                    <wbr/>
-                    {addr.substring(addr.length / 2)}
-                </div>
+                <TonAddress id="transactionSender" address={addr}/>
 
                 <div className="input-label">Date</div>
 

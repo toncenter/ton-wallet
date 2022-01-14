@@ -1,15 +1,17 @@
 import Modal from 'components/Modal';
 import { useAppDispatch, useAppSelector } from 'store/hooks';
 import { selectBalance, selectPopupState, setPopup } from 'store/app/appSlice';
-import { useCallback, useEffect, useRef } from 'react';
-import { PopupEnum } from '../../enums/popupEnum';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { PopupEnum } from 'enums/popupEnum';
 import * as TonWeb from 'tonweb';
 
 function SendModal() {
     const dispatch = useAppDispatch();
     const balance = useAppSelector(selectBalance);
-    const { address } = useAppSelector(selectPopupState);
+    const { address, amount, comment } = useAppSelector(selectPopupState);
     const inputRef = useRef<HTMLInputElement>(null);
+    const [hasAmountError, setHasAmountError] = useState(false);
+    const [hasAddressError, setHasAdressError] = useState(false);
 
     useEffect(()=> {
         if (inputRef.current) {
@@ -17,11 +19,47 @@ function SendModal() {
         }
     }, []);
 
-    const changeHandler = useCallback((event) => {
+    const changeAddressHandler = useCallback((event) => {
+        setHasAdressError(false);
         dispatch(setPopup({popup: PopupEnum.send, state: {
             address: event.target.value,
+            amount,
+            comment,
         }}));
-    }, [dispatch]);
+    }, [dispatch, amount, comment]);
+
+    const changeAmountHandler = useCallback((event) => {
+        setHasAmountError(false);
+        dispatch(setPopup({popup: PopupEnum.send, state: {
+                address,
+                amount: event.target.value,
+                comment,
+            }}));
+    }, [dispatch, address, comment]);
+
+    const changeCommentHandler = useCallback((event) => {
+        dispatch(setPopup({popup: PopupEnum.send, state: {
+                address,
+                amount,
+                comment: event.target.value,
+            }}));
+    }, [dispatch, amount, address]);
+
+    const sendHandler = useCallback((event) => {
+        const amountNano = TonWeb.utils.toNano(amount ? amount : "0");
+        if (!TonWeb.Address.isValid(address)) {
+            return setHasAdressError(true);
+        }
+        if (amountNano.lte(new TonWeb.utils.BN(0)) || new TonWeb.utils.BN(balance).lt(amountNano)) {
+            return setHasAmountError(true);
+        }
+        dispatch(setPopup({popup: PopupEnum.sendConfirm, state: {
+                address,
+                amount: amountNano.toString(),
+                comment: event.target.value,
+                fee: '0',
+            }}));
+    }, [dispatch, amount, address, balance]);
 
     const closeHandler = useCallback(() => {
         dispatch(setPopup({popup: PopupEnum.void}));
@@ -37,8 +75,9 @@ function SendModal() {
                        id="toWalletInput"
                        type="text"
                        placeholder="Enter wallet address"
+                       className={hasAddressError ? 'error' : ''}
                        value={address}
-                       onChange={changeHandler}
+                       onChange={changeAddressHandler}
                 />
 
                 <div className="popup-grey-text">
@@ -52,10 +91,26 @@ function SendModal() {
                     <div id="sendBalance">Balance: {TonWeb.utils.fromNano(balance)} 💎</div>
                 </div>
 
-                <input id="amountInput" type="number" placeholder="0.0"/>
-                <input id="commentInput" type="text" placeholder="Comment (optional)"/>
+                <input id="amountInput"
+                       type="number"
+                       placeholder="0.0"
+                       value={amount}
+                       className={hasAmountError ? 'error' : ''}
+                       onChange={changeAmountHandler}
+                />
+                <input id="commentInput"
+                       type="text"
+                       placeholder="Comment (optional)"
+                       value={comment}
+                       onChange={changeCommentHandler}
+                />
 
-                <button id="send_btn" className="btn-blue">Send TON</button>
+                <button id="send_btn"
+                        className="btn-blue"
+                        onClick={sendHandler}
+                >
+                    Send TON
+                </button>
 
                 <button id="send_closeBtn"
                         className="popup-close-btn"

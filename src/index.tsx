@@ -3,15 +3,16 @@ import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
+import { Store } from '@reduxjs/toolkit';
 
 import './styles/index.scss';
 import './pollyfill';
 import App from './App';
-import reportWebVitals from './reportWebVitals';
-import { store } from './store/store';
+import { store as localStore } from './store/store';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import translationEN from 'i18n/en/translation.json';
 
+const isPlugin = chrome.runtime && chrome.runtime.onConnect;
 
 // the translations
 const resources = {
@@ -34,28 +35,38 @@ i18n
         }
     });
 
-ReactDOM.render(
-  <React.StrictMode>
-      <Provider store={store}>
-          <App />
-      </Provider>
-  </React.StrictMode>,
-  document.getElementById('root')
-);
+function render(store: Store) {
+    ReactDOM.render(
+        <React.StrictMode>
+            <Provider store={store}>
+                <App />
+            </Provider>
+        </React.StrictMode>,
+        document.getElementById('root')
+    );
+}
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals(console.log);
+if (isPlugin) {
+    document.body.classList.add('plugin');
+    // Get redux store from background controller
+    const backgroundWindow = chrome.extension.getBackgroundPage();
+    const store = (backgroundWindow as any).controller.getStore();
+    const port = chrome.runtime.connect({name: 'gramWalletPopup'});
+    render(store);
+} else {
+    render(localStore);
+}
 
-serviceWorkerRegistration.register({
-    onUpdate: registration => {
-        alert('New version available!  Ready to update?');
-        if (registration && registration.waiting) {
-            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+if (!isPlugin) {
+    serviceWorkerRegistration.register({
+        onUpdate: registration => {
+            alert('New version available!  Ready to update?');
+            if (registration && registration.waiting) {
+                registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+            }
+            setTimeout(() => {
+                (window.location as any).reload(true);
+            }, 300);
         }
-        setTimeout(() => {
-            (window.location as any).reload(true);
-        }, 300);
-    }
-});
+    });
+}

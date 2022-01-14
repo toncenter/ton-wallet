@@ -1,16 +1,15 @@
-const code = `
 // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md#sample-class-implementation
 class TonProvider {
+    listeners: Record<string, Function[]> = {};
+    isTonWallet = true;
+    targetOrigin = '*'; // todo
+    // Init storage
+    private _nextJsonRpcId = 0;
+    private _promises: Record<number, {
+        resolve: Function,
+        reject: Function,
+    }> = {};
     constructor() {
-        this.listeners = {};
-
-        this.isTonWallet = true;
-        this.targetOrigin = '*'; // todo
-
-        // Init storage
-        this._nextJsonRpcId = 0;
-        this._promises = {};
-
         // Fire the connect
         this._connect();
 
@@ -20,7 +19,7 @@ class TonProvider {
 
     /* EventEmitter */
 
-    on(method, listener) {
+    on(method: string, listener: Function) {
         let methodListeners = this.listeners[method];
         if (!methodListeners) {
             methodListeners = [];
@@ -32,7 +31,7 @@ class TonProvider {
         return this;
     }
 
-    removeListener(method, listener) {
+    removeListener(method: string, listener: Function) {
         const methodListeners = this.listeners[method];
         if (!methodListeners) return;
         const index = methodListeners.indexOf(listener);
@@ -41,7 +40,7 @@ class TonProvider {
         }
     }
 
-    emit(method, ...args) {
+    emit(method: string, ...args: any[]) {
         const methodListeners = this.listeners[method];
         if (!methodListeners || !methodListeners.length) return false;
         methodListeners.forEach(listener => listener(...args));
@@ -50,7 +49,7 @@ class TonProvider {
 
     /* Methods */
 
-    send(method, params = []) {
+    send(method: any, params: any = []) {
         if (!method || typeof method !== 'string') {
             return new Error('Method is not a valid string.');
         }
@@ -89,7 +88,7 @@ class TonProvider {
 
     /* Internal methods */
 
-    async _handleJsonRpcMessage(event) {
+    async _handleJsonRpcMessage(event: MessageEvent) {
         // Return if no data to parse
         if (!event || !event.data) {
             return;
@@ -141,7 +140,9 @@ class TonProvider {
                 } else if (method === 'ton_doMagic') {
                     const isTurnedOn = message.params;
 
+                    // eslint-disable-next-line no-restricted-globals
                     if (!location.href.startsWith('https://web.telegram.org/z/')) {
+                        // eslint-disable-next-line no-restricted-globals
                         if (location.href.startsWith('https://web.telegram.org/k/')) {
                             toggleMagicBadge(isTurnedOn);
                         }
@@ -151,14 +152,14 @@ class TonProvider {
 
                     if (isTurnedOn) {
                         const scriptEl = document.querySelector('script[src^="main."]');
-                        const localRevision = scriptEl.getAttribute('src');
+                        const localRevision = scriptEl?.getAttribute('src');
 
                         const filesToInjectResponse = await fetch('https://ton.org/app/magic-sources.json?' + Date.now());
                         const filesToInject = await filesToInjectResponse.json();
-                        const magicRevision = filesToInject.find(f => f.startsWith('main.') && f.endsWith('.js'));
+                        const magicRevision = filesToInject.find((f: string) => f.startsWith('main.') && f.endsWith('.js'));
 
                         const assetCache = await window.caches.open('tt-assets');
-                        const cachedResponse = await assetCache.match(localRevision);
+                        const cachedResponse = await assetCache.match(localRevision as string);
                         if (cachedResponse) {
                             const cachedText = await cachedResponse.text();
                             // we leverage the fact that the file has its name as part of the sourcemaps appendix
@@ -172,7 +173,7 @@ class TonProvider {
 
                         addBadge('Loading <strong>TON magic</strong>...');
 
-                        const responses = await Promise.all(filesToInject.map(async (fileName) => {
+                        const responses = await Promise.all(filesToInject.map(async (fileName: string) => {
                             const res = await fetch('https://ton.org/app/' + fileName);
 
                             if (res.status !== 200) {
@@ -194,7 +195,7 @@ class TonProvider {
                                 if (fileName.endsWith('.js')) {
                                     await assetCache.put('https://web.telegram.org/z/' + localRevision, response.clone());
                                 } else if (fileName.endsWith('.css')) {
-                                    const linkEl = document.querySelector('link[rel=stylesheet]');
+                                    const linkEl = document.querySelector('link[rel=stylesheet]')!;
                                     const currentCssRevision = linkEl.getAttribute('href');
                                     await assetCache.put('https://web.telegram.org/z/' + currentCssRevision, response.clone());
                                 }
@@ -239,7 +240,7 @@ class TonProvider {
 
     /* Events */
 
-    _emitNotification(result) {
+    _emitNotification(result: any) {
         this.emit('notification', result);
     }
 
@@ -247,41 +248,40 @@ class TonProvider {
         this.emit('connect');
     }
 
-    _emitClose(code, reason) {
+    _emitClose(code: any, reason: any) {
         this.emit('close', code, reason);
     }
 
-    _emitChainChanged(chainId) {
+    _emitChainChanged(chainId: any) {
         this.emit('chainChanged', chainId);
     }
 
-    _emitAccountsChanged(accounts) {
+    _emitAccountsChanged(accounts: any) {
         this.emit('accountsChanged', accounts);
     }
 }
 
 console.log('[TON Wallet] Plugin is here');
 
-window.ton = new TonProvider();
+(window as any).ton = new TonProvider();
 
-function toggleMagicBadge(isTurnedOn) {
+function toggleMagicBadge(isTurnedOn: boolean) {
     if (isTurnedOn) {
         addBadge('Switch to <strong>Z version</strong> in the menu to take advantage of <strong>TON magic</strong>.');
-
         // handle shallow screen layout
-        document.getElementById('column-left').style.top = '28px';
-        document.getElementById('column-center').style.top = '28px';
+        document.getElementById('column-left')!.style.top = '28px';
+        document.getElementById('column-center')!.style.top = '28px';
     } else {
         const badge = document.getElementById('ton-magic-badge');
         if (badge) {
             badge.remove();
-            document.getElementById('column-left').style.top = '';
-            document.getElementById('column-center').style.top = '';
+            document.getElementById('column-left')!.style.top = '';
+            document.getElementById('column-center')!.style.top = '';
         }
     }
 }
 
-function addBadge(html) {
+function addBadge(html: string) {
     const badge = document.createElement('div');
     badge.id = 'ton-magic-badge';
     badge.style.position = 'fixed';
@@ -297,32 +297,5 @@ function addBadge(html) {
     badge.innerHTML = html;
     document.body.prepend(badge);
 }
-`;
 
-function injectScript(content) {
-    try {
-        const container = document.head || document.documentElement
-        const scriptTag = document.createElement('script')
-        scriptTag.setAttribute('async', 'false')
-        scriptTag.textContent = content
-        container.insertBefore(scriptTag, container.children[0])
-        container.removeChild(scriptTag)
-    } catch (e) {
-        console.error('ton-wallet provider injection failed.', e)
-    }
-}
-
-injectScript(code); // inject to dapp page
-
-const port = chrome.runtime.connect({name: 'gramWalletContentScript'})
-port.onMessage.addListener(function (msg) {
-    // Receive msg from Controller.js and resend to dapp page
-    window.postMessage(msg, "*"); // todo: origin
-});
-
-window.addEventListener('message', function (event) {
-    if (event.data && (event.data.type === 'gramWalletAPI_ton_provider_write' || event.data.type === 'gramWalletAPI_ton_provider_connect')) {
-        // Receive msg from dapp page and resend to Controller.js
-        port.postMessage(event.data);
-    }
-});
+export default TonProvider;

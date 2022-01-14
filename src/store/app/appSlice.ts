@@ -1,19 +1,20 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import TonWeb from 'tonweb';
 
 import type { RootState } from 'store/store'
 import {
     createWallet,
-    createWalletContract,
+    getFees,
     getWalletTransactions,
     importWallet,
-    savePrivateKey, saveWords,
-    updateWallet
+    savePrivateKey,
+    saveWords,
+    updateWallet,
+    walletSend
 } from './appThunks';
 import { ScreenEnum } from 'enums/screenEnum';
 import { PopupEnum } from 'enums/popupEnum';
 
-interface AppState {
+export interface AppState {
     screen: ScreenEnum;
     popup: PopupEnum;
     popupState: {
@@ -24,6 +25,8 @@ interface AppState {
         invoiceLink: string;
         onSuccess: Function;
         myMnemonicWords: string[];
+        fee: string;
+        message: string;
     },
     notification: string;
     isTestnet: boolean;
@@ -31,11 +34,12 @@ interface AppState {
     myMnemonicEncryptedWords: string;
     myAddress: string;
     isLedger: boolean;
-    walletContract: any;
-    balance: any;
+    balance: string;
     isContractInitialized: boolean;
     transactions: any[];
     lastTransactionTime: number;
+    ledgerApp: any;
+    sendingData: any;
 }
 
 const initialState = (): AppState => ({
@@ -50,6 +54,8 @@ const initialState = (): AppState => ({
         onSuccess: () => {
         },
         myMnemonicWords: [],
+        fee: '',
+        message: '',
     },
     notification: '',
     isTestnet: window.location.href.indexOf('testnet') > -1,
@@ -57,11 +63,12 @@ const initialState = (): AppState => ({
     myMnemonicEncryptedWords: localStorage.getItem('words') || '',
     myAddress: localStorage.getItem('address') || '',
     isLedger: localStorage.getItem('isLedger') === 'true',
-    walletContract: null,
-    balance: new TonWeb.utils.BN(0),
+    balance: '0',
     isContractInitialized: false,
     transactions: [],
     lastTransactionTime: 0,
+    ledgerApp: null,
+    sendingData: null,
 })
 
 export const appSlice = createSlice({
@@ -82,6 +89,15 @@ export const appSlice = createSlice({
             }
             if (state.popup === PopupEnum.send) {
                 state.popupState.address = action.payload.state.address;
+                state.popupState.amount = action.payload.state.amount;
+                state.popupState.comment = action.payload.state.comment;
+                return state;
+            }
+            if (state.popup === PopupEnum.sendConfirm) {
+                state.popupState.address = action.payload.state.address;
+                state.popupState.amount = action.payload.state.amount;
+                state.popupState.comment = action.payload.state.comment;
+                state.popupState.fee = action.payload.state.fee;
                 return state;
             }
             if (state.popup === PopupEnum.receive) {
@@ -102,6 +118,10 @@ export const appSlice = createSlice({
             if (state.popup === PopupEnum.enterPassword) {
                 state.popupState.onSuccess = action.payload.state.onSuccess || (() => {
                 });
+                return state;
+            }
+            if (state.popup === PopupEnum.done) {
+                state.popupState.message = action.payload.state.message || '';
                 return state;
             }
             if (state.popup === PopupEnum.void) {
@@ -135,9 +155,6 @@ export const appSlice = createSlice({
             localStorage.setItem('words', action.payload.encryptedWords);
             state.myMnemonicEncryptedWords = action.payload.encryptedWords;
         });
-        builder.addCase(createWalletContract.fulfilled, (state, action) => {
-            state.walletContract = action.payload.walletContract;
-        });
         builder.addCase(updateWallet.fulfilled, (state, action) => {
             state.balance = action.payload.balance;
             state.isContractInitialized = action.payload.isContractInitialized;
@@ -145,11 +162,23 @@ export const appSlice = createSlice({
         builder.addCase(getWalletTransactions.fulfilled, (state, action) => {
             state.transactions = action.payload.transactions;
             state.lastTransactionTime = action.payload.lastTransactionTime;
+            state.sendingData = action.payload.sendingData;
         });
         builder.addCase(importWallet.fulfilled, (state, action) => {
             state.myMnemonicWords = action.payload.myMnemonicWords;
             state.myAddress = action.payload.myAddress;
             localStorage.setItem('walletVersion', action.payload.walletVersion);
+        });
+        builder.addCase(getFees.fulfilled, (state, action) => {
+            state.popupState.fee = action.payload.fee;
+        });
+        builder.addCase(walletSend.fulfilled, (state, action) => {
+            if (action.payload) {
+                state.sendingData = action.payload.sendingData;
+                state.ledgerApp = action.payload.ledgerApp;
+                state.myAddress = action.payload.myAddress;
+                state.popupState.myMnemonicWords = [];
+            }
         });
     },
 })
@@ -162,7 +191,6 @@ export const selectPopupState = (state: RootState) => state.app.popupState;
 export const selectMyAddress = (state: RootState) => state.app.myAddress;
 export const selectMyMnemonicWords = (state: RootState) => state.app.myMnemonicWords;
 export const selectMyMnemonicEncryptedWords = (state: RootState) => state.app.myMnemonicEncryptedWords;
-export const selectWalletContract = (state: RootState) => state.app.walletContract;
 export const selectBalance = (state: RootState) => state.app.balance;
 export const selectTransactions = (state: RootState) => state.app.transactions;
 export const selectIsLedger = (state: RootState) => state.app.isLedger;

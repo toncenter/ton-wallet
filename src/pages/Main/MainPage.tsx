@@ -3,14 +3,14 @@ import TonWeb from 'tonweb';
 
 import TgsPlayer from 'components/TgsPlayer';
 import { useAppDispatch, useAppSelector } from 'store/hooks';
-import { selectBalance, selectMyAddress, selectTransactions, selectWalletContract, setPopup } from 'store/app/appSlice';
+import { selectBalance, selectMyAddress, selectTransactions, setPopup } from 'store/app/appSlice';
 import { createWalletContract, updateWallet } from 'store/app/appThunks';
 import { formatDate, formatTime } from 'utils/dateUtils';
 import { PopupEnum } from 'enums/popupEnum';
+import TonAddress from 'components/TonAddress';
 
 function MainPage() {
     const dispatch = useAppDispatch();
-    const walletContract = useAppSelector(selectWalletContract);
     const address = useAppSelector(selectMyAddress);
     const balance = useAppSelector(selectBalance);
     const transactions = useAppSelector(selectTransactions);
@@ -31,21 +31,17 @@ function MainPage() {
     }, [formattedBalance]);
 
     useEffect(() => {
+        dispatch(createWalletContract());
+    }, [dispatch]);
+
+    useEffect(() => {
         const intervalId = setInterval(() => {
-            //dispatch(updateWallet());
+            dispatch(updateWallet());
         }, 5000);
         return () => {
             clearInterval(intervalId);
         }
     }, [dispatch])
-
-    useEffect(() => {
-        if (!walletContract) {
-            dispatch(createWalletContract());
-        } else {
-            dispatch(updateWallet());
-        }
-    }, [dispatch, walletContract]);
 
     const refreshHandler = useCallback(() => {
         dispatch(updateWallet());
@@ -64,6 +60,8 @@ function MainPage() {
             popup: PopupEnum.send,
             state: {
                 address: '',
+                amount: '',
+                comment: '',
             }
         }));
     }, [dispatch]);
@@ -73,6 +71,8 @@ function MainPage() {
             popup: PopupEnum.receive,
             state: {
                 address,
+                amount: '',
+                comment: '',
             }
         }));
     }, [dispatch, address]);
@@ -110,7 +110,7 @@ function MainPage() {
                 </button>
 
                 {
-                    balance.gt(new TonWeb.utils.BN(0)) &&
+                    new TonWeb.utils.BN(balance).gt(new TonWeb.utils.BN(0)) &&
                   <button id="sendButton" className="btn-blue" onClick={sendHandler}>
                     <div className="btn-icon"
                          style={{'backgroundImage': 'url(\'assets/down-left.svg\')', 'transform': 'rotate(180deg)'}}/>
@@ -123,7 +123,7 @@ function MainPage() {
                 <div id="transactionsList">
                     {
                         transactions.map((tx, index) => {
-                            const isReceive = !tx.amount.isNeg();
+                            const isReceive = !new TonWeb.utils.BN(tx.amount).isNeg();
                             const amountFormatted = TonWeb.utils.fromNano(tx.amount);
                             const addr = isReceive ? tx.from_addr : tx.to_addr;
                             const txDate = formatDate(tx.date);
@@ -155,11 +155,7 @@ function MainPage() {
                                                     </>
                                             }
                                         </div>
-                                        <div className="tx-addr addr">
-                                            {addr.substring(0, addr.length / 2)}
-                                            <wbr/>
-                                            {addr.substring(addr.length / 2)}
-                                        </div>
+                                        <TonAddress className={"tx-addr"} address={addr}/>
                                         {
                                             tx.comment &&
                                           <div className="tx-comment">{tx.comment}</div>

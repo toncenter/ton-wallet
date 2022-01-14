@@ -1,21 +1,20 @@
-const code = `
-%%PROVIDER_CODE%%
-`;
-
-function injectScript(content) {
+function injectScript() {
     try {
+        const tonProvierUrl = chrome.runtime.getURL('static/js/tonProvider.js');
         const container = document.head || document.documentElement
         const scriptTag = document.createElement('script')
         scriptTag.setAttribute('async', 'false')
-        scriptTag.textContent = content
+        scriptTag.src = tonProvierUrl;
         container.insertBefore(scriptTag, container.children[0])
-        container.removeChild(scriptTag)
+        scriptTag.onload = function() {
+            scriptTag.remove();
+        };
     } catch (e) {
         console.error('ton-wallet provider injection failed.', e)
     }
 }
 
-injectScript(code); // inject to dapp page
+injectScript(); // inject to dapp page
 
 const port = chrome.runtime.connect({name: 'gramWalletContentScript'})
 port.onMessage.addListener(function (msg) {
@@ -29,3 +28,5 @@ window.addEventListener('message', function (event) {
         port.postMessage(event.data);
     }
 });
+
+export {};
