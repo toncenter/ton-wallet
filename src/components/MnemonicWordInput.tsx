@@ -5,10 +5,11 @@ import { IMPORT_WORDS_COUNT, MNEMONIC_WORD_LIST } from 'constants/app';
 interface MnemonicWordInputProps {
     index: number;
     value: string;
+    submitted: boolean;
     onChange: Function;
 }
 
-function MnemonicWordInput({index, value, onChange}: MnemonicWordInputProps) {
+function MnemonicWordInput({index, value, submitted, onChange}: MnemonicWordInputProps) {
     const inputRef = useRef<any>();
     const dropDownRef = useRef<any>();
     const [active, setActive] = useState(false);
@@ -20,8 +21,8 @@ function MnemonicWordInput({index, value, onChange}: MnemonicWordInputProps) {
     }, [value]);
 
     const hasErrors = useMemo(() => {
-        return !active && value && MNEMONIC_WORD_LIST.indexOf(value) === -1
-    }, [active, value])
+        return (!active || (submitted && !active)) && (value || submitted) && MNEMONIC_WORD_LIST.indexOf(value) === -1
+    }, [active, value, submitted])
 
     const showWordsPopup = useCallback((input) => {
         const text = input.value;

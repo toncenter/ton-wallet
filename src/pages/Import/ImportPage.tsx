@@ -1,4 +1,5 @@
 import React, { useCallback, useState } from 'react';
+import * as tonWebMnemonic from 'tonweb-mnemonic';
 
 import MnemonicWordInput from 'components/MnemonicWordInput';
 import { useAppDispatch } from 'store/hooks';
@@ -8,6 +9,7 @@ import { ScreenEnum } from 'enums/screenEnum';
 
 function ImportPage() {
     const dispatch = useAppDispatch();
+    const [submitted, setSubmitted] = useState(false);
     const [words, setWords] = useState<string[]>([]);
 
     const importAlertHandler = useCallback(() => {
@@ -22,7 +24,12 @@ function ImportPage() {
         setWords([...words])
     }, [words]);
 
-    const importHandler = useCallback(() => {
+    const importHandler = useCallback(async () => {
+        setSubmitted(true);
+        const isInvalid = !words.length || !(await tonWebMnemonic.validateMnemonic(words));
+        if (isInvalid) {
+            return;
+        }
         dispatch(importWallet({
             payload: words,
             onSuccess: () => dispatch(setScreen(ScreenEnum.createPassword))
@@ -61,6 +68,7 @@ function ImportPage() {
                                     <span className="word-num">{(index + 1) + '.'}</span>
                                     <MnemonicWordInput index={index}
                                                        value={words[index] || ''}
+                                                       submitted={submitted}
                                                        onChange={changeHandler.bind(null, index)}
                                     />
                                 </div>
@@ -68,6 +76,7 @@ function ImportPage() {
                                     <span className="word-num">{(index + 13) + '.'}</span>
                                     <MnemonicWordInput index={index + 12}
                                                        value={words[index + 12] || ''}
+                                                       submitted={submitted}
                                                        onChange={changeHandler.bind(null, index + 12)}
                                     />
                                 </div>

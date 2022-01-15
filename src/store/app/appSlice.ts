@@ -52,6 +52,7 @@ export interface AppState {
     isProxy: boolean;
     publicKeyHex: string;
     transportType: 'hid' | 'ble',
+    isUpdating: boolean,
 }
 
 const initialState = (): AppState => ({
@@ -80,6 +81,7 @@ const initialState = (): AppState => ({
     isTestnet: window.location.href.indexOf('testnet') > -1,
     isMagic: localStorage.getItem('isMagic') === 'true',
     isProxy: localStorage.getItem('isProxy') === 'true',
+    isUpdating: false,
     //wallet
     myMnemonicWords: [],
     myMnemonicEncryptedWords: localStorage.getItem('words') || '',
@@ -190,9 +192,16 @@ export const appSlice = createSlice({
             localStorage.setItem('words', action.payload.encryptedWords);
             state.myMnemonicEncryptedWords = action.payload.encryptedWords;
         });
+        builder.addCase(updateWallet.pending, (state, action) => {
+            state.isUpdating = true;
+        });
         builder.addCase(updateWallet.fulfilled, (state, action) => {
             state.balance = action.payload.balance;
             state.isContractInitialized = action.payload.isContractInitialized;
+            state.isUpdating = false;
+        });
+        builder.addCase(updateWallet.rejected, (state, action) => {
+            state.isUpdating = false;
         });
         builder.addCase(getWalletTransactions.fulfilled, (state, action) => {
             state.transactions = action.payload.transactions;
@@ -268,5 +277,6 @@ export const selectIsMagic = (state: RootState) => state.app.isMagic;
 export const selectIsProxy = (state: RootState) => state.app.isProxy;
 export const selectIsPlugin = (state: RootState) => state.app.isPlugin;
 export const selectTransportType = (state: RootState) => state.app.transportType;
+export const selectIsUpdating = (state: RootState) => state.app.isUpdating;
 
 export default appSlice.reducer;

@@ -3,7 +3,7 @@ import TonWeb from 'tonweb';
 
 import TgsPlayer from 'components/TgsPlayer';
 import { useAppDispatch, useAppSelector } from 'store/hooks';
-import { selectBalance, selectMyAddress, selectTransactions, setPopup } from 'store/app/appSlice';
+import { selectBalance, selectIsUpdating, selectMyAddress, selectTransactions, setPopup } from 'store/app/appSlice';
 import { createWalletContract, updateWallet } from 'store/app/appThunks';
 import { formatDate, formatTime } from 'utils/dateUtils';
 import { PopupEnum } from 'enums/popupEnum';
@@ -14,6 +14,7 @@ function MainPage() {
     const address = useAppSelector(selectMyAddress);
     const balance = useAppSelector(selectBalance);
     const transactions = useAppSelector(selectTransactions);
+    const isUpdating = useAppSelector(selectIsUpdating);
 
     const formattedBalance = useMemo(() => {
         const value = TonWeb.utils.fromNano(balance);
@@ -88,7 +89,11 @@ function MainPage() {
                     >
                     </button>
 
-                    <div id="updateLabel"/>
+                    <div id="updateLabel">
+                        {
+                            isUpdating ? 'updating..' : 'updated just now'
+                        }
+                    </div>
 
                     <button id="main_settingsButton" className="btn-round"
                             style={{'backgroundImage': 'url(\'assets/menu.svg\')'}}
