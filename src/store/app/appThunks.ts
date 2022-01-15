@@ -297,3 +297,14 @@ export const walletSend = createAsyncThunk(
     }),
 )
 
+export const rawSign = createAsyncThunk(
+    'app/wallet/rawSign',
+    withError<{ words: string[], hexToSign: string }, any, any>(async ({words, hexToSign}) => {
+        const privateKey = await tonWebService.wordsToPrivateKey(words);
+        const signature = tonWebService.rawSign(hexToSign, privateKey);
+        return {
+            signature,
+        };
+    }),
+)
+

@@ -6,6 +6,7 @@ import {
     getFees,
     getWalletTransactions,
     importWallet,
+    rawSign,
     savePrivateKey,
     saveWords,
     updateWallet,
@@ -28,6 +29,11 @@ export interface AppState {
         myMnemonicWords: string[];
         fee: string;
         message: string;
+        hexToSign: string;
+        signature: {
+            value: string;
+            successed: boolean;
+        },
     },
     notification: string;
     isTestnet: boolean;
@@ -60,6 +66,11 @@ const initialState = (): AppState => ({
         myMnemonicWords: [],
         fee: '',
         message: '',
+        hexToSign: '',
+        signature: {
+            value: '',
+            successed: false,
+        },
     },
     notification: '',
     isTestnet: window.location.href.indexOf('testnet') > -1,
@@ -122,17 +133,19 @@ export const appSlice = createSlice({
                 return state;
             }
             if (state.popup === PopupEnum.enterPassword) {
-                state.popupState.onSuccess = action.payload.state.onSuccess || (() => {
-                });
+                state.popupState.onSuccess = action.payload.state.onSuccess || (() => {});
                 return state;
             }
             if (state.popup === PopupEnum.done) {
                 state.popupState.message = action.payload.state.message || '';
                 return state;
             }
-            if (state.popup === PopupEnum.void) {
-                state.popupState.myMnemonicWords = action.payload.state.myMnemonicWords || [];
+            if (state.popup === PopupEnum.signConfirm) {
+                state.popupState.hexToSign = action.payload.state.hexToSign;
                 return state;
+            }
+            if (state.popup === PopupEnum.void && action.payload.state) {
+                state.popupState = {...state.popupState, ...action.payload.state};
             }
         },
         setNotification: (state, action: PayloadAction<string>) => {
@@ -192,6 +205,18 @@ export const appSlice = createSlice({
                 state.ledgerApp = action.payload.ledgerApp;
                 state.myAddress = action.payload.myAddress;
                 state.popupState.myMnemonicWords = [];
+            }
+        });
+        builder.addCase(rawSign.fulfilled, (state, action) => {
+            state.popupState.signature = {
+                value: action.payload.signature,
+                successed: true,
+            }
+        });
+        builder.addCase(rawSign.rejected, (state) => {
+            state.popupState.signature = {
+                value: '',
+                successed: false,
             }
         });
     },

@@ -7,6 +7,7 @@ import { useAppDispatch, useAppSelector } from 'store/hooks';
 import TonAddress from 'components/TonAddress';
 import { getFees, walletSend } from 'store/app/appThunks';
 import * as TonWeb from 'tonweb';
+import { AppDispatch } from 'store/store';
 
 function SendConfirmModal() {
     const dispatch = useAppDispatch();
@@ -25,7 +26,7 @@ function SendConfirmModal() {
     const sendHandler = useCallback(() => {
         dispatch(setPopup({
             popup: PopupEnum.enterPassword, state: {
-                onSuccess: (words: string[]) => {
+                onSuccess: (dispatch: AppDispatch, words: string[]) => {
                     dispatch(setPopup({
                         popup: PopupEnum.processing,
                     }));

@@ -14,7 +14,7 @@ export function withError<Args, Returned, ThunkApiConfig>(payloadCreator: AsyncT
             }
             return result;
         } catch (err) {
-            alert(err);
+            console.log(err);
             throw err; // throw error so createAsyncThunk will dispatch '/rejected'-action
         }
     };

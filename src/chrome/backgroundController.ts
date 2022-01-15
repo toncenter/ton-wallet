@@ -1,21 +1,30 @@
 import '../pollyfill';
 import { Store } from '@reduxjs/toolkit';
-import { createStore, RootState } from 'store/store';
 import { Unsubscribe } from 'redux';
+import * as TonWeb from 'tonweb';
+
+import { createStore, RootState } from 'store/store';
+import { selectIsLedger, selectPopupState, setPopup } from 'store/app/appSlice';
+import { PopupEnum } from '../enums/popupEnum';
 
 let contentScriptPort: chrome.runtime.Port | null;
 let popupPort: chrome.runtime.Port | null;
-const queueToPopup: string[] = [];
 
 class BackgroundController {
     private store: Store<RootState>;
     private currentState: RootState;
     private unsubscribe: Unsubscribe;
+    private lastPopup?: chrome.windows.Window;
 
     constructor(_store: Store) {
         this.store = _store;
         this.currentState = this.store.getState();
         this.unsubscribe = this.subscribe();
+        chrome.windows.onRemoved.addListener((windowId) => {
+            if (this.lastPopup && this.lastPopup.id === windowId) {
+                this.lastPopup = undefined;
+            }
+        });
     }
 
     setStore(newStore: Store<RootState>) {
@@ -51,6 +60,45 @@ class BackgroundController {
         //this.sendToDapp("ton_doProxy", this.currentState.app.isProxy);
     }
 
+    async onDappMessage(method: string, params: any) {
+        // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md
+        // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1102.md
+        switch (method) {
+            case 'ton_requestAccounts':
+                const myAddress = this.currentState.app.myAddress;
+                return (myAddress ? [myAddress] : []);
+            case 'ton_getBalance':
+                const balance = this.currentState.app.balance;
+                return (balance ? balance : '');
+            case 'ton_sendTransaction':
+                const param = params[0];
+                await this.showExtensionPopup();
+                if (param.dataType === 'hex') {
+                    param.data = TonWeb.utils.hexToBytes(param.data);
+                } else if (param.dataType === 'base64') {
+                    param.data = TonWeb.utils.base64ToBytes(param.data);
+                } else if (param.dataType === 'boc') {
+                    param.data = TonWeb.boc.Cell.fromBoc(TonWeb.utils.base64ToBytes(param.data))[0];
+                }
+                this.store.dispatch(setPopup({
+                    popup: PopupEnum.sendConfirm,
+                    state: {
+                        amount: param.value,
+                        address: param.to,
+                        comment: param.data,
+                    }
+                }));
+                return true;
+            case 'ton_rawSign':
+                const signParam = params[0];
+                await this.showExtensionPopup();
+                return this.handleRawSign(signParam);
+            case 'flushMemoryCache':
+                await chrome.webRequest.handlerBehaviorChanged();
+                return true;
+        }
+    }
+
     private sendToDapp(method: string, params: any) {
         if (contentScriptPort) {
             contentScriptPort.postMessage(JSON.stringify({
@@ -58,6 +106,57 @@ class BackgroundController {
                 message: {jsonrpc: '2.0', method: method, params: params}
             }));
         }
+    }
+
+    private async showExtensionPopup() {
+        return new Promise((resolve) => {
+            if (popupPort) {
+                if (this.lastPopup) {
+                    chrome.windows.update(this.lastPopup.id as number, { focused: true }, () => {
+                        resolve(true);
+                    });
+                    return;
+                }
+                return resolve(true);
+            }
+            chrome.windows.create({
+                url: 'index.html',
+                type: 'popup',
+                width: 415,
+                height: 630,
+                top: 0,
+                left: window.screen.width - 415,
+            }, (window) => {
+                this.lastPopup = window
+                resolve(true);
+            });
+        });
+    }
+
+    private handleRawSign(signParam: {data: string}) {
+        return new Promise((resolve, reject) => {
+            if (selectIsLedger(this.store.getState())) {
+                return reject();
+            }
+            this.store.dispatch(setPopup({
+                popup: PopupEnum.signConfirm,
+                state: {
+                    hexToSign: signParam.data,
+                }
+            }));
+            let currentSignature = selectPopupState(this.store.getState()).signature;
+            const unsub = this.store.subscribe(() => {
+                const prevSignature = currentSignature;
+                currentSignature = selectPopupState(this.store.getState()).signature;
+                if (currentSignature !== prevSignature) {
+                    unsub();
+                    if (currentSignature.successed) {
+                        return resolve(currentSignature.value);
+                    }
+                    return reject()
+                }
+            });
+        })
     }
 }
 
@@ -69,7 +168,7 @@ if (chrome.runtime && chrome.runtime.onConnect) {
             contentScriptPort = port;
             contentScriptPort.onMessage.addListener(async msg => {
                 if (!msg.message) return;
-                const result = {} //await controller.onDappMessage(msg.message.method, msg.message.params);
+                const result = await controller.onDappMessage(msg.message.method, msg.message.params);
                 if (contentScriptPort) {
                     contentScriptPort.postMessage(JSON.stringify({
                         type: 'gramWalletAPI',
@@ -83,18 +182,12 @@ if (chrome.runtime && chrome.runtime.onConnect) {
             controller.initDapp()
         } else if (port.name === 'gramWalletPopup') {
             popupPort = port;
-            popupPort.onMessage.addListener(function (msg) {
-                //controller.onViewMessage(msg.method, msg.params);
-            });
             popupPort.onDisconnect.addListener(() => {
                 popupPort = null;
                 // recreate store to remove subscriptions
                 const state = controller.getStore().getState();
                 controller.setStore(createStore(state));
             });
-            //controller.initView()
-            queueToPopup.forEach(msg => popupPort && popupPort.postMessage(msg));
-            queueToPopup.length = 0;
         }
     });
 }

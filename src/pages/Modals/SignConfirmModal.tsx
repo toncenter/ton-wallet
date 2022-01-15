@@ -1,23 +1,78 @@
+import { useCallback, useMemo } from 'react';
+
 import Modal from 'components/Modal';
+import { useAppDispatch, useAppSelector } from 'store/hooks';
+import { selectPopupState, setPopup } from 'store/app/appSlice';
+import { PopupEnum } from 'enums/popupEnum';
+import TonAddress from 'components/TonAddress';
+import { AppDispatch } from 'store/store';
+import { rawSign } from 'store/app/appThunks';
 
 function SignConfirmModal() {
+    const dispatch = useAppDispatch();
+    const { hexToSign } = useAppSelector(selectPopupState);
+
+    const signData = useMemo(() => {
+        return hexToSign.length > 48 ? hexToSign.substring(0, 47) + '…' : hexToSign;
+    }, [hexToSign]);
+
+    const signHandler = useCallback(() => {
+        dispatch(setPopup({
+            popup: PopupEnum.enterPassword, state: {
+                onSuccess: (dispatch: AppDispatch, words: string[]) => {
+                    dispatch(setPopup({
+                        popup: PopupEnum.void,
+                    }));
+                    dispatch(rawSign({
+                        payload: {
+                            words,
+                            hexToSign,
+                        }
+                    }))
+                }
+            }
+        }));
+    }, [dispatch, hexToSign]);
+
+    const closeHandler = useCallback(() => {
+        dispatch(setPopup({popup: PopupEnum.void, state: {
+            signature: {
+                value: '',
+                successed: false,
+            }
+        }}));
+    }, [dispatch]);
+
     return (
         <Modal>
             <div id="signConfirm" className="popup" style={{"paddingBottom": "10px"}}>
                 <div className="popup-title">Confirmation</div>
                 <div className="popup-black-text">Do you want to sign:</div>
 
-                <div id="signConfirmData" className="addr" />
+                <TonAddress id="signConfirmData" address={signData} />
 
                 <div className="popup-grey-text" style={{"textAlign": "center", "fontWeight": "bold", "color": "#D74D4D"}}>
                     Signing custom data is very dangerous. Use only if you know what you are doing.
                 </div>
 
-                <button id="signConfirm_closeBtn" className="popup-close-btn" />
+                <button id="signConfirm_closeBtn"
+                        className="popup-close-btn"
+                        onClick={closeHandler}
+                />
 
                 <div className="popup-footer">
-                    <button id="signConfirm_cancelBtn" className="btn-lite">CANCEL</button>
-                    <button id="signConfirm_okBtn" className="btn-lite">SIGN</button>
+                    <button id="signConfirm_cancelBtn"
+                            className="btn-lite"
+                            onClick={closeHandler}
+                    >
+                        CANCEL
+                    </button>
+                    <button id="signConfirm_okBtn"
+                            className="btn-lite"
+                            onClick={signHandler}
+                    >
+                        SIGN
+                    </button>
                 </div>
             </div>
         </Modal>

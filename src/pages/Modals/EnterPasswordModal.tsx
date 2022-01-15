@@ -25,7 +25,7 @@ function EnterPasswordModal() {
                     myMnemonicWords: words.split(',')
                 }
             }));
-            onSuccess && onSuccess(words.split(','));
+            onSuccess && onSuccess(dispatch, words.split(','));
         } catch (e) {
             return setHasPasswordError(true);
         }

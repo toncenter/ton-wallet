@@ -14,6 +14,7 @@ import {
 import { PopupEnum } from 'enums/popupEnum';
 import { ScreenEnum } from 'enums/screenEnum';
 import ToggleButton from 'components/ToggleButton';
+import { AppDispatch } from 'store/store';
 
 function MenuModal() {
     const dispatch = useAppDispatch();
@@ -37,7 +38,7 @@ function MenuModal() {
     const backupHandler = useCallback(() => {
         dispatch(setPopup({
             popup: PopupEnum.enterPassword, state: {
-                onSuccess: () => dispatch(setScreen(ScreenEnum.backup))
+                onSuccess: (dispatch: AppDispatch) => dispatch(setScreen(ScreenEnum.backup)),
             }
         }));
     }, [dispatch]);

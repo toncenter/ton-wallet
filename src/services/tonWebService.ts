@@ -1,7 +1,8 @@
 import TonWeb from 'tonweb';
 import * as tonMnemonic from 'tonweb-mnemonic';
+import nacl, { SignKeyPair } from 'tweetnacl';
+
 import { DEFAULT_LEDGER_WALLET_VERSION, MAINNET_RPC, TESTNET_RPC } from 'constants/app';
-import { SignKeyPair } from 'tweetnacl';
 
 const ACCOUNT_NUMBER = 0;
 
@@ -131,6 +132,12 @@ class TonWebService {
             myAddress,
             publicKeyHex,
         }
+    }
+
+    public rawSign(hex: string, privateKey: string): string {
+        const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
+        const signature = nacl.sign.detached(TonWeb.utils.hexToBytes(hex), keyPair.secretKey);
+        return TonWeb.utils.bytesToHex(signature);
     }
 
 }
