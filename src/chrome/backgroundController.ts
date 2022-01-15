@@ -136,6 +136,7 @@ class BackgroundController {
     private handleRawSign(signParam: {data: string}) {
         return new Promise((resolve, reject) => {
             if (selectIsLedger(this.store.getState())) {
+                alert('sign not supported by Ledger');
                 return reject();
             }
             this.store.dispatch(setPopup({

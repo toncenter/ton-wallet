@@ -6,9 +6,10 @@ import { encrypt } from 'utils/cryptUtils';
 import { RootState } from 'store/store';
 import { DEFAULT_WALLET_VERSION } from 'constants/app';
 import { withError } from 'utils/storeUtils';
-import { setPopup } from './appSlice';
+import { setPopup, setScreen } from './appSlice';
 import { PopupEnum } from 'enums/popupEnum';
 import TonWebService from 'services/tonWebService';
+import { ScreenEnum } from '../../enums/screenEnum';
 
 const ACCOUNT_NUMBER = 0;
 const IS_TESTNET = window.location.href.indexOf('testnet') > -1
@@ -215,19 +216,21 @@ export const getFees = createAsyncThunk(
 
 export const walletSend = createAsyncThunk(
     'app/wallet/send',
-    withError<{ address: string, amount: string, comment: string, words: string[] }, any, any>(async ({address, amount, comment, words}, thunkAPI) => {
+    withError<{ address: string, amount: string, comment: string, words?: string[] }, any, any>(async ({address, amount, comment, words}, thunkAPI) => {
         try {
             const state = thunkAPI.getState() as RootState;
             let myAddress = state.app.myAddress;
             let ledgerApp = state.app.ledgerApp;
             let addressFormat = 0;
             let sendingData = null;
+            let publicKeyHex = '';
             if (state.app.isLedger) {
                 if (!ledgerApp) {
-                    const ledger = await tonWebService.createLedger(localStorage.getItem('ledgerTransportType') || 'hid');
+                    const ledger = await tonWebService.createLedger(state.app.transportType || 'hid');
                     ledgerApp = ledger.ledgerApp;
                     myAddress = ledger.myAddress;
                     tonWebService.setWalletContract(ledger.walletContract);
+                    publicKeyHex = ledger.publicKeyHex;
                 }
 
                 const toAddress_ = new TonWeb.utils.Address(address);
@@ -268,9 +271,10 @@ export const walletSend = createAsyncThunk(
                     sendingData,
                     ledgerApp,
                     myAddress,
+                    publicKeyHex,
                 }
             } else {
-                const privateKey = await tonWebService.wordsToPrivateKey(words);
+                const privateKey = await tonWebService.wordsToPrivateKey(words!);
                 const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
                 const query = await tonWebService.sign(state.app.myAddress, address, amount, comment, keyPair);
                 sendingData = {address, amount, comment, query};
@@ -285,6 +289,7 @@ export const walletSend = createAsyncThunk(
                     sendingData,
                     ledgerApp,
                     myAddress,
+                    publicKeyHex,
                 }
             }
         } catch (error) {
@@ -308,3 +313,38 @@ export const rawSign = createAsyncThunk(
     }),
 )
 
+export const connectLedger = createAsyncThunk(
+    'app/wallet/connectLedger',
+    withError<'hid' | 'ble', any, any>(async (transportType, thunkAPI) => {
+        const ledger = await tonWebService.createLedger(transportType);
+        const ledgerApp = ledger.ledgerApp;
+        const myAddress = ledger.myAddress;
+        const publicKeyHex = ledger.publicKeyHex;
+        const walletVersion = ledger.walletContract.getName();
+        const isLedger = true;
+        tonWebService.setWalletContract(ledger.walletContract);
+        thunkAPI.dispatch(setScreen(ScreenEnum.readyToGo));
+
+        return {
+            ledgerApp,
+            myAddress,
+            publicKeyHex,
+            walletVersion,
+            isLedger,
+            transportType,
+        };
+    }),
+)
+
+export const showAddressOnDevice = createAsyncThunk(
+    'app/ledger/showAddress',
+    withError<void, any, any>(async (empty, thunkAPI) => {
+        const state = thunkAPI.getState() as RootState;
+        let ledgerApp = state.app.ledgerApp;
+        if (!state.app.ledgerApp) {
+            ledgerApp = (await tonWebService.createLedger(state.app.transportType || 'hid')).ledgerApp;
+        }
+        const {address} = await ledgerApp.getAddress(ACCOUNT_NUMBER, true, ledgerApp.ADDRESS_FORMAT_USER_FRIENDLY + ledgerApp.ADDRESS_FORMAT_URL_SAFE + ledgerApp.ADDRESS_FORMAT_BOUNCEABLE);
+        console.log(address.toString(true, true, true));
+    }),
+)

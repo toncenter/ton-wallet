@@ -3,7 +3,9 @@ import { useCallback } from 'react';
 import TgsPlayer from 'components/TgsPlayer';
 import { useAppDispatch } from 'store/hooks';
 import { ScreenEnum } from 'enums/screenEnum';
-import { setScreen } from 'store/app/appSlice';
+import { setPopup, setScreen } from 'store/app/appSlice';
+import { PopupEnum } from 'enums/popupEnum';
+import { connectLedger } from 'store/app/appThunks';
 
 
 function StartPage() {
@@ -11,6 +13,13 @@ function StartPage() {
 
     const navigateTo = useCallback((screen: ScreenEnum) => {
         dispatch(setScreen(screen));
+    }, [dispatch]);
+
+    const connectLedgerHandler = useCallback(() => {
+        dispatch(setPopup({
+            popup: PopupEnum.connectLedger,
+        }));
+        dispatch(connectLedger({payload: 'hid'}))
     }, [dispatch]);
 
     return (
@@ -49,7 +58,9 @@ function StartPage() {
                 <div style={{"marginTop": "10px"}}>
                     <button id="start_importLedgerHidBtn"
                             className="btn-lite"
-                            style={{"fontWeight": "normal"}}>
+                            style={{"fontWeight": "normal"}}
+                            onClick={connectLedgerHandler}
+                    >
                         Connect Ledger
                     </button>
                 </div>

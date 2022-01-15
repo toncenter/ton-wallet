@@ -1,13 +1,14 @@
+import { useCallback } from 'react';
 import QRCodeImpl from 'easyqrcodejs';
 
 import Modal from 'components/Modal';
 import QRCode from 'components/QRCode';
 import { useAppDispatch, useAppSelector } from 'store/hooks';
 import { selectIsLedger, selectPopupState, setNotification, setPopup } from 'store/app/appSlice';
-import React, { useCallback } from 'react';
 import { PopupEnum } from 'enums/popupEnum';
 import { copyToClipboard } from 'utils/domUtils';
 import TonAddress from 'components/TonAddress';
+import { showAddressOnDevice } from '../../store/app/appThunks';
 
 function ReceiveModal() {
     const dispatch = useAppDispatch();
@@ -29,6 +30,11 @@ function ReceiveModal() {
                 address
         }}));
     }, [dispatch, address]);
+
+    const showAddressHandler = useCallback(() => {
+        dispatch(setNotification('Please check the address on your device'));
+        dispatch(showAddressOnDevice());
+    }, [dispatch]);
 
     const closeHandler = useCallback(() => {
         dispatch(setPopup({popup: PopupEnum.void}));
@@ -55,7 +61,10 @@ function ReceiveModal() {
 
                 {
                     isLedger &&
-                  <button id="receive_showAddressOnDeviceBtn" className="btn-lite btn-lite-first">
+                  <button id="receive_showAddressOnDeviceBtn"
+                          className="btn-lite btn-lite-first"
+                          onClick={showAddressHandler}
+                  >
                     Show Address on Device
                   </button>
                 }

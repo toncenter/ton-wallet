@@ -3,6 +3,7 @@ import React, { useCallback } from 'react';
 import Modal from 'components/Modal';
 import { useAppDispatch, useAppSelector } from 'store/hooks';
 import {
+    selectIsLedger,
     selectIsMagic,
     selectIsPlugin,
     selectIsProxy,
@@ -19,6 +20,7 @@ import { AppDispatch } from 'store/store';
 function MenuModal() {
     const dispatch = useAppDispatch();
     const isPlugin = useAppSelector(selectIsPlugin);
+    const isLedger = useAppSelector(selectIsLedger);
     const isMagic = useAppSelector(selectIsMagic);
     const isProxy = useAppSelector(selectIsProxy);
 
@@ -81,7 +83,7 @@ function MenuModal() {
                 {
                     isPlugin &&
                   <div id="menu_magic" className="dropdown-item">
-                    TON Magic <ToggleButton value={isMagic} onChange={magicHandler} />
+                    TON Magic <ToggleButton value={isMagic} onChange={magicHandler}/>
                   </div>
                 }
                 {
@@ -93,21 +95,27 @@ function MenuModal() {
                 {
                     isPlugin &&
                   <div id="menu_proxy" className="dropdown-item">
-                    TON Proxy <ToggleButton value={isProxy} onChange={proxyHandler} />
+                    TON Proxy <ToggleButton value={isProxy} onChange={proxyHandler}/>
                   </div>
                 }
-                <div id="menu_changePassword"
-                     className="dropdown-item"
-                     onClick={changePasswordHandler}
-                >
+                {
+                    !isLedger &&
+                  <div id="menu_changePassword"
+                       className="dropdown-item"
+                       onClick={changePasswordHandler}
+                  >
                     Change password
-                </div>
-                <div id="menu_backupWallet"
-                     className="dropdown-item"
-                     onClick={backupHandler}
-                >
+                  </div>
+                }
+                {
+                    !isLedger &&
+                  <div id="menu_backupWallet"
+                       className="dropdown-item"
+                       onClick={backupHandler}
+                  >
                     Back up wallet
-                </div>
+                  </div>
+                }
                 <div id="menu_delete"
                      className="dropdown-item"
                      onClick={deleteHandler}

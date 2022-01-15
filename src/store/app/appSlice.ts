@@ -2,6 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 
 import type { RootState } from 'store/store'
 import {
+    connectLedger,
     createWallet,
     getFees,
     getWalletTransactions,
@@ -49,9 +50,12 @@ export interface AppState {
     sendingData: any;
     isMagic: boolean;
     isProxy: boolean;
+    publicKeyHex: string;
+    transportType: 'hid' | 'ble',
 }
 
 const initialState = (): AppState => ({
+    //app
     isPlugin: !!(chrome.runtime && chrome.runtime.onConnect),
     screen: ScreenEnum.main,
     popup: PopupEnum.void,
@@ -74,18 +78,22 @@ const initialState = (): AppState => ({
     },
     notification: '',
     isTestnet: window.location.href.indexOf('testnet') > -1,
+    isMagic: localStorage.getItem('isMagic') === 'true',
+    isProxy: localStorage.getItem('isProxy') === 'true',
+    //wallet
     myMnemonicWords: [],
     myMnemonicEncryptedWords: localStorage.getItem('words') || '',
     myAddress: localStorage.getItem('address') || '',
-    isLedger: localStorage.getItem('isLedger') === 'true',
     balance: '0',
     isContractInitialized: false,
     transactions: [],
     lastTransactionTime: 0,
-    ledgerApp: null,
     sendingData: null,
-    isMagic: localStorage.getItem('isMagic') === 'true',
-    isProxy: localStorage.getItem('isProxy') === 'true',
+    //ledger
+    ledgerApp: null,
+    isLedger: localStorage.getItem('isLedger') === 'true',
+    publicKeyHex: localStorage.getItem('publicKey') || '',
+    transportType: 'hid',
 })
 
 export const appSlice = createSlice({
@@ -204,6 +212,7 @@ export const appSlice = createSlice({
                 state.sendingData = action.payload.sendingData;
                 state.ledgerApp = action.payload.ledgerApp;
                 state.myAddress = action.payload.myAddress;
+                state.publicKeyHex = action.payload.publicKeyHex;
                 state.popupState.myMnemonicWords = [];
             }
         });
@@ -219,6 +228,19 @@ export const appSlice = createSlice({
                 successed: false,
             }
         });
+        builder.addCase(connectLedger.fulfilled, (state, action) => {
+            state.ledgerApp = action.payload.ledgerApp;
+            state.myAddress = action.payload.myAddress;
+            state.publicKeyHex = action.payload.publicKeyHex;
+            state.transportType = action.payload.transportType;
+            state.isLedger = action.payload.isLedger;
+            localStorage.setItem('walletVersion', action.payload.walletVersion);
+            localStorage.setItem('address', state.myAddress);
+            localStorage.setItem('isLedger', 'true');
+            localStorage.setItem('ledgerTransportType', state.transportType);
+            localStorage.setItem('words', 'ledger');
+            localStorage.setItem('publicKey', state.publicKeyHex);
+        });
     },
 })
 
@@ -228,7 +250,7 @@ export const {
     setNotification,
     disconnect,
     setMagic,
-    setProxy
+    setProxy,
 } = appSlice.actions
 
 export const selectScreen = (state: RootState) => state.app.screen;
@@ -245,5 +267,6 @@ export const selectIsTestnet = (state: RootState) => state.app.isTestnet;
 export const selectIsMagic = (state: RootState) => state.app.isMagic;
 export const selectIsProxy = (state: RootState) => state.app.isProxy;
 export const selectIsPlugin = (state: RootState) => state.app.isPlugin;
+export const selectTransportType = (state: RootState) => state.app.transportType;
 
 export default appSlice.reducer;
