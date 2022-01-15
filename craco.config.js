@@ -1,4 +1,5 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const path = require('path')
 
 module.exports = {
   webpack: {
@@ -9,6 +10,7 @@ module.exports = {
       if (htmlWebpackPluginInstance) {
         htmlWebpackPluginInstance.userOptions.inject = false;
       }
+      paths.appBuild = webpackConfig.output.path = path.resolve('./docs');
       return {
         ...webpackConfig,
         entry: {
