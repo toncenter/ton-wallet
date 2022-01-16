@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import Modal from 'components/Modal';
 import { useAppDispatch } from 'store/hooks';
@@ -7,6 +8,7 @@ import { PopupEnum } from 'enums/popupEnum';
 
 function ConnectLedgerModal() {
     const dispatch = useAppDispatch();
+    const { t } = useTranslation();
 
     const closeHandler = useCallback(() => {
         dispatch(setPopup({
@@ -17,15 +19,15 @@ function ConnectLedgerModal() {
     return (
         <Modal>
             <div id="connectLedger" className="popup" style={{"paddingBottom": "10px"}}>
-                <div className="popup-title">Connect Ledger</div>
+                <div className="popup-title">{t('Connect Ledger')}</div>
                 <div className="popup-black-text">
-                    Please use Edge/Google Chrome v89 or later.
+                    {t('Please use Edge/Google Chrome v89 or later.')}
                 </div>
                 <div className="popup-black-text" style={{"marginTop": "20px"}}>
-                    Turn off Ledger Live.
+                    {t('Turn off Ledger Live.')}
                 </div>
                 <div className="popup-black-text" style={{"marginTop": "20px"}}>
-                    If it does not connect, then try reconnecting the device.
+                    {t('If it does not connect, then try reconnecting the device.')}
                 </div>
 
                 <div className="popup-footer">
@@ -33,7 +35,7 @@ function ConnectLedgerModal() {
                             className="btn-lite"
                             onClick={closeHandler}
                     >
-                        OK
+                        {t('OK')}
                     </button>
                 </div>
             </div>

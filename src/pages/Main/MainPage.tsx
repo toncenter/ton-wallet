@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
 import TonWeb from 'tonweb';
+import { useTranslation } from 'react-i18next';
 
 import TgsPlayer from 'components/TgsPlayer';
 import { useAppDispatch, useAppSelector } from 'store/hooks';
@@ -11,6 +12,7 @@ import TonAddress from 'components/TonAddress';
 
 function MainPage() {
     const dispatch = useAppDispatch();
+    const { t } = useTranslation();
     const address = useAppSelector(selectMyAddress);
     const balance = useAppSelector(selectBalance);
     const transactions = useAppSelector(selectTransactions);
@@ -86,20 +88,18 @@ function MainPage() {
                             className="btn-round"
                             style={{'backgroundImage': 'url(\'assets/refresh.svg\')'}}
                             onClick={refreshHandler}
-                    >
-                    </button>
+                    />
 
                     <div id="updateLabel">
                         {
-                            isUpdating ? 'updating..' : 'updated just now'
+                            isUpdating ? t('updating..') : t('updated just now')
                         }
                     </div>
 
                     <button id="main_settingsButton" className="btn-round"
                             style={{'backgroundImage': 'url(\'assets/menu.svg\')'}}
                             onClick={menuHandler}
-                    >
-                    </button>
+                    />
                 </div>
 
                 <div id="balance">
@@ -107,11 +107,11 @@ function MainPage() {
                     <span style={{'fontSize': '24px'}}>{lastBalanceValue}</span>
                     <span> 💎</span>
                 </div>
-                <div className="your-balance">Your mainnet balance</div>
+                <div className="your-balance">{t('Your mainnet balance')}</div>
 
                 <button id="main_receiveBtn" className="btn-blue" onClick={receiveHandler}>
                     <div className="btn-icon" style={{'backgroundImage': 'url(\'assets/down-left.svg\')'}}/>
-                    Receive
+                    {t('Receive')}
                 </button>
 
                 {
@@ -119,7 +119,7 @@ function MainPage() {
                   <button id="sendButton" className="btn-blue" onClick={sendHandler}>
                     <div className="btn-icon"
                          style={{'backgroundImage': 'url(\'assets/down-left.svg\')', 'transform': 'rotate(180deg)'}}/>
-                    Send
+                      {t('Send')}
                   </button>
                 }
             </div>
@@ -151,12 +151,12 @@ function MainPage() {
                                                         <span
                                                             className="tx-amount tx-amount-green">{'+' + amountFormatted}</span>
                                                         <span> 💎</span>
-                                                        <span className="tx-from"> from:</span>
+                                                        <span className="tx-from"> {t('from')}:</span>
                                                     </> :
                                                     <>
                                                         <span className="tx-amount">{amountFormatted}</span>
                                                         <span> 💎</span>
-                                                        <span className="tx-from"> to:</span>
+                                                        <span className="tx-from"> {t('to')}:</span>
                                                     </>
                                             }
                                         </div>
@@ -165,7 +165,7 @@ function MainPage() {
                                             tx.comment &&
                                           <div className="tx-comment">{tx.comment}</div>
                                         }
-                                        <div className="tx-fee">blockchain fees: {TonWeb.utils.fromNano(tx.fee)}</div>
+                                        <div className="tx-fee">{t('blockchain fees')}: {TonWeb.utils.fromNano(tx.fee)}</div>
                                         <div className="tx-item-date">{formatTime(tx.date)}</div>
                                     </div>
                                 </React.Fragment>
@@ -180,7 +180,7 @@ function MainPage() {
                                width={150}
                                height={150}
                                src="assets/lottie/empty.tgs"/>
-                    <div>Wallet Created</div>
+                    <div>{t('Wallet Created')}</div>
                   </div>
                 }
             </div>

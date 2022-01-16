@@ -1,4 +1,5 @@
 import React, { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import Modal from 'components/Modal';
 import { useAppDispatch, useAppSelector } from 'store/hooks';
@@ -19,6 +20,7 @@ import { AppDispatch } from 'store/store';
 
 function MenuModal() {
     const dispatch = useAppDispatch();
+    const { t } = useTranslation();
     const isPlugin = useAppSelector(selectIsPlugin);
     const isLedger = useAppSelector(selectIsLedger);
     const isMagic = useAppSelector(selectIsMagic);
@@ -71,31 +73,31 @@ function MenuModal() {
                        className="dropdown-item"
                        onClick={extensionHandler}
                   >
-                    Chrome Extension
+                      {t('Chrome Extension')}
                   </div>
                 }
                 <div id="menu_about"
                      className="dropdown-item"
                      onClick={aboutHandler}
                 >
-                    About
+                    {t('About')}
                 </div>
                 {
                     isPlugin &&
                   <div id="menu_magic" className="dropdown-item">
-                    TON Magic <ToggleButton value={isMagic} onChange={magicHandler}/>
+                      {t('TON Magic')} <ToggleButton value={isMagic} onChange={magicHandler}/>
                   </div>
                 }
                 {
                     isPlugin && isMagic &&
                   <div id="menu_telegram" className="dropdown-item" onClick={openTeleramHandler}>
-                    Open Telegram Web »
+                      {t('Open Telegram Web')} »
                   </div>
                 }
                 {
                     isPlugin &&
                   <div id="menu_proxy" className="dropdown-item">
-                    TON Proxy <ToggleButton value={isProxy} onChange={proxyHandler}/>
+                      {t('TON Proxy')} <ToggleButton value={isProxy} onChange={proxyHandler}/>
                   </div>
                 }
                 {
@@ -104,7 +106,7 @@ function MenuModal() {
                        className="dropdown-item"
                        onClick={changePasswordHandler}
                   >
-                    Change password
+                      {t('Change password')}
                   </div>
                 }
                 {
@@ -113,14 +115,14 @@ function MenuModal() {
                        className="dropdown-item"
                        onClick={backupHandler}
                   >
-                    Back up wallet
+                      {t('Back up wallet')}
                   </div>
                 }
                 <div id="menu_delete"
                      className="dropdown-item"
                      onClick={deleteHandler}
                 >
-                    Delete wallet
+                    {t('Delete wallet')}
                 </div>
             </div>
         </Modal>

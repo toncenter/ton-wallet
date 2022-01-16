@@ -1,6 +1,8 @@
+import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
 import TgsPlayer from 'components/TgsPlayer';
 import Modal from 'components/Modal';
-import { useCallback, useState } from 'react';
 import { selectMyMnemonicEncryptedWords, selectPopupState, setPopup } from 'store/app/appSlice';
 import { PopupEnum } from 'enums/popupEnum';
 import { useAppDispatch, useAppSelector } from 'store/hooks';
@@ -8,6 +10,7 @@ import { decrypt } from 'utils/cryptUtils';
 
 function EnterPasswordModal() {
     const dispatch = useAppDispatch();
+    const { t } = useTranslation();
     const { onSuccess } = useAppSelector(selectPopupState);
     const myMnemonicEncryptedWords = useAppSelector(selectMyMnemonicEncryptedWords);
     const [password, setPassword] = useState('');
@@ -38,11 +41,11 @@ function EnterPasswordModal() {
     return (
         <Modal>
             <div id="enterPassword" className="popup" style={{'paddingBottom': '10px'}}>
-                <div className="popup-title">Password</div>
+                <div className="popup-title">{t('Password')}</div>
 
                 <TgsPlayer name="enterPassword" src="assets/lottie/lock.tgs" width={150} height={150}/>
                 <input id="enterPassword_input"
-                       placeholder="Enter your password"
+                       placeholder={t('Enter your password')}
                        type="password"
                        style={{'textAlign': 'center', 'width': '200px', 'marginLeft': '40px', 'fontSize': '15px'}}
                        className={hasPasswordError ? 'error' : ''}
@@ -55,13 +58,13 @@ function EnterPasswordModal() {
                             className="btn-lite"
                             onClick={closeHandler}
                     >
-                        CANCEL
+                        {t('CANCEL')}
                     </button>
                     <button id="enterPassword_okBtn"
                             className="btn-lite"
                             onClick={nextHandler}
                     >
-                        NEXT
+                        {t('NEXT')}
                     </button>
                 </div>
             </div>

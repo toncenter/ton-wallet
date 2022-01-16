@@ -1,4 +1,5 @@
 import { useCallback, useEffect } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import * as TonWeb from 'tonweb';
 
 import Modal from 'components/Modal';
@@ -11,6 +12,7 @@ import { AppDispatch } from 'store/store';
 
 function SendConfirmModal() {
     const dispatch = useAppDispatch();
+    const { t } = useTranslation();
     const isLedger = useAppSelector(selectIsLedger);
     const {address, amount, comment, fee} = useAppSelector(selectPopupState);
 
@@ -63,19 +65,25 @@ function SendConfirmModal() {
     return (
         <Modal>
             <div id="sendConfirm" className="popup" style={{'paddingBottom': '10px'}}>
-                <div className="popup-title">Confirmation</div>
-                <div className="popup-black-text">Do you want to send <b
-                    id="sendConfirmAmount">{TonWeb.utils.fromNano(new TonWeb.utils.BN(amount))} TON</b> to:
+                <div className="popup-title">{t('Confirmation')}</div>
+                <div className="popup-black-text">
+                    <Trans>
+                        Do you want to send <b id="sendConfirmAmount">{{amount: TonWeb.utils.fromNano(new TonWeb.utils.BN(amount))}} TON</b> to:
+                    </Trans>
                 </div>
 
                 <TonAddress id="sendConfirmAddr" address={address}/>
 
-                <div id="sendConfirmFee" className="popup-grey-text" style={{'textAlign': 'center'}}>Fee:
-                    ~{TonWeb.utils.fromNano(new TonWeb.utils.BN(fee))} TON
+                <div id="sendConfirmFee" className="popup-grey-text" style={{'textAlign': 'center'}}>
+                    <Trans>
+                        Fee: ~{{fee: TonWeb.utils.fromNano(new TonWeb.utils.BN(fee))}} TON
+                    </Trans>
                 </div>
 
                 <div className="popup-grey-text" style={{'textAlign': 'center'}}>
-                    Note: Your comment will not be <b>encrypted</b>
+                    <Trans>
+                        Note: Your comment will not be <b>encrypted</b>
+                    </Trans>
                 </div>
                 {
                     !isLedger &&
@@ -91,13 +99,13 @@ function SendConfirmModal() {
                             className="btn-lite"
                             onClick={closeHandler}
                     >
-                      CANCEL
+                        {t('CANCEL')}
                     </button>
                     <button id="sendConfirm_okBtn"
                             className="btn-lite"
                             onClick={sendHandler}
                     >
-                      SEND TON
+                        {t('SEND TON')}
                     </button>
                   </div>
                 }

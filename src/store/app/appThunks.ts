@@ -9,7 +9,7 @@ import { withError } from 'utils/storeUtils';
 import { setPopup, setScreen } from './appSlice';
 import { PopupEnum } from 'enums/popupEnum';
 import TonWebService from 'services/tonWebService';
-import { ScreenEnum } from '../../enums/screenEnum';
+import { ScreenEnum } from 'enums/screenEnum';
 
 const ACCOUNT_NUMBER = 0;
 const IS_TESTNET = window.location.href.indexOf('testnet') > -1

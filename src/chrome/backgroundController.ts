@@ -5,7 +5,7 @@ import * as TonWeb from 'tonweb';
 
 import { createStore, RootState } from 'store/store';
 import { selectIsLedger, selectPopupState, setPopup } from 'store/app/appSlice';
-import { PopupEnum } from '../enums/popupEnum';
+import { PopupEnum } from 'enums/popupEnum';
 
 let contentScriptPort: chrome.runtime.Port | null;
 let popupPort: chrome.runtime.Port | null;

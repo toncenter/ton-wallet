@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import * as tonWebMnemonic from 'tonweb-mnemonic';
+import { Trans, useTranslation } from 'react-i18next';
 
 import MnemonicWordInput from 'components/MnemonicWordInput';
 import { useAppDispatch } from 'store/hooks';
@@ -9,12 +10,13 @@ import { ScreenEnum } from 'enums/screenEnum';
 
 function ImportPage() {
     const dispatch = useAppDispatch();
+    const { t } = useTranslation();
     const [submitted, setSubmitted] = useState(false);
     const [words, setWords] = useState<string[]>([]);
 
     const importAlertHandler = useCallback(() => {
-        alert('Too Bad. Without the secret words, you can\'t restore access to your wallet.')
-    }, []);
+        alert(t('Too Bad. Without the secret words, you can\'t restore access to your wallet.'));
+    }, [t]);
 
     const changeHandler = useCallback((index, value) => {
         if (Array.isArray(value)) {
@@ -43,20 +45,22 @@ function ImportPage() {
              style={{"textAlign":"center"}}>
             <div className="screen-title"
                  style={{"marginTop":"80px"}}>
-                24 Secret Words
+                {t('24 Secret Words')}
             </div>
             <div className="screen-text"
                  style={{"marginBottom":"10px"}}>
-                Please restore access to your <b>non-hardware</b> wallet by<br/>
-                entering the 24 secret words you wrote<br/>
-                down when creating the wallet.
+                <Trans>
+                    Please restore access to your <b>non-hardware</b> wallet by<br/>
+                    entering the 24 secret words you wrote<br/>
+                    down when creating the wallet.
+                </Trans>
             </div>
 
             <button id="import_alertBtn"
                     className="btn-lite"
                     onClick={importAlertHandler}
             >
-                I don't have them
+                {t('I don\'t have them')}
             </button>
 
             <div id="importWords">
@@ -92,7 +96,7 @@ function ImportPage() {
                         style={{"marginTop":"30px","marginBottom":"20px"}}
                         onClick={importHandler}
                 >
-                    Continue
+                    {t('Continue')}
                 </button>
             </div>
         </div>

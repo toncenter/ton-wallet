@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 
 import TgsPlayer from 'components/TgsPlayer';
 import { useAppDispatch } from 'store/hooks';
@@ -10,6 +11,7 @@ import { connectLedger } from 'store/app/appThunks';
 
 function StartPage() {
     const dispatch = useAppDispatch();
+    const { t } = useTranslation();
 
     const navigateTo = useCallback((screen: ScreenEnum) => {
         dispatch(setScreen(screen));
@@ -31,11 +33,13 @@ function StartPage() {
                             height={120}
                             className="screen-lottie" />
 
-                <div className="screen-title">TON Wallet</div>
+                <div className="screen-title">{t('TON Wallet')}</div>
                 <div className="screen-text">
-                    TON wallet allows you to make fast and<br/>
-                    secure blockchain-based payments<br/>
-                    without intermediaries.
+                    <Trans>
+                        TON wallet allows you to make fast and<br/>
+                        secure blockchain-based payments<br/>
+                        without intermediaries.
+                    </Trans>
                 </div>
 
                 <div style={{"marginTop": "95px"}}>
@@ -43,7 +47,7 @@ function StartPage() {
                             className="btn-blue screen-btn"
                             onClick={navigateTo.bind(null, ScreenEnum.created)}
                     >
-                        Create My Wallet
+                        {t('Create My Wallet')}
                     </button>
                 </div>
                 <div style={{"marginTop": "20px"}}>
@@ -52,7 +56,7 @@ function StartPage() {
                             style={{"fontWeight": "normal"}}
                             onClick={navigateTo.bind(null, ScreenEnum.import)}
                     >
-                        Import existing wallet
+                        {t('Import existing wallet')}
                     </button>
                 </div>
                 <div style={{"marginTop": "10px"}}>
@@ -61,14 +65,14 @@ function StartPage() {
                             style={{"fontWeight": "normal"}}
                             onClick={connectLedgerHandler}
                     >
-                        Connect Ledger
+                        {t('Connect Ledger')}
                     </button>
                 </div>
                 <div style={{"marginTop": "10px"}}>
                     <button id="start_importLedgerBleBtn"
                             className="btn-lite"
                             style={{"fontWeight": "normal"}}>
-                        Connect Ledger via Bluetooth
+                        {t('Connect Ledger via Bluetooth')}
                     </button>
                 </div>
             </div>

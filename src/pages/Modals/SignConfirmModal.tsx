@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import Modal from 'components/Modal';
 import { useAppDispatch, useAppSelector } from 'store/hooks';
@@ -10,6 +11,7 @@ import { rawSign } from 'store/app/appThunks';
 
 function SignConfirmModal() {
     const dispatch = useAppDispatch();
+    const { t } = useTranslation();
     const { hexToSign } = useAppSelector(selectPopupState);
 
     const signData = useMemo(() => {
@@ -46,13 +48,13 @@ function SignConfirmModal() {
     return (
         <Modal>
             <div id="signConfirm" className="popup" style={{"paddingBottom": "10px"}}>
-                <div className="popup-title">Confirmation</div>
-                <div className="popup-black-text">Do you want to sign:</div>
+                <div className="popup-title">{t('Confirmation')}</div>
+                <div className="popup-black-text">{t('Do you want to sign:')}</div>
 
                 <TonAddress id="signConfirmData" address={signData} />
 
                 <div className="popup-grey-text" style={{"textAlign": "center", "fontWeight": "bold", "color": "#D74D4D"}}>
-                    Signing custom data is very dangerous. Use only if you know what you are doing.
+                    {t('Signing custom data is very dangerous. Use only if you know what you are doing.')}
                 </div>
 
                 <button id="signConfirm_closeBtn"
@@ -65,13 +67,13 @@ function SignConfirmModal() {
                             className="btn-lite"
                             onClick={closeHandler}
                     >
-                        CANCEL
+                        {t('CANCEL')}
                     </button>
                     <button id="signConfirm_okBtn"
                             className="btn-lite"
                             onClick={signHandler}
                     >
-                        SIGN
+                        {t('SIGN')}
                     </button>
                 </div>
             </div>

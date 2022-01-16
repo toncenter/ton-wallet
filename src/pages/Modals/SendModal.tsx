@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as TonWeb from 'tonweb';
 
 import Modal from 'components/Modal';
@@ -8,6 +9,7 @@ import { PopupEnum } from 'enums/popupEnum';
 
 function SendModal() {
     const dispatch = useAppDispatch();
+    const { t } = useTranslation();
     const balance = useAppSelector(selectBalance);
     const isLedger = useAppSelector(selectIsLedger);
     const {address, amount, comment} = useAppSelector(selectPopupState);
@@ -78,27 +80,25 @@ function SendModal() {
     return (
         <Modal>
             <div id="send" className="popup">
-                <div className="popup-title">Send TON</div>
+                <div className="popup-title">{t('Send TON')}</div>
 
-                <div className="input-label">Recipient wallet address</div>
+                <div className="input-label">{t('Recipient wallet address')}</div>
                 <input ref={inputRef}
                        id="toWalletInput"
                        type="text"
-                       placeholder="Enter wallet address"
+                       placeholder={t('Enter wallet address')}
                        className={hasAddressError ? 'error' : ''}
                        value={address}
                        onChange={changeAddressHandler}
                 />
 
                 <div className="popup-grey-text">
-                    Copy the 48-letter wallet address of the
-                    recipient here or ask them to send you a
-                    ton:// link
+                    {t('Copy the 48-letter wallet address of the recipient here or ask them to send you a ton:// link')}
                 </div>
 
                 <div style={{'position': 'relative', 'width': '100%'}}>
-                    <div className="input-label">Amount</div>
-                    <div id="sendBalance">Balance: {TonWeb.utils.fromNano(balance)} 💎</div>
+                    <div className="input-label">{t('Amount')}</div>
+                    <div id="sendBalance">{t('Balance')}: {TonWeb.utils.fromNano(balance)} 💎</div>
                 </div>
 
                 <input id="amountInput"
@@ -112,7 +112,7 @@ function SendModal() {
                     !isLedger &&
                   <input id="commentInput"
                          type="text"
-                         placeholder="Comment (optional)"
+                         placeholder={t('Comment (optional)')}
                          value={comment}
                          onChange={changeCommentHandler}
                   />
@@ -121,7 +121,7 @@ function SendModal() {
                         className="btn-blue"
                         onClick={sendHandler}
                 >
-                    Send TON
+                    {t('Send TON')}
                 </button>
 
                 <button id="send_closeBtn"

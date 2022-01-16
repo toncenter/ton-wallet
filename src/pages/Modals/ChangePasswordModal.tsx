@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import TgsPlayer from 'components/TgsPlayer';
 import Modal from 'components/Modal';
@@ -10,6 +11,7 @@ import { saveWords } from 'store/app/appThunks';
 
 function ChangePasswordModal() {
     const dispatch = useAppDispatch();
+    const { t } = useTranslation();
     const isTestnet = useAppSelector(selectIsTestnet)
     const myMnemonicEncryptedWords = useAppSelector(selectMyMnemonicEncryptedWords);
     const [oldPassword, setOldPassword] = useState('');
@@ -66,26 +68,26 @@ function ChangePasswordModal() {
     return (
         <Modal>
             <div id="changePassword" className="popup" style={{'paddingBottom': '10px'}}>
-                <div className="popup-title">Change Password</div>
+                <div className="popup-title">{t('Change Password')}</div>
 
                 <TgsPlayer name="changePassword" src="assets/lottie/lock.tgs" width={150} height={150}/>
 
                 <input id="changePassword_oldInput"
-                       placeholder="Enter your old password"
+                       placeholder={t('Enter your old password')}
                        type="password"
                        style={{"textAlign": "center", "width": "200px", "marginLeft": "40px", "fontSize": "15px"}}
                        className={hasOldPasswordError ? 'error' : ''}
                        onChange={changeOldPasswordHandler}
                 />
                 <input id="changePassword_newInput"
-                       placeholder="Enter a new password"
+                       placeholder={t('Enter a new password')}
                        type="password"
                        style={{"textAlign": "center", "width": "200px", "marginLeft": "40px", "fontSize": "15px", "marginTop": "20px"}}
                        className={hasNewPasswordError ? 'error' : ''}
                        onChange={changeNewPasswordHandler}
                 />
                 <input id="changePassword_repeatInput"
-                       placeholder="Repeat the new password"
+                       placeholder={t('Repeat the new password')}
                        type="password"
                        style={{"textAlign": "center", "width": "200px", "marginLeft": "40px", "fontSize": "15px"}}
                        className={hasRepeatPasswordError ? 'error' : ''}
@@ -97,13 +99,13 @@ function ChangePasswordModal() {
                             className="btn-lite"
                             onClick={closeHandler}
                     >
-                        CANCEL
+                        {t('CANCEL')}
                     </button>
                     <button id="changePassword_okBtn"
                             className="btn-lite"
                             onClick={saveHandler}
                     >
-                        SAVE
+                        {t('SAVE')}
                     </button>
                 </div>
             </div>

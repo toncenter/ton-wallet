@@ -1,4 +1,5 @@
 import { useCallback, useEffect } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 
 import TgsPlayer from 'components/TgsPlayer';
 import { useAppDispatch, useAppSelector } from 'store/hooks';
@@ -8,6 +9,7 @@ import { ScreenEnum } from 'enums/screenEnum';
 
 function CreatedPage() {
     const dispatch = useAppDispatch();
+    const { t } = useTranslation();
     const myAddress = useAppSelector(selectMyAddress);
 
     useEffect(() => {
@@ -27,17 +29,21 @@ function CreatedPage() {
                            height={120}
                            className="screen-lottie" />
 
-                <div className="screen-title">Congratulations</div>
+                <div className="screen-title">{t('Congratulations')}</div>
 
                 <div className="screen-text">
-                    Your TON wallet has just been created.<br/>
-                    Only you control it.
+                    <Trans>
+                        Your TON wallet has just been created.<br/>
+                        Only you control it.
+                    </Trans>
                 </div>
 
                 <div className="screen-text">
-                    To be able to always have access to it,<br/>
-                    please set up a secure password and write<br/>
-                    down secret words.
+                    <Trans>
+                        To be able to always have access to it,<br/>
+                        please set up a secure password and write<br/>
+                        down secret words.
+                    </Trans>
                 </div>
 
                 <div>
@@ -47,7 +53,7 @@ function CreatedPage() {
                             disabled={!myAddress}
                             onClick={showScreen.bind(null, ScreenEnum.backup)}
                     >
-                        Continue
+                        {t('Continue')}
                     </button>
                 </div>
             </div>

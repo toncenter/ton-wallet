@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import TonWeb from 'tonweb';
 
 import { formatDateFull } from 'utils/dateUtils';
@@ -10,6 +11,7 @@ import TonAddress from 'components/TonAddress';
 
 function TransactionModal() {
     const dispatch = useAppDispatch();
+    const { t } = useTranslation();
     const { tx } = useAppSelector(selectPopupState);
 
     const isReceive = useMemo(() => {
@@ -33,7 +35,7 @@ function TransactionModal() {
     return (
         <Modal>
             <div id="transaction" className="popup">
-                <div className="popup-title">Transaction</div>
+                <div className="popup-title">{t('Transaction')}</div>
 
                 <div id="transactionAmount">
                     {
@@ -42,18 +44,18 @@ function TransactionModal() {
                             TonWeb.utils.fromNano(tx.amount) + ' 💎'
                     }
                 </div>
-                <div id="transactionFee">{TonWeb.utils.fromNano(tx.otherFee)} transaction fee</div>
-                <div id="transactionStorageFee">{TonWeb.utils.fromNano(tx.storageFee)} storage fee</div>
+                <div id="transactionFee">{TonWeb.utils.fromNano(tx.otherFee)} {t('transaction fee')}</div>
+                <div id="transactionStorageFee">{TonWeb.utils.fromNano(tx.storageFee)} {t('storage fee')}</div>
 
                 <div id="transactionSenderLabel" className="input-label" style={{'marginTop': '20px'}}>
                     {
-                        isReceive ? 'Sender' : 'Recipient'
+                        isReceive ? t('Sender') : t('Recipient')
                     }
                 </div>
 
                 <TonAddress id="transactionSender" address={addr}/>
 
-                <div className="input-label">Date</div>
+                <div className="input-label">{t('Date')}</div>
 
                 <div id="transactionDate" className="popup-black-text">
                     {formatDateFull(tx.date)}
@@ -62,7 +64,7 @@ function TransactionModal() {
                 {
                     !!tx.comment &&
                   <>
-                    <div id="transactionCommentLabel" className="input-label">Comment</div>
+                    <div id="transactionCommentLabel" className="input-label">{t('Comment')}</div>
 
                     <div id="transactionComment" className="popup-black-text">
                         {tx.comment}
@@ -75,7 +77,7 @@ function TransactionModal() {
                         style={{'marginTop': '20px'}}
                         onClick={sendHandler}
                 >
-                    Send TON to this address
+                    {t('Send TON to this address')}
                 </button>
 
                 <button id="transaction_closeBtn"

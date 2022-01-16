@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import QRCodeImpl from 'easyqrcodejs';
 
 import Modal from 'components/Modal';
@@ -8,22 +9,23 @@ import { selectIsLedger, selectPopupState, setNotification, setPopup } from 'sto
 import { PopupEnum } from 'enums/popupEnum';
 import { copyToClipboard } from 'utils/domUtils';
 import TonAddress from 'components/TonAddress';
-import { showAddressOnDevice } from '../../store/app/appThunks';
+import { showAddressOnDevice } from 'store/app/appThunks';
 
 function ReceiveModal() {
     const dispatch = useAppDispatch();
+    const { t } = useTranslation();
     const isLedger = useAppSelector(selectIsLedger)
     const { address } = useAppSelector(selectPopupState);
 
     const shareAddressHandler = useCallback(() => {
         const result = copyToClipboard(address);
-        dispatch(setNotification(result ? 'Wallet address copied to clipboard' : 'Can\'t copy link'));
-    }, [dispatch, address]);
+        dispatch(setNotification(result ? t('Wallet address copied to clipboard') : t('Can\'t copy link')));
+    }, [dispatch, t, address]);
 
     const shareTransferLinkHandler = useCallback(() => {
         const result = copyToClipboard('ton://transfer/' + address);
-        dispatch(setNotification(result ? 'Transfer link copied to clipboard' : 'Can\'t copy link'));
-    }, [dispatch, address]);
+        dispatch(setNotification(result ? t('Transfer link copied to clipboard') : t('Can\'t copy link')));
+    }, [dispatch, t, address]);
 
     const createInvoiceHandler = useCallback(() => {
         dispatch(setPopup({popup: PopupEnum.invoice, state: {
@@ -32,9 +34,9 @@ function ReceiveModal() {
     }, [dispatch, address]);
 
     const showAddressHandler = useCallback(() => {
-        dispatch(setNotification('Please check the address on your device'));
+        dispatch(setNotification(t('Please check the address on your device')));
         dispatch(showAddressOnDevice());
-    }, [dispatch]);
+    }, [dispatch, t]);
 
     const closeHandler = useCallback(() => {
         dispatch(setPopup({popup: PopupEnum.void}));
@@ -43,8 +45,9 @@ function ReceiveModal() {
     return (
         <Modal>
             <div id="receive" className="popup">
-                <div className="popup-title">Receive TON</div>
-                <div className="popup-text">Share this address to receive TON.
+                <div className="popup-title">{t('Receive TON')}</div>
+                <div className="popup-text">
+                    {t('Share this address to receive TON.')}
                 </div>
 
                 <QRCode options={{
@@ -65,7 +68,7 @@ function ReceiveModal() {
                           className="btn-lite btn-lite-first"
                           onClick={showAddressHandler}
                   >
-                    Show Address on Device
+                      {t('Show Address on Device')}
                   </button>
                 }
 
@@ -73,14 +76,14 @@ function ReceiveModal() {
                         className="btn-lite"
                         onClick={createInvoiceHandler}
                 >
-                    Create Invoice
+                    {t('Create Invoice')}
                 </button>
 
                 <button id="receive_shareBtn"
                         className="btn-blue"
                         onClick={shareTransferLinkHandler}
                 >
-                    Share Wallet Address
+                    {t('Share Wallet Address')}
                 </button>
 
                 <button id="receive_closeBtn"

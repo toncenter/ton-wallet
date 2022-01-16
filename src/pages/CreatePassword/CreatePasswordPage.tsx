@@ -1,4 +1,5 @@
 import { ChangeEvent, useCallback, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 
 import TgsPlayer from 'components/TgsPlayer';
 import { useAppDispatch } from 'store/hooks';
@@ -8,6 +9,7 @@ import { ScreenEnum } from 'enums/screenEnum';
 
 function CreatePasswordPage() {
     const dispatch = useAppDispatch();
+    const { t } = useTranslation();
     const [submitted, setSubmitted] = useState(false);
     const [password, setPassword] = useState("");
     const [repeatPassword, setRepeatPassword] = useState("");
@@ -40,17 +42,19 @@ function CreatePasswordPage() {
                            height={120}
                            className="screen-lottie"/>
 
-                <div className="screen-title">Secure Password</div>
+                <div className="screen-title">{t('Secure Password')}</div>
 
                 <div className="screen-text">
-                    Please choose a secure password<br/>
-                    for confirming your payments
+                    <Trans>
+                        Please choose a secure password<br/>
+                        for confirming your payments
+                    </Trans>
                 </div>
 
                 <div style={{"marginTop":"54px"}}>
                     <input id="createPassword_input"
                            className={!password && submitted ? 'error' : ''}
-                           placeholder="Enter your password"
+                           placeholder={t('Enter your password')}
                            type="password"
                            value={password}
                            onChange={onChangePasswordHandler}
@@ -59,7 +63,7 @@ function CreatePasswordPage() {
                 <div>
                     <input id="createPassword_repeatInput"
                            className={password !== repeatPassword && submitted ? 'error' : ''}
-                           placeholder="Repeat your password"
+                           placeholder={t('Repeat your password')}
                            type="password"
                            value={repeatPassword}
                            onChange={onChangeRepeatPasswordHandler}
@@ -72,7 +76,7 @@ function CreatePasswordPage() {
                             style={{"marginTop":"38px","marginBottom":"20px"}}
                             onClick={showScreen.bind(null, ScreenEnum.readyToGo)}
                     >
-                        Continue
+                        {t('Continue')}
                     </button>
                 </div>
             </div>
