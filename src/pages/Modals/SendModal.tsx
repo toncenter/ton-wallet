@@ -55,7 +55,7 @@ function SendModal() {
         }));
     }, [dispatch, amount, address]);
 
-    const sendHandler = useCallback((event) => {
+    const sendHandler = useCallback(() => {
         const amountNano = TonWeb.utils.toNano(amount ? amount : '0');
         if (!TonWeb.Address.isValid(address)) {
             return setHasAdressError(true);
@@ -67,11 +67,11 @@ function SendModal() {
             popup: PopupEnum.sendConfirm, state: {
                 address,
                 amount: amountNano.toString(),
-                comment: event.target.value,
+                comment: comment,
                 fee: '0',
             }
         }));
-    }, [dispatch, amount, address, balance]);
+    }, [dispatch, amount, address, comment, balance]);
 
     const closeHandler = useCallback(() => {
         dispatch(setPopup({popup: PopupEnum.void}));
