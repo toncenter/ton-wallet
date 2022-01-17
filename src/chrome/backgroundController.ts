@@ -186,7 +186,7 @@ if (chrome.runtime && chrome.runtime.onConnect) {
             popupPort.onDisconnect.addListener(() => {
                 popupPort = null;
                 // recreate store to remove subscriptions
-                const state = controller.getStore().getState();
+                const state = Object.assign({}, controller.getStore().getState());
                 controller.setStore(createStore(state));
             });
         }

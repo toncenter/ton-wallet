@@ -15,6 +15,7 @@ import {
 } from './appThunks';
 import { ScreenEnum } from 'enums/screenEnum';
 import { PopupEnum } from 'enums/popupEnum';
+import { DEFAULT_WALLET_VERSION } from 'constants/app';
 
 export interface AppState {
     isPlugin: boolean,
@@ -41,6 +42,7 @@ export interface AppState {
     myMnemonicWords: string[];
     myMnemonicEncryptedWords: string;
     myAddress: string;
+    walletVersion: string;
     isLedger: boolean;
     balance: string;
     isContractInitialized: boolean;
@@ -86,6 +88,7 @@ const initialState = (): AppState => ({
     myMnemonicWords: [],
     myMnemonicEncryptedWords: localStorage.getItem('words') || '',
     myAddress: localStorage.getItem('address') || '',
+    walletVersion: localStorage.getItem('walletVersion') || DEFAULT_WALLET_VERSION,
     balance: '0',
     isContractInitialized: false,
     transactions: [],

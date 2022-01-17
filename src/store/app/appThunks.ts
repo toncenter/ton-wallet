@@ -42,7 +42,7 @@ export const createWalletContract = createAsyncThunk(
     'app/wallet/contract/create',
     withError<void, any, any>(async (empty, thunkAPI) => {
         const state = thunkAPI.getState() as RootState;
-        const walletVersion = localStorage.getItem('walletVersion');
+        const walletVersion = state.app.walletVersion;
         const walletClass = walletVersion ? tonWebService.ton.wallet.all[walletVersion] : tonWebService.ton.wallet.default;
         const walletContract = new walletClass(tonWebService.ton.provider, {
             address: state.app.myAddress,

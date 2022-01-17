@@ -29,6 +29,8 @@ function TransactionModal() {
     const sendHandler = useCallback(() => {
         dispatch(setPopup({popup: PopupEnum.send, state: {
             address: addr,
+            amount: '',
+            comment: '',
         }}));
     }, [dispatch, addr]);
 
