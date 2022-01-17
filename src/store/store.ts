@@ -1,9 +1,9 @@
-import { configureStore, Dispatch, Store } from '@reduxjs/toolkit'
+import { configureStore, Dispatch, Store } from '@reduxjs/toolkit';
 
 import appReducer, { AppState } from './app/appSlice';
 
 interface RootStateInterface {
-    app: AppState,
+    app: AppState;
 }
 
 export function createStore(state?: RootStateInterface): Store<RootStateInterface, any> {
@@ -20,4 +20,4 @@ export function createStore(state?: RootStateInterface): Store<RootStateInterfac
 }
 
 export type RootState = RootStateInterface;
-export type AppDispatch = Dispatch<any>
+export type AppDispatch = Dispatch<any>;

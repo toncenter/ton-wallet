@@ -10,19 +10,17 @@ function Notification() {
         let timeout: ReturnType<typeof setTimeout>;
         if (notification) {
             timeout = setTimeout(() => {
-                dispatch(setNotification(''))
-            }, 2000)
+                dispatch(setNotification(''));
+            }, 2000);
         }
         return () => {
             if (timeout) {
-                clearTimeout(timeout)
+                clearTimeout(timeout);
             }
-        }
-    }, [dispatch, notification])
+        };
+    }, [dispatch, notification]);
 
-    return (
-        notification ? <div id="notify">{notification}</div> : <></>
-    )
+    return notification ? <div id="notify">{notification}</div> : <></>;
 }
 
 export default Notification;

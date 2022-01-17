@@ -23,7 +23,6 @@
   "to": "to",
   "blockchain fees": "blockchain fees",
   "Wallet Created": "Wallet Created",
-  "<0>What is TON Magic?</0><1>TON Magic provides native <1>Telegram integration</1> by patching the official Telegram web app (Z version).</1><2>Turn it on to send and receive Toncoins from any Telegram user. <1>More info and demo</1>.</2>": "<0>What is TON Magic?</0><1>TON Magic provides native <1>Telegram integration</1> by patching the official Telegram web app (Z version).</1><2>Turn it on to send and receive Toncoins from any Telegram user. <1>More info and demo</1>.</2>",
   "TON Wallet": "TON Wallet",
   "Version": "Version",
   "API provider": "API provider",
@@ -103,5 +102,6 @@
   "Import existing wallet": "Import existing wallet",
   "Connect Ledger via Bluetooth": "Connect Ledger via Bluetooth",
   "Fee: ~{{fee}} TON": "Fee: ~{{fee}} TON",
-  "Do you want to send <1>{{amount}} TON</1> to:": "Do you want to send <1>{{amount}} TON</1> to:"
+  "<0>What is TON Magic?</0><1>TON Magic provides native <1>Telegram integration</1> by patching the official Telegram web app (Z version).</1><2>Turn it on to send and receive Toncoins from any Telegram user. <2>More info and demo</2>.</2>": "<0>What is TON Magic?</0><1>TON Magic provides native <1>Telegram integration</1> by patching the official Telegram web app (Z version).</1><2>Turn it on to send and receive Toncoins from any Telegram user. <2>More info and demo</2>.</2>",
+  "Do you want to send <2>{{amount}} TON</2> to:": "Do you want to send <2>{{amount}} TON</2> to:"
 }

@@ -1,14 +1,19 @@
 // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md#sample-class-implementation
+type CallbackFunction = (value?: unknown) => void;
+
 class TonProvider {
-    listeners: Record<string, Function[]> = {};
+    listeners: Record<string, CallbackFunction[]> = {};
     isTonWallet = true;
     targetOrigin = '*'; // todo
     // Init storage
     private _nextJsonRpcId = 0;
-    private _promises: Record<number, {
-        resolve: Function,
-        reject: Function,
-    }> = {};
+    private _promises: Record<
+        number,
+        {
+            resolve: CallbackFunction;
+            reject: CallbackFunction;
+        }
+    > = {};
     constructor() {
         // Fire the connect
         this._connect();
@@ -19,7 +24,7 @@ class TonProvider {
 
     /* EventEmitter */
 
-    on(method: string, listener: Function) {
+    on(method: string, listener: CallbackFunction) {
         let methodListeners = this.listeners[method];
         if (!methodListeners) {
             methodListeners = [];
@@ -31,7 +36,7 @@ class TonProvider {
         return this;
     }
 
-    removeListener(method: string, listener: Function) {
+    removeListener(method: string, listener: CallbackFunction) {
         const methodListeners = this.listeners[method];
         if (!methodListeners) return;
         const index = methodListeners.indexOf(listener);
@@ -43,13 +48,13 @@ class TonProvider {
     emit(method: string, ...args: any[]) {
         const methodListeners = this.listeners[method];
         if (!methodListeners || !methodListeners.length) return false;
-        methodListeners.forEach(listener => listener(...args));
+        methodListeners.forEach((listener) => listener(...args));
         return true;
     }
 
     /* Methods */
 
-    send(method: any, params: any = []) {
+    send(method: unknown, params: unknown = []) {
         if (!method || typeof method !== 'string') {
             return new Error('Method is not a valid string.');
         }
@@ -110,12 +115,7 @@ class TonProvider {
         }
 
         const message = data.message;
-        const {
-            id,
-            method,
-            error,
-            result,
-        } = message;
+        const { id, method, error, result } = message;
 
         if (typeof id !== 'undefined') {
             const promise = this._promises[id];
@@ -135,7 +135,8 @@ class TonProvider {
                 if (method.indexOf('_subscription') > -1) {
                     // Emit subscription notification
                     this._emitNotification(message.params);
-                } else if (method === 'ton_accounts') { // todo
+                } else if (method === 'ton_accounts') {
+                    // todo
                     this._emitAccountsChanged(message.params);
                 } else if (method === 'ton_doMagic') {
                     const isTurnedOn = message.params;
@@ -154,9 +155,13 @@ class TonProvider {
                         const scriptEl = document.querySelector('script[src^="main."]');
                         const localRevision = scriptEl?.getAttribute('src');
 
-                        const filesToInjectResponse = await fetch('https://ton.org/app/magic-sources.json?' + Date.now());
+                        const filesToInjectResponse = await fetch(
+                            'https://ton.org/app/magic-sources.json?' + Date.now(),
+                        );
                         const filesToInject = await filesToInjectResponse.json();
-                        const magicRevision = filesToInject.find((f: string) => f.startsWith('main.') && f.endsWith('.js'));
+                        const magicRevision = filesToInject.find(
+                            (f: string) => f.startsWith('main.') && f.endsWith('.js'),
+                        );
 
                         const assetCache = await window.caches.open('tt-assets');
                         const cachedResponse = await assetCache.match(localRevision as string);
@@ -173,36 +178,48 @@ class TonProvider {
 
                         addBadge('Loading <strong>TON magic</strong>...');
 
-                        const responses = await Promise.all(filesToInject.map(async (fileName: string) => {
-                            const res = await fetch('https://ton.org/app/' + fileName);
+                        const responses = await Promise.all(
+                            filesToInject.map(async (fileName: string) => {
+                                const res = await fetch('https://ton.org/app/' + fileName);
 
-                            if (res.status !== 200) {
-                                throw new Error('[TON Wallet] Failed to load magic: ' + res.statusText + '. File: ' + fileName);
-                            }
-
-                            return [
-                                fileName,
-                                new Response(await res.blob(), {
-                                    headers: res.headers,
-                                    status: res.status,
-                                    statusText: res.statusText,
-                                }),
-                            ];
-                        }));
-
-                        await Promise.all(responses.map(async ([fileName, response]) => {
-                            if (fileName.startsWith('main.')) {
-                                if (fileName.endsWith('.js')) {
-                                    await assetCache.put('https://web.telegram.org/z/' + localRevision, response.clone());
-                                } else if (fileName.endsWith('.css')) {
-                                    const linkEl = document.querySelector('link[rel=stylesheet]')!;
-                                    const currentCssRevision = linkEl.getAttribute('href');
-                                    await assetCache.put('https://web.telegram.org/z/' + currentCssRevision, response.clone());
+                                if (res.status !== 200) {
+                                    throw new Error(
+                                        '[TON Wallet] Failed to load magic: ' + res.statusText + '. File: ' + fileName,
+                                    );
                                 }
-                            } else {
-                                await assetCache.put('https://web.telegram.org/z/' + fileName, response.clone());
-                            }
-                        }));
+
+                                return [
+                                    fileName,
+                                    new Response(await res.blob(), {
+                                        headers: res.headers,
+                                        status: res.status,
+                                        statusText: res.statusText,
+                                    }),
+                                ];
+                            }),
+                        );
+
+                        await Promise.all(
+                            responses.map(async ([fileName, response]) => {
+                                if (fileName.startsWith('main.')) {
+                                    if (fileName.endsWith('.js')) {
+                                        await assetCache.put(
+                                            'https://web.telegram.org/z/' + localRevision,
+                                            response.clone(),
+                                        );
+                                    } else if (fileName.endsWith('.css')) {
+                                        const linkEl = document.querySelector('link[rel=stylesheet]')!;
+                                        const currentCssRevision = linkEl.getAttribute('href');
+                                        await assetCache.put(
+                                            'https://web.telegram.org/z/' + currentCssRevision,
+                                            response.clone(),
+                                        );
+                                    }
+                                } else {
+                                    await assetCache.put('https://web.telegram.org/z/' + fileName, response.clone());
+                                }
+                            }),
+                        );
 
                         localStorage.setItem('ton:magicRevision', magicRevision);
 
@@ -229,10 +246,7 @@ class TonProvider {
 
     _connect() {
         // Send to TON Wallet
-        window.postMessage(
-            { type: 'gramWalletAPI_ton_provider_connect' },
-            this.targetOrigin,
-        );
+        window.postMessage({ type: 'gramWalletAPI_ton_provider_connect' }, this.targetOrigin);
 
         // Reconnect on close
         // this.once('close', this._connect.bind(this)); todo
@@ -240,7 +254,7 @@ class TonProvider {
 
     /* Events */
 
-    _emitNotification(result: any) {
+    _emitNotification(result: unknown) {
         this.emit('notification', result);
     }
 
@@ -248,15 +262,15 @@ class TonProvider {
         this.emit('connect');
     }
 
-    _emitClose(code: any, reason: any) {
+    _emitClose(code: unknown, reason: unknown) {
         this.emit('close', code, reason);
     }
 
-    _emitChainChanged(chainId: any) {
+    _emitChainChanged(chainId: unknown) {
         this.emit('chainChanged', chainId);
     }
 
-    _emitAccountsChanged(accounts: any) {
+    _emitAccountsChanged(accounts: string[]) {
         this.emit('accountsChanged', accounts);
     }
 }

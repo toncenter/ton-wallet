@@ -19,19 +19,24 @@ function TransactionModal() {
     }, [tx]);
 
     const addr = useMemo(() => {
-        return  isReceive ? tx.from_addr : tx.to_addr;
+        return isReceive ? tx.from_addr : tx.to_addr;
     }, [tx, isReceive]);
 
     const closeHandler = useCallback(() => {
-        dispatch(setPopup({popup: PopupEnum.void}));
+        dispatch(setPopup({ popup: PopupEnum.void }));
     }, [dispatch]);
 
     const sendHandler = useCallback(() => {
-        dispatch(setPopup({popup: PopupEnum.send, state: {
-            address: addr,
-            amount: '',
-            comment: '',
-        }}));
+        dispatch(
+            setPopup({
+                popup: PopupEnum.send,
+                state: {
+                    address: addr,
+                    amount: '',
+                    comment: '',
+                },
+            }),
+        );
     }, [dispatch, addr]);
 
     return (
@@ -40,22 +45,22 @@ function TransactionModal() {
                 <div className="popup-title">{t('Transaction')}</div>
 
                 <div id="transactionAmount">
-                    {
-                        isReceive ?
-                            '+' + TonWeb.utils.fromNano(tx.amount) + ' 💎' :
-                            TonWeb.utils.fromNano(tx.amount) + ' 💎'
-                    }
+                    {isReceive
+                        ? '+' + TonWeb.utils.fromNano(tx.amount) + ' 💎'
+                        : TonWeb.utils.fromNano(tx.amount) + ' 💎'}
                 </div>
-                <div id="transactionFee">{TonWeb.utils.fromNano(tx.otherFee)} {t('transaction fee')}</div>
-                <div id="transactionStorageFee">{TonWeb.utils.fromNano(tx.storageFee)} {t('storage fee')}</div>
-
-                <div id="transactionSenderLabel" className="input-label" style={{'marginTop': '20px'}}>
-                    {
-                        isReceive ? t('Sender') : t('Recipient')
-                    }
+                <div id="transactionFee">
+                    {TonWeb.utils.fromNano(tx.otherFee)} {t('transaction fee')}
+                </div>
+                <div id="transactionStorageFee">
+                    {TonWeb.utils.fromNano(tx.storageFee)} {t('storage fee')}
                 </div>
 
-                <TonAddress id="transactionSender" address={addr}/>
+                <div id="transactionSenderLabel" className="input-label" style={{ marginTop: '20px' }}>
+                    {isReceive ? t('Sender') : t('Recipient')}
+                </div>
+
+                <TonAddress id="transactionSender" address={addr} />
 
                 <div className="input-label">{t('Date')}</div>
 
@@ -63,32 +68,31 @@ function TransactionModal() {
                     {formatDateFull(tx.date)}
                 </div>
 
-                {
-                    !!tx.comment &&
-                  <>
-                    <div id="transactionCommentLabel" className="input-label">{t('Comment')}</div>
+                {!!tx.comment && (
+                    <>
+                        <div id="transactionCommentLabel" className="input-label">
+                            {t('Comment')}
+                        </div>
 
-                    <div id="transactionComment" className="popup-black-text">
-                        {tx.comment}
-                    </div>
-                  </>
-                }
+                        <div id="transactionComment" className="popup-black-text">
+                            {tx.comment}
+                        </div>
+                    </>
+                )}
 
-                <button id="transaction_sendBtn"
-                        className="btn-blue"
-                        style={{'marginTop': '20px'}}
-                        onClick={sendHandler}
+                <button
+                    id="transaction_sendBtn"
+                    className="btn-blue"
+                    style={{ marginTop: '20px' }}
+                    onClick={sendHandler}
                 >
                     {t('Send TON to this address')}
                 </button>
 
-                <button id="transaction_closeBtn"
-                        className="popup-close-btn"
-                        onClick={closeHandler}
-                />
+                <button id="transaction_closeBtn" className="popup-close-btn" onClick={closeHandler} />
             </div>
         </Modal>
-    )
+    );
 }
 
 export default TransactionModal;

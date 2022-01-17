@@ -13,29 +13,28 @@ function DoneModal() {
     const { message } = useAppSelector(selectPopupState);
 
     const closeHandler = useCallback(() => {
-        dispatch(setPopup({
-            popup: PopupEnum.void,
-        }));
+        dispatch(
+            setPopup({
+                popup: PopupEnum.void,
+            }),
+        );
     }, [dispatch]);
 
     return (
         <Modal>
-            <div id="done" className="popup" style={{"textAlign": "center", "paddingBottom": "10px"}}>
+            <div id="done" className="popup" style={{ textAlign: 'center', paddingBottom: '10px' }}>
                 <TgsPlayer name="done" src="assets/lottie/done.tgs" width={150} height={150} />
                 <div className="popup-title">{t('Done!')}</div>
                 <div className="popup-grey-text">{message}</div>
 
                 <div className="popup-footer">
-                    <button id="done_closeBtn"
-                            className="btn-lite"
-                            onClick={closeHandler}
-                    >
+                    <button id="done_closeBtn" className="btn-lite" onClick={closeHandler}>
                         {t('CLOSE')}
                     </button>
                 </div>
             </div>
         </Modal>
-    )
+    );
 }
 
 export default DoneModal;

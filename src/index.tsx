@@ -1,8 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
-import i18n from "i18next";
-import { initReactI18next } from "react-i18next";
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
 import { Store } from '@reduxjs/toolkit';
 
 import './styles/index.scss';
@@ -16,23 +16,21 @@ const isPlugin = chrome.runtime && chrome.runtime.onConnect;
 // the translations
 const resources = {
     en: {
-        translation: translationEN
-    }
+        translation: translationEN,
+    },
 };
 
-i18n
-    .use(initReactI18next)
-    .init({
-        resources,
-        lng: "en",
-        fallbackLng: "en",
-        react: {
-            useSuspense: false
-        },
-        interpolation: {
-            escapeValue: false // react already safes from xss => https://www.i18next.com/translation-function/interpolation#unescape
-        }
-    });
+i18n.use(initReactI18next).init({
+    resources,
+    lng: 'en',
+    fallbackLng: 'en',
+    react: {
+        useSuspense: false,
+    },
+    interpolation: {
+        escapeValue: false, // react already safes from xss => https://www.i18next.com/translation-function/interpolation#unescape
+    },
+});
 
 function render(store: Store) {
     ReactDOM.render(
@@ -41,7 +39,7 @@ function render(store: Store) {
                 <App />
             </Provider>
         </React.StrictMode>,
-        document.getElementById('root')
+        document.getElementById('root'),
     );
 }
 
@@ -50,7 +48,7 @@ if (isPlugin) {
     // Get redux store from background controller
     const backgroundWindow = chrome.extension.getBackgroundPage();
     const store = (backgroundWindow as any).controller.getStore();
-    const port = chrome.runtime.connect({name: 'gramWalletPopup'});
+    const port = chrome.runtime.connect({ name: 'gramWalletPopup' });
     render(store);
 } else {
     render(createStore());

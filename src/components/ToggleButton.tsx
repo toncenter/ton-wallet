@@ -1,19 +1,16 @@
 import React, { useCallback } from 'react';
 
 interface ToggleButtonProps {
-    value: boolean,
-    onChange: Function,
+    value: boolean;
+    onChange: (value: boolean) => void;
 }
 
-function ToggleButton({value, onChange}: ToggleButtonProps) {
-
+function ToggleButton({ value, onChange }: ToggleButtonProps) {
     const clickHandler = useCallback(() => {
         onChange(!value);
-    }, [value, onChange])
+    }, [value, onChange]);
 
-    return (
-        <div className={`dropdown-toggle ${value ? 'toggle-on' : ''}`} onClick={clickHandler}/>
-    )
+    return <div className={`dropdown-toggle ${value ? 'toggle-on' : ''}`} onClick={clickHandler} />;
 }
 
 export default ToggleButton;

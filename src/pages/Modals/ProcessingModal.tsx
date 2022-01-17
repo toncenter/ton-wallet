@@ -12,29 +12,30 @@ function ProcessingModal() {
     const { t } = useTranslation();
 
     const closeHandler = useCallback(() => {
-        dispatch(setPopup({
-            popup: PopupEnum.void,
-        }));
+        dispatch(
+            setPopup({
+                popup: PopupEnum.void,
+            }),
+        );
     }, [dispatch]);
 
     return (
         <Modal>
-            <div id="processing" className="popup" style={{"textAlign": "center"}}>
+            <div id="processing" className="popup" style={{ textAlign: 'center' }}>
                 <TgsPlayer name="processing" src="assets/lottie/money.tgs" width={150} height={150} />
                 <div className="popup-title">{t('Sending TON')}</div>
                 <div className="popup-grey-text">
                     <Trans>
-                        Please wait a few seconds for your<br/>transaction to be processed..
+                        Please wait a few seconds for your
+                        <br />
+                        transaction to be processed..
                     </Trans>
                 </div>
 
-                <button id="processing_closeBtn"
-                        className="popup-close-btn"
-                        onClick={closeHandler}
-                />
+                <button id="processing_closeBtn" className="popup-close-btn" onClick={closeHandler} />
             </div>
         </Modal>
-    )
+    );
 }
 
 export default ProcessingModal;

@@ -7,18 +7,18 @@ import { PopupEnum } from 'enums/popupEnum';
 
 interface ModalProps {
     children: ReactNode;
-    onClose?: Function;
+    onClose?: () => void;
 }
 
 function Modal({ children, onClose }: ModalProps) {
     const dispatch = useAppDispatch();
 
     const el = useMemo(() => {
-        const element = document.createElement("div");
+        const element = document.createElement('div');
         element.setAttribute('id', 'modal');
         element.addEventListener('mousedown', (event) => {
-            if(event.target === event.currentTarget) {
-                dispatch(setPopup({popup: PopupEnum.void}));
+            if (event.target === event.currentTarget) {
+                dispatch(setPopup({ popup: PopupEnum.void }));
                 onClose && onClose();
             }
         });
@@ -33,9 +33,7 @@ function Modal({ children, onClose }: ModalProps) {
         };
     }, [el]);
 
-    return ReactDOM.createPortal((
-        <>{children}</>
-    ), el);
+    return ReactDOM.createPortal(<>{children}</>, el);
 }
 
 export default Modal;

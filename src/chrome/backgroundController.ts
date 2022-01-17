@@ -39,13 +39,16 @@ class BackgroundController {
 
     subscribe() {
         return this.store.subscribe(() => {
-            let prevState = this.currentState;
+            const prevState = this.currentState;
             this.currentState = this.store.getState();
             if (prevState.app.myAddress !== this.currentState.app.myAddress) {
-                this.sendToDapp('ton_accounts', this.currentState.app.myAddress ? [this.currentState.app.myAddress] : []);
+                this.sendToDapp(
+                    'ton_accounts',
+                    this.currentState.app.myAddress ? [this.currentState.app.myAddress] : [],
+                );
             }
             if (prevState.app.isMagic !== this.currentState.app.isMagic) {
-                this.sendToDapp("ton_doMagic", this.currentState.app.isMagic);
+                this.sendToDapp('ton_doMagic', this.currentState.app.isMagic);
             }
             if (prevState.app.isProxy !== this.currentState.app.isProxy) {
                 //this.sendToDapp("ton_doProxy", this.currentState.app.isProxy);
@@ -56,7 +59,7 @@ class BackgroundController {
     public initDapp() {
         const myAddress = this.currentState.app.myAddress;
         this.sendToDapp('ton_accounts', myAddress ? [myAddress] : []);
-        this.sendToDapp("ton_doMagic", this.currentState.app.isMagic);
+        this.sendToDapp('ton_doMagic', this.currentState.app.isMagic);
         //this.sendToDapp("ton_doProxy", this.currentState.app.isProxy);
     }
 
@@ -66,10 +69,10 @@ class BackgroundController {
         switch (method) {
             case 'ton_requestAccounts':
                 const myAddress = this.currentState.app.myAddress;
-                return (myAddress ? [myAddress] : []);
+                return myAddress ? [myAddress] : [];
             case 'ton_getBalance':
                 const balance = this.currentState.app.balance;
-                return (balance ? balance : '');
+                return balance ? balance : '';
             case 'ton_sendTransaction':
                 const param = params[0];
                 await this.showExtensionPopup();
@@ -80,14 +83,16 @@ class BackgroundController {
                 } else if (param.dataType === 'boc') {
                     param.data = TonWeb.boc.Cell.fromBoc(TonWeb.utils.base64ToBytes(param.data))[0];
                 }
-                this.store.dispatch(setPopup({
-                    popup: PopupEnum.sendConfirm,
-                    state: {
-                        amount: param.value,
-                        address: param.to,
-                        comment: param.data,
-                    }
-                }));
+                this.store.dispatch(
+                    setPopup({
+                        popup: PopupEnum.sendConfirm,
+                        state: {
+                            amount: param.value,
+                            address: param.to,
+                            comment: param.data,
+                        },
+                    }),
+                );
                 return true;
             case 'ton_rawSign':
                 const signParam = params[0];
@@ -101,10 +106,12 @@ class BackgroundController {
 
     private sendToDapp(method: string, params: any) {
         if (contentScriptPort) {
-            contentScriptPort.postMessage(JSON.stringify({
-                type: 'gramWalletAPI',
-                message: {jsonrpc: '2.0', method: method, params: params}
-            }));
+            contentScriptPort.postMessage(
+                JSON.stringify({
+                    type: 'gramWalletAPI',
+                    message: { jsonrpc: '2.0', method: method, params: params },
+                }),
+            );
         }
     }
 
@@ -119,32 +126,37 @@ class BackgroundController {
                 }
                 return resolve(true);
             }
-            chrome.windows.create({
-                url: 'index.html',
-                type: 'popup',
-                width: 415,
-                height: 630,
-                top: 0,
-                left: window.screen.width - 415,
-            }, (window) => {
-                this.lastPopup = window
-                resolve(true);
-            });
+            chrome.windows.create(
+                {
+                    url: 'index.html',
+                    type: 'popup',
+                    width: 415,
+                    height: 630,
+                    top: 0,
+                    left: window.screen.width - 415,
+                },
+                (window) => {
+                    this.lastPopup = window;
+                    resolve(true);
+                },
+            );
         });
     }
 
-    private handleRawSign(signParam: {data: string}) {
+    private handleRawSign(signParam: { data: string }) {
         return new Promise((resolve, reject) => {
             if (selectIsLedger(this.store.getState())) {
                 alert('sign not supported by Ledger');
                 return reject();
             }
-            this.store.dispatch(setPopup({
-                popup: PopupEnum.signConfirm,
-                state: {
-                    hexToSign: signParam.data,
-                }
-            }));
+            this.store.dispatch(
+                setPopup({
+                    popup: PopupEnum.signConfirm,
+                    state: {
+                        hexToSign: signParam.data,
+                    },
+                }),
+            );
             let currentSignature = selectPopupState(this.store.getState()).signature;
             const unsub = this.store.subscribe(() => {
                 const prevSignature = currentSignature;
@@ -154,33 +166,35 @@ class BackgroundController {
                     if (currentSignature.successed) {
                         return resolve(currentSignature.value);
                     }
-                    return reject()
+                    return reject();
                 }
             });
-        })
+        });
     }
 }
 
-const controller = (window as any).controller = new BackgroundController(createStore());
+const controller = ((window as any).controller = new BackgroundController(createStore()));
 
 if (chrome.runtime && chrome.runtime.onConnect) {
-    chrome.runtime.onConnect.addListener(port => {
+    chrome.runtime.onConnect.addListener((port) => {
         if (port.name === 'gramWalletContentScript') {
             contentScriptPort = port;
-            contentScriptPort.onMessage.addListener(async msg => {
+            contentScriptPort.onMessage.addListener(async (msg) => {
                 if (!msg.message) return;
                 const result = await controller.onDappMessage(msg.message.method, msg.message.params);
                 if (contentScriptPort) {
-                    contentScriptPort.postMessage(JSON.stringify({
-                        type: 'gramWalletAPI',
-                        message: {jsonrpc: '2.0', id: msg.message.id, method: msg.message.method, result}
-                    }));
+                    contentScriptPort.postMessage(
+                        JSON.stringify({
+                            type: 'gramWalletAPI',
+                            message: { jsonrpc: '2.0', id: msg.message.id, method: msg.message.method, result },
+                        }),
+                    );
                 }
             });
             contentScriptPort.onDisconnect.addListener(() => {
                 contentScriptPort = null;
             });
-            controller.initDapp()
+            controller.initDapp();
         } else if (port.name === 'gramWalletPopup') {
             popupPort = port;
             popupPort.onDisconnect.addListener(() => {

@@ -5,5 +5,5 @@ export enum ScreenEnum {
     createPassword = 'createPassword',
     readyToGo = 'readyToGo',
     import = 'import',
-    main = 'main'
+    main = 'main',
 }

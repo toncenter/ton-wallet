@@ -29,8 +29,11 @@ body.plugin {
     -moz-user-select: none;
 }
 
-a, a:focus, a:active, a:after {
-    color: #3CA4DB;
+a,
+a:focus,
+a:active,
+a:after {
+    color: #3ca4db;
 }
 
 input {
@@ -51,18 +54,20 @@ input {
 }
 
 input:focus {
-    border-bottom: 1px solid #3CA4DB;
+    border-bottom: 1px solid #3ca4db;
 }
 
 input.error {
-    border-bottom: 1px solid #D74D4D;
+    border-bottom: 1px solid #d74d4d;
 }
 
-::-webkit-input-placeholder { /* Edge */
+::-webkit-input-placeholder {
+    /* Edge */
     color: #999999;
 }
 
-:-ms-input-placeholder { /* Internet Explorer 10-11 */
+:-ms-input-placeholder {
+    /* Internet Explorer 10-11 */
     color: #999999;
 }
 
@@ -72,7 +77,7 @@ input.error {
 
 .input-label {
     font-weight: bold;
-    color: #3CA4DB;
+    color: #3ca4db;
 }
 
 button {
@@ -82,7 +87,7 @@ button {
 
 .btn-blue {
     border: none;
-    background: #3CA4DB;
+    background: #3ca4db;
     color: white;
     border-radius: 2px;
     height: 39px;
@@ -92,7 +97,7 @@ button {
 
 .btn-lite {
     border: none;
-    color: #3CA4DB;
+    color: #3ca4db;
     height: 40px;
     font-size: 15px;
     font-weight: bold;
@@ -100,7 +105,7 @@ button {
 }
 
 .btn-lite-red {
-    color: #D74D4D;
+    color: #d74d4d;
 }
 
 .btn-round {
@@ -113,11 +118,12 @@ button {
     background-repeat: no-repeat;
     background-size: 50%;
     background-color: transparent;
-    opacity: .5;
+    opacity: 0.5;
 }
 
-.btn-round:hover, .btn-round:active {
-    background-color: #2E2F31;
+.btn-round:hover,
+.btn-round:active {
+    background-color: #2e2f31;
 }
 
 .screen {
@@ -170,7 +176,7 @@ button {
     line-height: 19px;
     color: #999;
     margin-top: 8px;
-    margin-bottom: 20px
+    margin-bottom: 20px;
 }
 
 .screen-btn {
@@ -228,7 +234,7 @@ button {
     -webkit-overflow-scrolling: touch;
     text-align: left;
 
-    border: 1px solid #DCDCDC;
+    border: 1px solid #dcdcdc;
 }
 
 .words-popup-item {
@@ -308,23 +314,23 @@ button {
     align-items: center;
     justify-content: center;
     padding: 10px;
-    margin-bottom: 44px
+    margin-bottom: 44px;
 }
 
 #updateLabel {
     flex-grow: 1;
-    font-size: 14px
+    font-size: 14px;
 }
 
 #balance {
     font-size: 32px;
-    margin-bottom: 6px
+    margin-bottom: 6px;
 }
 
 .your-balance {
     font-size: 14px;
     margin-bottom: 49px;
-    color: #eee
+    color: #eee;
 }
 
 #main .btn-blue {
@@ -413,7 +419,7 @@ button {
 }
 
 .dropdown-toggle.toggle-on {
-    background-color: #3CA4DB;
+    background-color: #3ca4db;
 }
 
 .toggle-on.dropdown-toggle:after {
@@ -452,7 +458,7 @@ button {
     position: relative;
     padding-bottom: 10px;
     margin-bottom: 10px;
-    border-bottom: 1px solid #E7E7E7;
+    border-bottom: 1px solid #e7e7e7;
     cursor: pointer;
     width: 100%;
     max-width: 480px;
@@ -463,11 +469,11 @@ button {
 .tx-amount {
     font-weight: bold;
     font-size: 16px;
-    color: #D74D4D;
+    color: #d74d4d;
 }
 
 .tx-amount-green {
-    color: #39B139;
+    color: #39b139;
 }
 
 .tx-from {
@@ -560,7 +566,7 @@ button {
     line-height: 18px;
     color: #999999;
     font-size: 14px;
-    margin-bottom: 20px
+    margin-bottom: 20px;
 }
 
 .popup-close-btn {
@@ -574,7 +580,7 @@ button {
     background-size: 40%;
     border: none;
     background-color: transparent;
-    background-image: url("../../public/assets/close.svg");
+    background-image: url('../../public/assets/close.svg');
 }
 
 .popup-footer {
@@ -591,7 +597,7 @@ button {
     width: 150px;
     height: 150px;
     margin-left: auto;
-    margin-right: auto
+    margin-right: auto;
 }
 
 .popup input {
@@ -606,18 +612,21 @@ button {
     text-align: center;
     margin: 20px 0px 20px 0px;
     canvas {
-      display: none;
+        display: none;
     }
 }
 
-#qr, #invoiceQrImg {
+#qr,
+#invoiceQrImg {
     width: 185px;
     height: 185px;
     margin-left: auto;
     margin-right: auto;
 }
 
-#qr img, #invoiceQrImg img, #invoiceQrImg canvas {
+#qr img,
+#invoiceQrImg img,
+#invoiceQrImg canvas {
     width: 185px;
     height: 185px;
 }
@@ -660,8 +669,8 @@ button {
     font-size: 14px;
 }
 
-
-#sendConfirm .addr, #signConfirm .addr {
+#sendConfirm .addr,
+#signConfirm .addr {
     font-family: monospace;
     text-align: center;
     font-size: 18px;
@@ -669,7 +678,7 @@ button {
     margin-bottom: 10px;
     max-width: 280px;
     padding: 10px;
-    background-color: #F1F1F1;
+    background-color: #f1f1f1;
 }
 
 /* INVOICE POPUP */
@@ -721,7 +730,8 @@ button {
     margin-bottom: 8px;
 }
 
-#transactionFee, #transactionStorageFee {
+#transactionFee,
+#transactionStorageFee {
     color: #999;
     text-align: center;
 }
@@ -768,13 +778,13 @@ button {
 }
 
 .plugin #start_importLedgerBleBtn {
-  display: none;
+    display: none;
 }
 
 #start_importLedgerBleBtn {
-  display: none;
+    display: none;
 }
 
 #main {
-  display: flex;
+    display: flex;
 }

@@ -1,6 +1,6 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit'
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-import type { RootState } from 'store/store'
+import type { AppDispatch, RootState } from 'store/store';
 import {
     connectLedger,
     createWallet,
@@ -11,14 +11,14 @@ import {
     savePrivateKey,
     saveWords,
     updateWallet,
-    walletSend
+    walletSend,
 } from './appThunks';
 import { ScreenEnum } from 'enums/screenEnum';
 import { PopupEnum } from 'enums/popupEnum';
 import { DEFAULT_WALLET_VERSION } from 'constants/app';
 
 export interface AppState {
-    isPlugin: boolean,
+    isPlugin: boolean;
     screen: ScreenEnum;
     popup: PopupEnum;
     popupState: {
@@ -27,7 +27,7 @@ export interface AppState {
         amount: string;
         comment: string;
         invoiceLink: string;
-        onSuccess: Function;
+        onSuccess: (dispatch?: AppDispatch, params?: unknown) => void;
         myMnemonicWords: string[];
         fee: string;
         message: string;
@@ -35,8 +35,8 @@ export interface AppState {
         signature: {
             value: string;
             successed: boolean;
-        },
-    },
+        };
+    };
     notification: string;
     isTestnet: boolean;
     myMnemonicWords: string[];
@@ -53,8 +53,8 @@ export interface AppState {
     isMagic: boolean;
     isProxy: boolean;
     publicKeyHex: string;
-    transportType: 'hid' | 'ble',
-    isUpdating: boolean,
+    transportType: 'hid' | 'ble';
+    isUpdating: boolean;
 }
 
 const initialState = (): AppState => ({
@@ -68,8 +68,7 @@ const initialState = (): AppState => ({
         amount: '',
         comment: '',
         invoiceLink: '',
-        onSuccess: () => {
-        },
+        onSuccess: () => ({}),
         myMnemonicWords: [],
         fee: '',
         message: '',
@@ -99,7 +98,7 @@ const initialState = (): AppState => ({
     isLedger: localStorage.getItem('isLedger') === 'true',
     publicKeyHex: localStorage.getItem('publicKey') || '',
     transportType: 'hid',
-})
+});
 
 export const appSlice = createSlice({
     name: 'app',
@@ -108,7 +107,7 @@ export const appSlice = createSlice({
         setScreen: (state, action: PayloadAction<ScreenEnum>) => {
             state.screen = action.payload;
         },
-        setPopup: (state, action: PayloadAction<{ popup: PopupEnum, state?: any }>) => {
+        setPopup: (state, action: PayloadAction<{ popup: PopupEnum; state?: any }>) => {
             state.popup = action.payload.popup;
             if (!action.payload.state) {
                 return state;
@@ -146,7 +145,7 @@ export const appSlice = createSlice({
                 return state;
             }
             if (state.popup === PopupEnum.enterPassword) {
-                state.popupState.onSuccess = action.payload.state.onSuccess || (() => {});
+                state.popupState.onSuccess = action.payload.state.onSuccess || (() => ({}));
                 return state;
             }
             if (state.popup === PopupEnum.done) {
@@ -158,7 +157,7 @@ export const appSlice = createSlice({
                 return state;
             }
             if (state.popup === PopupEnum.void && action.payload.state) {
-                state.popupState = {...state.popupState, ...action.payload.state};
+                state.popupState = { ...state.popupState, ...action.payload.state };
             }
         },
         setNotification: (state, action: PayloadAction<string>) => {
@@ -175,7 +174,7 @@ export const appSlice = createSlice({
         disconnect: () => {
             localStorage.clear();
             return initialState();
-        }
+        },
     },
     extraReducers: (builder) => {
         builder.addCase(createWallet.fulfilled, (state, action) => {
@@ -195,7 +194,7 @@ export const appSlice = createSlice({
             localStorage.setItem('words', action.payload.encryptedWords);
             state.myMnemonicEncryptedWords = action.payload.encryptedWords;
         });
-        builder.addCase(updateWallet.pending, (state, action) => {
+        builder.addCase(updateWallet.pending, (state) => {
             state.isUpdating = true;
         });
         builder.addCase(updateWallet.fulfilled, (state, action) => {
@@ -203,7 +202,7 @@ export const appSlice = createSlice({
             state.isContractInitialized = action.payload.isContractInitialized;
             state.isUpdating = false;
         });
-        builder.addCase(updateWallet.rejected, (state, action) => {
+        builder.addCase(updateWallet.rejected, (state) => {
             state.isUpdating = false;
         });
         builder.addCase(getWalletTransactions.fulfilled, (state, action) => {
@@ -232,13 +231,13 @@ export const appSlice = createSlice({
             state.popupState.signature = {
                 value: action.payload.signature,
                 successed: true,
-            }
+            };
         });
         builder.addCase(rawSign.rejected, (state) => {
             state.popupState.signature = {
                 value: '',
                 successed: false,
-            }
+            };
         });
         builder.addCase(connectLedger.fulfilled, (state, action) => {
             state.ledgerApp = action.payload.ledgerApp;
@@ -254,16 +253,9 @@ export const appSlice = createSlice({
             localStorage.setItem('publicKey', state.publicKeyHex);
         });
     },
-})
+});
 
-export const {
-    setScreen,
-    setPopup,
-    setNotification,
-    disconnect,
-    setMagic,
-    setProxy,
-} = appSlice.actions
+export const { setScreen, setPopup, setNotification, disconnect, setMagic, setProxy } = appSlice.actions;
 
 export const selectScreen = (state: RootState) => state.app.screen;
 export const selectPopup = (state: RootState) => state.app.popup;

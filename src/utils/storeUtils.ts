@@ -2,10 +2,12 @@ import { AsyncThunkPayloadCreator } from '@reduxjs/toolkit';
 
 interface GenericSuccessArgs<T> {
     payload: T;
-    onSuccess?: Function;
+    onSuccess?: () => void;
 }
 
-export function withError<Args, Returned, ThunkApiConfig>(payloadCreator: AsyncThunkPayloadCreator<Returned, Args, ThunkApiConfig>) {
+export function withError<Args, Returned, ThunkApiConfig>(
+    payloadCreator: AsyncThunkPayloadCreator<Returned, Args, ThunkApiConfig>,
+) {
     return async (args: GenericSuccessArgs<Args> = { payload: null as any }, thunkAPI: any) => {
         try {
             const result = await payloadCreator(args.payload, thunkAPI);

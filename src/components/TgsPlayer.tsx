@@ -8,10 +8,10 @@ interface TgsPlayerProps {
     width: number;
     height: number;
     className?: string;
-    style?: Record<string, string>
+    style?: Record<string, string>;
 }
 
-function TgsPlayer({name, src, width, height, className, style}: TgsPlayerProps) {
+function TgsPlayer({ name, src, width, height, className, style }: TgsPlayerProps) {
     const ref = useRef<HTMLDivElement>(null);
 
     useLayoutEffect(() => {
@@ -39,7 +39,7 @@ function TgsPlayer({name, src, width, height, className, style}: TgsPlayerProps)
                         rendererSettings: {
                             context: ctx,
                             scaleMode: 'noScale',
-                            clearCanvas: true
+                            clearCanvas: true,
                         },
                     } as any);
                     ctx?.clearRect(0, 0, 1000, 1000);
@@ -47,7 +47,7 @@ function TgsPlayer({name, src, width, height, className, style}: TgsPlayerProps)
                 }
             }
         };
-        xmlHttp.open("GET", src, true);
+        xmlHttp.open('GET', src, true);
         xmlHttp.send(null);
         return () => {
             if (lottieInstance) {
@@ -56,12 +56,10 @@ function TgsPlayer({name, src, width, height, className, style}: TgsPlayerProps)
             if (element && canvas && canvas.parentNode === element) {
                 element.removeChild(canvas);
             }
-        }
-    }, [width, height, name, src])
+        };
+    }, [width, height, name, src]);
 
-    return (
-        <div className={`tgs-player ${className}`} style={style} ref={ref}/>
-    )
+    return <div className={`tgs-player ${className}`} style={style} ref={ref} />;
 }
 
 export default TgsPlayer;

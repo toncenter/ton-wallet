@@ -11,7 +11,7 @@ import {
     selectMyMnemonicEncryptedWords,
     selectPopup,
     selectScreen,
-    setScreen
+    setScreen,
 } from './store/app/appSlice';
 import { ScreenEnum } from './enums/screenEnum';
 import { PopupEnum } from './enums/popupEnum';
@@ -42,34 +42,34 @@ function App() {
     if (screen === ScreenEnum.main && (!myAddress || !myMnemonicEncryptedWords)) {
         localStorage.clear();
         dispatch(setScreen(ScreenEnum.start));
-        return <></>
+        return <></>;
     }
 
     return (
         <>
             {
                 {
-                    [ScreenEnum.start]: <StartPage/>,
-                    [ScreenEnum.created]: <CreatedPage/>,
-                    [ScreenEnum.backup]: <BackupPage/>,
-                    [ScreenEnum.createPassword]: <CreatePasswordPage/>,
-                    [ScreenEnum.readyToGo]: <ReadyToGoPage/>,
-                    [ScreenEnum.import]: <ImportPage/>,
-                    [ScreenEnum.main]: <MainPage/>,
+                    [ScreenEnum.start]: <StartPage />,
+                    [ScreenEnum.created]: <CreatedPage />,
+                    [ScreenEnum.backup]: <BackupPage />,
+                    [ScreenEnum.createPassword]: <CreatePasswordPage />,
+                    [ScreenEnum.readyToGo]: <ReadyToGoPage />,
+                    [ScreenEnum.import]: <ImportPage />,
+                    [ScreenEnum.main]: <MainPage />,
                 }[screen]
             }
             {
                 {
-                    [PopupEnum.changePassword]: <ChangePasswordModal/>,
-                    [PopupEnum.done]: <DoneModal/>,
-                    [PopupEnum.enterPassword]: <EnterPasswordModal/>,
-                    [PopupEnum.invoice]: <InvoiceModal/>,
-                    [PopupEnum.invoiceQr]: <InvoiceQrModal/>,
-                    [PopupEnum.send]: <SendModal/>,
-                    [PopupEnum.sendConfirm]: <SendConfirmModal/>,
-                    [PopupEnum.signConfirm]: <SignConfirmModal/>,
-                    [PopupEnum.receive]: <ReceiveModal/>,
-                    [PopupEnum.processing]: <ProcessingModal/>,
+                    [PopupEnum.changePassword]: <ChangePasswordModal />,
+                    [PopupEnum.done]: <DoneModal />,
+                    [PopupEnum.enterPassword]: <EnterPasswordModal />,
+                    [PopupEnum.invoice]: <InvoiceModal />,
+                    [PopupEnum.invoiceQr]: <InvoiceQrModal />,
+                    [PopupEnum.send]: <SendModal />,
+                    [PopupEnum.sendConfirm]: <SendConfirmModal />,
+                    [PopupEnum.signConfirm]: <SignConfirmModal />,
+                    [PopupEnum.receive]: <ReceiveModal />,
+                    [PopupEnum.processing]: <ProcessingModal />,
                     [PopupEnum.menuDropdown]: <MenuModal />,
                     [PopupEnum.about]: <AboutModal />,
                     [PopupEnum.delete]: <DeleteWalletModal />,
@@ -80,7 +80,7 @@ function App() {
             }
             <Notification />
         </>
-    )
+    );
 }
 
 export default App;

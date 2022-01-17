@@ -7,14 +7,14 @@ interface TonAddressProps {
     onSelect?: MouseEventHandler;
 }
 
-function TonAddress({address, id, className, onSelect}: TonAddressProps) {
+function TonAddress({ address, id, className, onSelect }: TonAddressProps) {
     return (
         <div id={id} className={`addr ${className}`} onClick={onSelect}>
             {address.substring(0, address.length / 2)}
-            <wbr/>
+            <wbr />
             {address.substring(address.length / 2)}
         </div>
-    )
+    );
 }
 
 export default TonAddress;

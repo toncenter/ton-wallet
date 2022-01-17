@@ -7,8 +7,7 @@ import React from 'react';
 
 const hasChildren = (node: any) => node && (node.children || (node.props && node.props.children));
 
-const getChildren = (node: any) =>
-    node && node.children ? node.children : node.props && node.props.children;
+const getChildren = (node: any) => (node && node.children ? node.children : node.props && node.props.children);
 
 const renderNodes: any = (reactNodes: any) => {
     if (typeof reactNodes === 'string') {
@@ -44,5 +43,5 @@ jest.mock('react-i18next', () => ({
             },
         };
     },
-    Trans: ({ children }: any) => Array.isArray(children) ? renderNodes(children) : renderNodes([children]),
+    Trans: ({ children }: any) => (Array.isArray(children) ? renderNodes(children) : renderNodes([children])),
 }));

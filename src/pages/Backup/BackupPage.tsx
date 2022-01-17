@@ -10,82 +10,88 @@ import { PopupEnum } from 'enums/popupEnum';
 function BackupPage() {
     const dispatch = useAppDispatch();
     const { t } = useTranslation();
-    let myMnemonicWords = useAppSelector(selectMyMnemonicWords);
+    const myMnemonicWords = useAppSelector(selectMyMnemonicWords);
     const popupState = useAppSelector(selectPopupState);
 
     const words = useMemo(() => {
         return myMnemonicWords.length ? myMnemonicWords : popupState.myMnemonicWords;
-    }, [myMnemonicWords, popupState.myMnemonicWords])
+    }, [myMnemonicWords, popupState.myMnemonicWords]);
 
     const navigateTo = useCallback(() => {
         if (popupState.myMnemonicWords.length) {
             dispatch(setScreen(ScreenEnum.main));
-            return dispatch(setPopup({
-                popup: PopupEnum.void,
-                state: {
-                    myMnemonicWords: [],
-                }
-            }))
+            return dispatch(
+                setPopup({
+                    popup: PopupEnum.void,
+                    state: {
+                        myMnemonicWords: [],
+                    },
+                }),
+            );
         }
         return dispatch(setScreen(ScreenEnum.createPassword));
     }, [dispatch, popupState.myMnemonicWords]);
 
     return (
-        <div id="backup"
-             className="screen" style={{'textAlign': 'center'}}>
-            <TgsPlayer name="backup"
-                       src="assets/lottie/paper.tgs"
-                       width={120}
-                       height={120}
-                       className="screen-lottie"
-                       style={{'marginTop': '30px'}}/>
+        <div id="backup" className="screen" style={{ textAlign: 'center' }}>
+            <TgsPlayer
+                name="backup"
+                src="assets/lottie/paper.tgs"
+                width={120}
+                height={120}
+                className="screen-lottie"
+                style={{ marginTop: '30px' }}
+            />
 
             <div className="screen-title">{t('24 secret words')}</div>
 
             <div className="screen-text">
                 <Trans>
-                    Write down these 24 words in the correct<br/>
+                    Write down these 24 words in the correct
+                    <br />
                     order and store them in secret place.
                 </Trans>
             </div>
 
             <div className="screen-text">
                 <Trans>
-                    Use these secret words to restore access to<br/>
-                    your wallet if you lose your password or<br/>
+                    Use these secret words to restore access to
+                    <br />
+                    your wallet if you lose your password or
+                    <br />
                     access to this device.
                 </Trans>
             </div>
 
             <div id="createWords">
-                {
-                    words.slice(0, 12).map((word, index) => {
-                        return (
-                            <>
-                                <div className="create-word-item">
-                                    <span className="word-num">{(index + 1) + '.'}</span>
-                                    <span style={{'fontWeight': 'bold'}}>{word}</span>
-                                </div>
-                                <div className="create-word-item">
-                                    <span className="word-num">{(index + 13) + '.'}</span>
-                                    <span style={{'fontWeight': 'bold'}}>{words[index + 12]}</span>
-                                </div>
-                            </>
-                        )
-                    })
-                }
+                {words.slice(0, 12).map((word, index) => {
+                    return (
+                        <>
+                            <div className="create-word-item">
+                                <span className="word-num">{index + 1 + '.'}</span>
+                                <span style={{ fontWeight: 'bold' }}>{word}</span>
+                            </div>
+                            <div className="create-word-item">
+                                <span className="word-num">{index + 13 + '.'}</span>
+                                <span style={{ fontWeight: 'bold' }}>{words[index + 12]}</span>
+                            </div>
+                        </>
+                    );
+                })}
             </div>
 
-            <div style={{'clear': 'both'}}>
-                <button id="backup_continueBtn" className="btn-blue screen-btn"
-                        style={{'marginTop': '26px', 'marginBottom': '20px'}}
-                        onClick={navigateTo}
+            <div style={{ clear: 'both' }}>
+                <button
+                    id="backup_continueBtn"
+                    className="btn-blue screen-btn"
+                    style={{ marginTop: '26px', marginBottom: '20px' }}
+                    onClick={navigateTo}
                 >
                     {t('Continue')}
                 </button>
             </div>
         </div>
-    )
+    );
 }
 
 export default BackupPage;

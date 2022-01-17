@@ -32,8 +32,11 @@
     "typescript": "^4.1.2"
   },
   "devDependencies": {
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^4.0.0",
     "i18next-scanner": "^3.1.0",
     "i18next-scanner-typescript": "^1.0.6",
+    "prettier": "^2.5.1",
     "source-map-explorer": "^2.5.2"
   },
   "scripts": {
@@ -46,7 +49,9 @@
     "docker:run": "docker run -it --rm -p 1337:80 ton-wallet:prod",
     "docker:run:dev": "docker run -it --rm -v ${PWD}:/app -v /app/node_modules -p 3001:3000 -e CHOKIDAR_USEPOLLING=true ton-wallet:dev",
     "i18n": "i18next-scanner",
-    "analyze": "source-map-explorer 'build/static/js/*.js'"
+    "analyze": "source-map-explorer 'build/static/js/*.js'",
+    "lint": "lint",
+    "prettier": "prettier \"src/**/*\" --write --ignore-unknown"
   },
   "repository": {
     "type": "git",

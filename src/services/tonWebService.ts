@@ -27,7 +27,6 @@ class TonWebService {
     }
 
     public async getTransactions(myAddress: string, limit = 20) {
-
         function getComment(msg: any) {
             if (!msg.msg_data) return '';
             if (msg.msg_data['@type'] !== 'msg.dataText') return '';
@@ -37,21 +36,23 @@ class TonWebService {
 
         const arr = [];
         const transactions = await this.ton.getTransactions(myAddress, limit);
-        for (let t of transactions) {
+        for (const t of transactions) {
             let amount = new TonWeb.utils.BN(t.in_msg.value);
-            for (let outMsg of t.out_msgs) {
+            for (const outMsg of t.out_msgs) {
                 amount = amount.sub(new TonWeb.utils.BN(outMsg.value));
             }
             //amount = amount.sub(new BN(t.fee));
 
-            let from_addr = "";
-            let to_addr = "";
-            let comment = "";
-            if (t.in_msg.source) { // internal message with grams, set source
+            let from_addr = '';
+            let to_addr = '';
+            let comment = '';
+            if (t.in_msg.source) {
+                // internal message with grams, set source
                 from_addr = t.in_msg.source;
                 to_addr = t.in_msg.destination;
                 comment = getComment(t.in_msg);
-            } else if (t.out_msgs.length) { // external message, we sending grams
+            } else if (t.out_msgs.length) {
+                // external message, we sending grams
                 from_addr = t.out_msgs[0].source;
                 to_addr = t.out_msgs[0].destination;
                 comment = getComment(t.out_msgs[0]);
@@ -76,7 +77,13 @@ class TonWebService {
         return arr;
     }
 
-    public async sign(myAddress: string, toAddress: string, amount: string, comment: string, keyPair: SignKeyPair | null) {
+    public async sign(
+        myAddress: string,
+        toAddress: string,
+        amount: string,
+        comment: string,
+        keyPair: SignKeyPair | null,
+    ) {
         const wallet = await this.ton.provider.getWalletInfo(myAddress);
         let seqno = wallet.seqno;
         if (!seqno) seqno = 0;
@@ -88,7 +95,7 @@ class TonWebService {
             amount: amount,
             seqno: seqno,
             payload: comment,
-            sendMode: 3
+            sendMode: 3,
         });
     }
 
@@ -103,7 +110,7 @@ class TonWebService {
                 transport = await TonWeb.ledger.BluetoothTransport.create();
                 break;
             default:
-                throw new Error('unknown transportType' + transportType)
+                throw new Error('unknown transportType' + transportType);
         }
 
         transport.setDebugMode(true);
@@ -111,15 +118,17 @@ class TonWebService {
         const ledgerVersion = (await ledgerApp.getAppConfiguration()).version;
         console.log('ledgerAppConfig=', ledgerVersion);
         if (!ledgerVersion.startsWith('2')) {
-            alert('Please update your Ledger TON-app to v2.0.1 or upper or use old wallet version https://tonwallet.me/prev/')
+            alert(
+                'Please update your Ledger TON-app to v2.0.1 or upper or use old wallet version https://tonwallet.me/prev/',
+            );
             throw new Error('outdated ledger ton-app version');
         }
-        const {publicKey} = await ledgerApp.getPublicKey(ACCOUNT_NUMBER, false); // todo: можно сохранять publicKey и не запрашивать это
+        const { publicKey } = await ledgerApp.getPublicKey(ACCOUNT_NUMBER, false); // todo: можно сохранять publicKey и не запрашивать это
 
         const WalletClass = this.ton.wallet.all[DEFAULT_LEDGER_WALLET_VERSION];
         const wallet = new WalletClass(this.ton.provider, {
             publicKey: publicKey,
-            wc: 0
+            wc: 0,
         });
         const walletContract = wallet;
 
@@ -131,7 +140,7 @@ class TonWebService {
             walletContract,
             myAddress,
             publicKeyHex,
-        }
+        };
     }
 
     public rawSign(hex: string, privateKey: string): string {
@@ -139,7 +148,6 @@ class TonWebService {
         const signature = nacl.sign.detached(TonWeb.utils.hexToBytes(hex), keyPair.secretKey);
         return TonWeb.utils.bytesToHex(signature);
     }
-
 }
 
 export default TonWebService;

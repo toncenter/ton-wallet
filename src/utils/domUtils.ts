@@ -1,7 +1,7 @@
 export function copyToClipboard(text: string) {
-    const textArea = document.createElement("textarea");
+    const textArea = document.createElement('textarea');
     textArea.value = text;
-    textArea.style.position = "fixed";  //avoid scrolling to bottom
+    textArea.style.position = 'fixed'; //avoid scrolling to bottom
     document.body.appendChild(textArea);
     textArea.focus();
     textArea.select();
@@ -10,8 +10,7 @@ export function copyToClipboard(text: string) {
     try {
         const successful = document.execCommand('copy');
         result = successful ? 'successful' : 'unsuccessful';
-    } catch (err) {
-    }
+    } catch (err) {}
 
     document.body.removeChild(textArea);
     return result;

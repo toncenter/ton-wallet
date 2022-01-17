@@ -19,66 +19,69 @@ function SignConfirmModal() {
     }, [hexToSign]);
 
     const signHandler = useCallback(() => {
-        dispatch(setPopup({
-            popup: PopupEnum.enterPassword, state: {
-                onSuccess: (dispatch: AppDispatch, words: string[]) => {
-                    dispatch(setPopup({
-                        popup: PopupEnum.void,
-                    }));
-                    dispatch(rawSign({
-                        payload: {
-                            words,
-                            hexToSign,
-                        }
-                    }))
-                }
-            }
-        }));
+        dispatch(
+            setPopup({
+                popup: PopupEnum.enterPassword,
+                state: {
+                    onSuccess: (dispatch: AppDispatch, words: string[]) => {
+                        dispatch(
+                            setPopup({
+                                popup: PopupEnum.void,
+                            }),
+                        );
+                        dispatch(
+                            rawSign({
+                                payload: {
+                                    words,
+                                    hexToSign,
+                                },
+                            }),
+                        );
+                    },
+                },
+            }),
+        );
     }, [dispatch, hexToSign]);
 
     const closeHandler = useCallback(() => {
-        dispatch(setPopup({popup: PopupEnum.void, state: {
-            signature: {
-                value: '',
-                successed: false,
-            }
-        }}));
+        dispatch(
+            setPopup({
+                popup: PopupEnum.void,
+                state: {
+                    signature: {
+                        value: '',
+                        successed: false,
+                    },
+                },
+            }),
+        );
     }, [dispatch]);
 
     return (
         <Modal>
-            <div id="signConfirm" className="popup" style={{"paddingBottom": "10px"}}>
+            <div id="signConfirm" className="popup" style={{ paddingBottom: '10px' }}>
                 <div className="popup-title">{t('Confirmation')}</div>
                 <div className="popup-black-text">{t('Do you want to sign:')}</div>
 
                 <TonAddress id="signConfirmData" address={signData} />
 
-                <div className="popup-grey-text" style={{"textAlign": "center", "fontWeight": "bold", "color": "#D74D4D"}}>
+                <div className="popup-grey-text" style={{ textAlign: 'center', fontWeight: 'bold', color: '#D74D4D' }}>
                     {t('Signing custom data is very dangerous. Use only if you know what you are doing.')}
                 </div>
 
-                <button id="signConfirm_closeBtn"
-                        className="popup-close-btn"
-                        onClick={closeHandler}
-                />
+                <button id="signConfirm_closeBtn" className="popup-close-btn" onClick={closeHandler} />
 
                 <div className="popup-footer">
-                    <button id="signConfirm_cancelBtn"
-                            className="btn-lite"
-                            onClick={closeHandler}
-                    >
+                    <button id="signConfirm_cancelBtn" className="btn-lite" onClick={closeHandler}>
                         {t('CANCEL')}
                     </button>
-                    <button id="signConfirm_okBtn"
-                            className="btn-lite"
-                            onClick={signHandler}
-                    >
+                    <button id="signConfirm_okBtn" className="btn-lite" onClick={signHandler}>
                         {t('SIGN')}
                     </button>
                 </div>
             </div>
         </Modal>
-    )
+    );
 }
 
 export default SignConfirmModal;
