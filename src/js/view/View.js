@@ -108,6 +108,17 @@ class View {
 
         $("#start_createBtn").addEventListener('click', () => this.sendMessage('showScreen', {name: 'created'}));
         $("#start_importBtn").addEventListener('click', () => this.sendMessage('showScreen', {name: 'import'}));
+
+        let needShowLedger = false;
+        try {
+            needShowLedger = window.location.href.indexOf('ledgerReview') > -1;
+        } catch (e) {
+
+        }
+        if (needShowLedger) {
+            toggle($("#start_importLedgerHidBtn"), 'inline-block');
+        }
+
         $("#start_importLedgerHidBtn").addEventListener('click', () => {
             this.showPopup('connectLedger');
             this.sendMessage('showScreen', {name: 'importLedger', transportType: 'hid'})
