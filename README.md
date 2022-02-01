@@ -34,3 +34,20 @@ https://chrome.google.com/webstore/detail/ton-wallet/nphplpgoakhhjchkkhmiggakijn
 
 `npx webpack --mode=none`
 
+# Code
+
+## About Plain JS
+
+We deliberately use plain js and do not use frameworks in web applications where there is direct access to the user's private keys.
+
+We also try to use the minimum number of dependencies, and consciously include them as static files and not as npm packages.
+
+We understand that this may not be fashionable.
+
+We try to minimize the number of potential vulnerabilities, taking into account the design of npm modules with an infinite number of unknown sub-dependencies and the errors and vulnerabilities that periodically arise because of this.
+
+We will clarify that this level of paranoia is only in relation to the code that has access to private keys. Using frameworks is OK if you are making an dapp that interacts with an extension.
+
+## About 3 isolated areas
+
+The division of the application into 3 isolated areas is due to the requirements of the Chrome Extension architecture.
