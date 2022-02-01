@@ -125,6 +125,10 @@ class View {
         });
         // $("#start_importLedgerBleBtn").addEventListener('click', () => this.sendMessage('showScreen', {name: 'importLedger', transportType: 'ble'}));
 
+        // $('#main_buyBtn').addEventListener('click', () => {
+        //     window.open('https://exchange.mercuryo.io/?currency=TONCOIN&address=' + this.myAddress, '_blank');
+        // });
+
         $('#import_alertBtn').addEventListener('click', () => alert('Too Bad. Without the secret words, you can\'t restore access to your wallet.'));
         $('#import_continueBtn').addEventListener('click', async () => this.sendMessage('import', {words: await this.getImportWords()}));
 

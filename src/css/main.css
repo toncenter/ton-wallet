@@ -331,6 +331,22 @@ button {
     margin-right: 10px;
 }
 
+@media (max-width: 450px) {
+    #main .btn-blue {
+        width: 100px;
+        margin-left: 4px;
+        margin-right: 4px;
+    }
+}
+
+@media (max-width: 320px) {
+    #main .btn-blue {
+        width: 85px;
+        margin-left: 2px;
+        margin-right: 2px;
+    }
+}
+
 .btn-icon {
     display: inline-block;
     width: 10px;

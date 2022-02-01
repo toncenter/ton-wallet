@@ -480,6 +480,9 @@ class Controller {
     }
 
     update(force) {
+        // if (!document.hasFocus()) {
+        //     return;
+        // }
         const needUpdate = (this.processingVisible && this.sendingData) || (this.balance === null) || force;
 
         if (!needUpdate) return;
