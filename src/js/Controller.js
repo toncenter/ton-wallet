@@ -789,11 +789,11 @@ class Controller {
 
     sendToView(method, params, needQueue) {
         if (method === 'showScreen') {
-          this.viewScreen = params;
+            this.viewScreen = params;
         }
-      if (method === 'showPopup') {
-        this.viewPopup = params;
-      }
+        if (method === 'showPopup') {
+            this.viewPopup = params;
+        }
         if (window.view) {
             window.view.onMessage(method, params);
         } else {
