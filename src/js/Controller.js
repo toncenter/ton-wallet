@@ -469,7 +469,7 @@ class Controller {
     }
 
     initView() {
-        if (!this.myAddress || !localStorage.getItem('words')) {
+        if ((!this.myAddress || !localStorage.getItem('words')) && (!this.viewScreen || this.viewScreen.name === 'main')) {
             this.sendToView('showScreen', {name: 'start'})
         } else {
             if (this.viewScreen) {
@@ -875,6 +875,11 @@ class Controller {
                 localStorage.setItem('proxy', params ? 'true' : 'false');
                 this.doProxy(params);
                 break;
+          case 'updatePopup':
+                this.viewPopup = {...this.viewPopup, ...params};
+                break;
+          case 'updateScreen':
+                this.viewScreen = {...this.viewScreen, ...params};
         }
     }
 
