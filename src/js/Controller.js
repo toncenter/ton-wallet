@@ -856,7 +856,6 @@ class Controller {
                 break;
             case 'showMain':
                 this.showMain();
-                this.initMain();
                 break;
             case 'onBackupWalletClick':
                 this.onBackupWalletClick();
