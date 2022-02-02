@@ -189,6 +189,30 @@ button {
     text-align: center;
 }
 
+/* START */
+
+#walletsList {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#walletsList > div {
+    cursor: pointer;
+}
+
+#walletsList > div:hover {
+    background-color: #f0f0f0;
+}
+
+#walletsList:empty + div {
+    margin-top: 95px;
+}
+
+#walletsList:not(:empty) + div {
+    margin-top: 20px;
+}
+
 /* SET PASSWORD */
 
 #createPassword input {
