@@ -118,7 +118,7 @@ class Controller {
             window.view.controller = this;
         }
 
-        const mainnetRpc = 'https://wallet.toncenter.com/api/v2/jsonRPC';
+        const mainnetRpc = 'https://toncenter.com/api/v2/jsonRPC';
         const testnetRpc = 'https://testnet.toncenter.com/api/v2/jsonRPC';
         this.sendToView('setIsTestnet', IS_TESTNET)
 
