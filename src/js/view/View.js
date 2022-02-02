@@ -39,15 +39,21 @@ class View {
         this.balance = null;
         /** @type   {string} */
         this.currentScreenName = null;
+        /** @type   {string} */
+        this.currentPopupName = null;
         /** @type   {boolean} */
         this.isTestnet = false;
 
         this.createImportInputs();
 
         initLotties().then(() => {
-            const lottie = lotties[this.currentScreenName];
-            if (lottie) {
-                toggleLottie(lottie, true);
+            const screenLottie = lotties[this.currentScreenName];
+            const popupLottie = lotties[this.currentPopupName];
+            if (screenLottie) {
+                toggleLottie(screenLottie, true);
+            }
+            if (popupLottie) {
+              toggleLottie(popupLottie, true);
             }
         });
 
@@ -289,7 +295,8 @@ class View {
         window.scrollTo(0, 0);
     }
 
-    showPopup(name) {
+    showPopup(name, params) {
+        this.sendMessage('showPopup', {name, ...params})
         $('#enterPassword_input').value = '';
 
         toggle($('#modal'), name !== '');
@@ -303,6 +310,8 @@ class View {
                 toggleLottie(lottie, name === popup);
             }
         });
+
+        this.currentPopupName = name;
     }
 
     isPopupVisible(name) {
@@ -619,19 +628,10 @@ class View {
     // TRANSACTION POPUP
 
     onTransactionClick(tx) {
-        this.showPopup('transaction');
-        const isReceive = !tx.amount.isNeg();
-        const addr = isReceive ? tx.from_addr : tx.to_addr;
-        this.currentTransactionAddr = addr;
-        const amountFormatted = formatNanograms(tx.amount);
-        $('#transactionAmount').innerText = (isReceive ? '+' + amountFormatted : amountFormatted) + ' 💎';
-        $('#transactionFee').innerText = formatNanograms(tx.otherFee) + ' transaction fee';
-        $('#transactionStorageFee').innerText = formatNanograms(tx.storageFee) + ' storage fee';
-        $('#transactionSenderLabel').innerText = isReceive ? 'Sender' : 'Recipient';
-        setAddr($('#transactionSender'), addr);
-        toggle($('#transactionCommentLabel'), !!tx.comment);
-        $('#transactionComment').innerText = tx.comment;
-        $('#transactionDate').innerText = formatDateFull(tx.date);
+        this.onMessage('showPopup', {
+          name: 'transaction',
+          tx: {...tx, amount: tx.amount.toString(), otherFee: tx.otherFee.toString(), storageFee: tx.storageFee.toString()}
+        });
     }
 
     onTransactionButtonClick() {
@@ -820,7 +820,7 @@ class View {
                 break;
 
             case 'showPopup':
-                this.showPopup(params.name);
+                this.showPopup(params.name, params);
 
                 switch (params.name) {
                     case 'changePassword':
@@ -862,6 +862,22 @@ class View {
                     case 'signConfirm':
                         const hex = params.data.length > 48 ? params.data.substring(0, 47) + '…' : params.data;
                         setAddr($('#signConfirmData'), hex);
+                        break;
+                    case 'transaction':
+                        const tx = params.tx;
+                        const amount = new BN(tx.amount);
+                        const isReceive = !amount.isNeg();
+                        const addr = isReceive ? tx.from_addr : tx.to_addr;
+                        this.currentTransactionAddr = addr;
+                        const amountFormatted = formatNanograms(amount);
+                        $('#transactionAmount').innerText = (isReceive ? '+' + amountFormatted : amountFormatted) + ' 💎';
+                        $('#transactionFee').innerText = formatNanograms(new BN(tx.otherFee)) + ' transaction fee';
+                        $('#transactionStorageFee').innerText = formatNanograms(new BN(tx.storageFee)) + ' storage fee';
+                        $('#transactionSenderLabel').innerText = isReceive ? 'Sender' : 'Recipient';
+                        setAddr($('#transactionSender'), addr);
+                        toggle($('#transactionCommentLabel'), !!tx.comment);
+                        $('#transactionComment').innerText = tx.comment;
+                        $('#transactionDate').innerText = formatDateFull(tx.date);
                         break;
                 }
                 break;
