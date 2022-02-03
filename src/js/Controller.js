@@ -105,6 +105,7 @@ class Controller {
         /** @type {WalletContract} */
         this.walletContract = null;
         this.transactions = [];
+        this.hasMoreTxs = true;
         this.updateIntervalId = 0;
         this.lastTransactionTime = 0;
         this.isContractInitialized = false;
@@ -181,7 +182,11 @@ class Controller {
         return new BN(getWalletResponse.balance);
     }
 
-    async getTransactions(limit = 20) {
+    async getTransactions(loadMore = false, limit = 20) {
+
+        if (loadMore && !this.hasMoreTxs) {
+            return [];
+        }
 
         function getComment(msg) {
             if (!msg.msg_data) return '';
@@ -191,7 +196,20 @@ class Controller {
         }
 
         const arr = [];
-        const transactions = await this.ton.getTransactions(this.myAddress, limit);
+        let lt, hash;
+
+        if (loadMore) {
+            const lastTransaction = this.transactions[this.transactions.length - 1];
+            lt = lastTransaction.lt;
+            hash = this.ton.utils.bytesToHex(this.ton.utils.stringToBytes(atob(lastTransaction.hash)));
+        }
+
+        const transactions = await this.ton.provider.getTransactions(this.myAddress, limit, lt, hash, undefined, loadMore);
+
+        if (loadMore && transactions.length < limit){
+            this.hasMoreTxs = false;
+        }
+
         for (let t of transactions) {
             let amount = new BN(t.in_msg.value);
             for (let outMsg of t.out_msgs) {
@@ -224,7 +242,9 @@ class Controller {
                     storageFee: t.storage_fee.toString(),
                     otherFee: t.other_fee.toString(),
                     comment: comment,
-                    date: t.utime * 1000
+                    date: t.utime * 1000,
+                    lt: t.transaction_id.lt,
+                    hash: t.transaction_id.hash,
                 });
             }
         }
@@ -503,8 +523,8 @@ class Controller {
             if (isBalanceChanged) {
                 this.getTransactions().then(txs => {
                     if (txs.length > 0) {
-                        this.transactions = txs;
                         const newTxs = txs.filter(tx => Number(tx.date) > this.lastTransactionTime);
+                        this.transactions = [...newTxs, ...this.transactions];
                         this.lastTransactionTime = Number(txs[0].date);
 
                         if (this.processingVisible && this.sendingData) {
@@ -854,6 +874,12 @@ class Controller {
             case 'onProxyClick':
                 localStorage.setItem('proxy', params ? 'true' : 'false');
                 this.doProxy(params);
+                break;
+            case 'loadTransactions':
+                this.getTransactions(true).then((txs) => {
+                    this.transactions = [...this.transactions, ...txs];
+                    this.sendToView('setTransactions', {txs: this.transactions});
+                })
                 break;
         }
     }

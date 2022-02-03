@@ -41,6 +41,8 @@ class View {
         this.currentScreenName = null;
         /** @type   {boolean} */
         this.isTestnet = false;
+        /** @type   {IntersectionObserver} */
+        this.txsListObserver = null;
 
         this.createImportInputs();
 
@@ -559,7 +561,13 @@ class View {
     }
 
     setTransactions(txs) {
-        clearElement($('#transactionsList'));
+        const transactionsList = $('#transactionsList');
+
+        if (this.txsListObserver && transactionsList.lastElementChild) {
+            this.txsListObserver.unobserve(transactionsList.lastElementChild);
+        }
+
+        clearElement(transactionsList);
         let date = '';
 
         toggle($('#walletCreated'), txs.length === 0);
@@ -578,6 +586,7 @@ class View {
             }
             this.addTx(tx)
         });
+        this.observeTransactionsList();
     }
 
     addDateSeparator(dateString) {
@@ -636,6 +645,22 @@ class View {
 
     onTransactionButtonClick() {
         this.onMessage('showPopup', {name: 'send', toAddr: this.currentTransactionAddr});
+    }
+
+    observeTransactionsList() {
+        if (!this.txsListObserver) {
+            this.txsListObserver = new IntersectionObserver((entries) => {
+                const target = entries[0];
+                if (target.isIntersecting) {
+                    this.sendMessage('loadTransactions');
+                }
+            }, {
+                root: $('#transactionsContainer'),
+                rootMargin: '0px',
+                threshold: 0.5,
+            });
+        }
+        this.txsListObserver.observe($('#transactionsList').lastElementChild);
     }
 
     // SEND POPUP
@@ -757,6 +782,10 @@ class View {
 
             case 'setBalance':
                 this.setBalance(new BN(params.balance), params.txs);
+                break;
+
+            case 'setTransactions':
+                this.setTransactions(params.txs);
                 break;
 
             case 'setIsLedger':
