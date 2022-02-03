@@ -660,7 +660,10 @@ class View {
                 threshold: 0.5,
             });
         }
-        this.txsListObserver.observe($('#transactionsList').lastElementChild);
+        const lastTxElement = $('#transactionsList').lastElementChild;
+        if (lastTxElement) {
+            this.txsListObserver.observe(lastTxElement);
+        }
     }
 
     // SEND POPUP

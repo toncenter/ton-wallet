@@ -201,7 +201,7 @@ class Controller {
         if (loadMore) {
             const lastTransaction = this.transactions[this.transactions.length - 1];
             lt = lastTransaction.lt;
-            hash = this.ton.utils.bytesToHex(this.ton.utils.stringToBytes(atob(lastTransaction.hash)));
+            hash = this.ton.utils.bytesToHex(this.ton.utils.base64ToBytes(lastTransaction.hash));
         }
 
         const transactions = await this.ton.provider.getTransactions(this.myAddress, limit, lt, hash, undefined, loadMore);
