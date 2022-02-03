@@ -110,6 +110,8 @@ class Controller {
         this.isContractInitialized = false;
         this.sendingData = null;
         this.processingVisible = false;
+        this.viewScreen = null;
+        this.viewPopup = null;
 
         this.ledgerApp = null;
         this.isLedger = false;
@@ -292,7 +294,7 @@ class Controller {
 
     onBackupDone() {
         if (localStorage.getItem('words')) {
-            this.sendToView('showScreen', {name: 'main'});
+            this.sendToView('showScreen', {name: 'main', myAddress: this.myAddress});
         } else {
             this.showCreatePassword();
         }
@@ -467,10 +469,17 @@ class Controller {
     }
 
     initView() {
-        if (!this.myAddress || !localStorage.getItem('words')) {
+        if ((!this.myAddress || !localStorage.getItem('words')) && (!this.viewScreen || this.viewScreen.name === 'main')) {
             this.sendToView('showScreen', {name: 'start'})
         } else {
-            this.sendToView('showScreen', {name: 'main', myAddress: this.myAddress});
+            if (this.viewScreen) {
+                this.sendToView('showScreen', this.viewScreen);
+                if (this.viewPopup) {
+                    this.sendToView('showPopup', this.viewPopup);
+                }
+            } else {
+              this.sendToView('showScreen', {name: 'main', myAddress: this.myAddress});
+            }
             if (this.balance !== null) {
                 this.sendToView('setBalance', {balance: this.balance.toString(), txs: this.transactions});
             }
@@ -779,6 +788,12 @@ class Controller {
     // TRANSPORT WITH VIEW
 
     sendToView(method, params, needQueue) {
+        if (method === 'showScreen') {
+            this.viewScreen = params;
+        }
+        if (method === 'showPopup') {
+            this.viewPopup = params;
+        }
         if (window.view) {
             window.view.onMessage(method, params);
         } else {
@@ -796,6 +811,7 @@ class Controller {
     onViewMessage(method, params) {
         switch (method) {
             case 'showScreen':
+                this.viewScreen = params;
                 switch (params.name) {
                     case 'created':
                         this.showCreated();
@@ -808,6 +824,9 @@ class Controller {
                         break;
                 }
                 break;
+          case 'showPopup':
+            this.viewPopup = params;
+            break;
             case 'import':
                 this.import(params.words);
                 break;
@@ -855,6 +874,11 @@ class Controller {
                 localStorage.setItem('proxy', params ? 'true' : 'false');
                 this.doProxy(params);
                 break;
+          case 'updatePopup':
+                this.viewPopup = {...this.viewPopup, ...params};
+                break;
+          case 'updateScreen':
+                this.viewScreen = {...this.viewScreen, ...params};
         }
     }
 

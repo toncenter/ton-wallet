@@ -39,15 +39,21 @@ class View {
         this.balance = null;
         /** @type   {string} */
         this.currentScreenName = null;
+        /** @type   {string} */
+        this.currentPopupName = null;
         /** @type   {boolean} */
         this.isTestnet = false;
 
         this.createImportInputs();
 
         initLotties().then(() => {
-            const lottie = lotties[this.currentScreenName];
-            if (lottie) {
-                toggleLottie(lottie, true);
+            const screenLottie = lotties[this.currentScreenName];
+            const popupLottie = lotties[this.currentPopupName];
+            if (screenLottie) {
+                toggleLottie(screenLottie, true);
+            }
+            if (popupLottie) {
+              toggleLottie(popupLottie, true);
             }
         });
 
@@ -86,25 +92,45 @@ class View {
                     return;
                 }
                 let s = url.substring('ton://transfer/'.length);
-                $('#toWalletInput').value = s.substring(0, 48);
+                const toAddr = s.substring(0, 48);
+                let amount, comment;
+                $('#toWalletInput').value = toAddr;
                 s = s.substring(49);
                 const pairs = s.split('&');
                 pairs
                     .map(p => p.split('='))
                     .forEach(arr => {
                         if (arr[0] === 'amount') {
-                            $('#amountInput').value = TonWeb.utils.fromNano(new BN(arr[1]));
+                            amount = TonWeb.utils.fromNano(new BN(arr[1]));
+                            $('#amountInput').value = amount;
                         } else if (arr[0] === 'text') {
-                            $('#commentInput').value = arr[1];
+                            comment = arr[1];
+                            $('#commentInput').value = comment;
                         }
                     });
 
+                this.sendMessage('updatePopup', {toAddr, amount, comment})
                 e.preventDefault();
             }
         });
+        onInput($('#toWalletInput'), e => {
+            this.sendMessage('updatePopup', {toAddr: e.target.value});
+        });
+        onInput($('#amountInput'), e => {
+            this.sendMessage('updatePopup', {amount: e.target.value});
+        });
+        onInput($('#commentInput'), e => {
+            this.sendMessage('updatePopup', {comment: e.target.value});
+        });
 
-        onInput($('#invoice_amountInput'), () => this.updateInvoiceLink());
-        onInput($('#invoice_commentInput'), () => this.updateInvoiceLink());
+        onInput($('#invoice_amountInput'), (e) => {
+          this.sendMessage('updatePopup', {amount: e.target.value});
+          this.updateInvoiceLink();
+        });
+        onInput($('#invoice_commentInput'), (e) => {
+          this.sendMessage('updatePopup', {comment: e.target.value});
+          this.updateInvoiceLink();
+        });
 
         $("#start_createBtn").addEventListener('click', () => this.sendMessage('showScreen', {name: 'created'}));
         $("#start_importBtn").addEventListener('click', () => this.sendMessage('showScreen', {name: 'import'}));
@@ -160,8 +186,7 @@ class View {
         $('#main_settingsButton').addEventListener('click', () => this.onSettingsClick());
 
         $('#main_receiveBtn').addEventListener('click', () => {
-            toggle($('#receive_showAddressOnDeviceBtn'), !!this.isLedger);
-            this.showPopup('receive');
+            this.onMessage('showPopup', {name: 'receive'});
         });
         $('#sendButton').addEventListener('click', () => this.onMessage('showPopup', {name: 'send'}));
 
@@ -289,7 +314,8 @@ class View {
         window.scrollTo(0, 0);
     }
 
-    showPopup(name) {
+    showPopup(name, params) {
+        this.sendMessage('showPopup', {name, ...params})
         $('#enterPassword_input').value = '';
 
         toggle($('#modal'), name !== '');
@@ -303,6 +329,8 @@ class View {
                 toggleLottie(lottie, name === popup);
             }
         });
+
+        this.currentPopupName = name;
     }
 
     isPopupVisible(name) {
@@ -354,6 +382,7 @@ class View {
     // IMPORT SCREEN
 
     createImportInputs() {
+        const self = this;
         const onEnter = input => {
             const i = Number(input.getAttribute('tabindex'));
             if (i === IMPORT_WORDS_COUNT) {
@@ -382,6 +411,14 @@ class View {
             input.classList.remove('error');
 
             showWordsPopup(input);
+
+            const words = [];
+            for (let i = 0; i < IMPORT_WORDS_COUNT; i++) {
+                const input = $('#importInput' + i);
+                const value = input.value.toLowerCase().trim();
+                words.push(value);
+            }
+            self.sendMessage('updateScreen', {name: 'import', words})
         }
 
         const onFocusIn = (e) => {
@@ -469,11 +506,12 @@ class View {
         }
     }
 
-    clearImportWords() {
+    clearImportWords(words = []) {
+        console.log(words);
         toggle($('#wordsPopup'), false);
         for (let i = 0; i < IMPORT_WORDS_COUNT; i++) {
             const input = $('#importInput' + i);
-            input.value = '';
+            input.value = words[i] || '';
             input.classList.remove('error');
         }
     }
@@ -619,19 +657,10 @@ class View {
     // TRANSACTION POPUP
 
     onTransactionClick(tx) {
-        this.showPopup('transaction');
-        const isReceive = !tx.amount.isNeg();
-        const addr = isReceive ? tx.from_addr : tx.to_addr;
-        this.currentTransactionAddr = addr;
-        const amountFormatted = formatNanograms(tx.amount);
-        $('#transactionAmount').innerText = (isReceive ? '+' + amountFormatted : amountFormatted) + ' 💎';
-        $('#transactionFee').innerText = formatNanograms(tx.otherFee) + ' transaction fee';
-        $('#transactionStorageFee').innerText = formatNanograms(tx.storageFee) + ' storage fee';
-        $('#transactionSenderLabel').innerText = isReceive ? 'Sender' : 'Recipient';
-        setAddr($('#transactionSender'), addr);
-        toggle($('#transactionCommentLabel'), !!tx.comment);
-        $('#transactionComment').innerText = tx.comment;
-        $('#transactionDate').innerText = formatDateFull(tx.date);
+        this.onMessage('showPopup', {
+          name: 'transaction',
+          tx: {...tx, amount: tx.amount.toString(), otherFee: tx.otherFee.toString(), storageFee: tx.storageFee.toString()}
+        });
     }
 
     onTransactionButtonClick() {
@@ -715,7 +744,13 @@ class View {
     // RECEIVE INVOICE QR POPUP
 
     onCreateInvoiceQrClick() {
-        this.onMessage('showPopup', {name: 'invoiceQr'});
+        this.onMessage('showPopup',
+            {
+              name: 'invoiceQr',
+              amount: $('#invoice_amountInput').value,
+              comment: $('#invoice_commentInput').value,
+            }
+        );
     }
 
     drawInvoiceQr(link) {
@@ -795,7 +830,7 @@ class View {
                     case 'created':
                         break;
                     case 'import':
-                        this.clearImportWords();
+                        this.clearImportWords(params.words);
                         $('#importInput0').focus();
                         break;
                     case 'backup':
@@ -820,7 +855,7 @@ class View {
                 break;
 
             case 'showPopup':
-                this.showPopup(params.name);
+                this.showPopup(params.name, params);
 
                 switch (params.name) {
                     case 'changePassword':
@@ -834,20 +869,25 @@ class View {
                         $('#done .popup-grey-text').innerText = params.message;
                         break;
                     case 'invoice':
-                        $('#invoice_amountInput').value = '';
-                        $('#invoice_commentInput').value = '';
+                        toggle($('#receive_showAddressOnDeviceBtn'), !!this.isLedger);
+                        $('#invoice_amountInput').value = params.amount || '';
+                        $('#invoice_commentInput').value = params.comment || '';
                         this.updateInvoiceLink();
                         $('#invoice_amountInput').focus();
                         break;
                     case 'invoiceQr':
+                        toggle($('#receive_showAddressOnDeviceBtn'), !!this.isLedger);
+                        $('#invoice_amountInput').value = params.amount || '';
+                        $('#invoice_commentInput').value = params.comment || '';
+                        this.updateInvoiceLink();
                         this.drawInvoiceQr(this.getInvoiceLink());
                         $('#invoiceQrAmount').innerText = $('#invoice_amountInput').value;
                         break;
                     case 'send':
                         this.clearSend();
-                        if (params.toAddr) {
-                            $('#toWalletInput').value = params.toAddr;
-                        }
+                        $('#toWalletInput').value = params.toAddr || '';
+                        $('#amountInput').value = params.amount || '';
+                        $('#commentInput').value = params.comment || '';
                         toggle($('#commentInput'), !this.isLedger);
                         $('#toWalletInput').focus();
                         break;
@@ -862,6 +902,25 @@ class View {
                     case 'signConfirm':
                         const hex = params.data.length > 48 ? params.data.substring(0, 47) + '…' : params.data;
                         setAddr($('#signConfirmData'), hex);
+                        break;
+                    case 'transaction':
+                        const tx = params.tx;
+                        const amount = new BN(tx.amount);
+                        const isReceive = !amount.isNeg();
+                        const addr = isReceive ? tx.from_addr : tx.to_addr;
+                        this.currentTransactionAddr = addr;
+                        const amountFormatted = formatNanograms(amount);
+                        $('#transactionAmount').innerText = (isReceive ? '+' + amountFormatted : amountFormatted) + ' 💎';
+                        $('#transactionFee').innerText = formatNanograms(new BN(tx.otherFee)) + ' transaction fee';
+                        $('#transactionStorageFee').innerText = formatNanograms(new BN(tx.storageFee)) + ' storage fee';
+                        $('#transactionSenderLabel').innerText = isReceive ? 'Sender' : 'Recipient';
+                        setAddr($('#transactionSender'), addr);
+                        toggle($('#transactionCommentLabel'), !!tx.comment);
+                        $('#transactionComment').innerText = tx.comment;
+                        $('#transactionDate').innerText = formatDateFull(tx.date);
+                        break;
+                    case 'receive':
+                        toggle($('#receive_showAddressOnDeviceBtn'), !!this.isLedger);
                         break;
                 }
                 break;

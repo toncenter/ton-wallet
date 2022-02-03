@@ -632,7 +632,7 @@ button {
     margin-right: auto;
 }
 
-#qr img, #invoiceQrImg img, #invoiceQrImg canvas {
+#qr img, #qr canvas, #invoiceQrImg img, #invoiceQrImg canvas {
     width: 185px;
     height: 185px;
 }
