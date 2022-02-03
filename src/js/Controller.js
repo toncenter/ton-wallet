@@ -547,7 +547,7 @@ class Controller {
                         }
                     }
 
-                    this.sendToView('setBalance', {balance: balance.toString(), txs});
+                    this.sendToView('setBalance', {balance: balance.toString(),  txs: this.transactions});
                 });
             } else {
                 this.sendToView('setBalance', {balance: balance.toString(), txs: this.transactions});
