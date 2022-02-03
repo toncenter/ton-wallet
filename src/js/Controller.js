@@ -877,8 +877,10 @@ class Controller {
                 break;
             case 'loadTransactions':
                 this.getTransactions(true).then((txs) => {
-                    this.transactions = [...this.transactions, ...txs];
-                    this.sendToView('setTransactions', {txs: this.transactions});
+                    if (txs.length) {
+                        this.transactions = [...this.transactions, ...txs];
+                        this.sendToView('setTransactions', {txs: this.transactions});
+                    }
                 })
                 break;
         }
