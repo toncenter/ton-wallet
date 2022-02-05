@@ -159,7 +159,6 @@ class Controller {
         const mainnetRpc = 'https://toncenter.com/api/v2/jsonRPC';
         const testnetRpc = 'https://testnet.toncenter.com/api/v2/jsonRPC';
 
-        await storage.clear();
         await storage.removeItem('pwdHash');
 
         this.ton = new TonWeb(new TonWeb.HttpProvider(IS_TESTNET ? testnetRpc : mainnetRpc));
