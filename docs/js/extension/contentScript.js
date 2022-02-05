@@ -205,7 +205,7 @@ class TonProvider {
                         localStorage.setItem('ton:magicRevision', magicRevision);
 
                         await this.send('flushMemoryCache');
-                        // window.location.reload();
+                        window.location.reload();
                     } else {
                         const prevMagicRevision = localStorage.getItem('ton:magicRevision');
                         if (!prevMagicRevision) {
@@ -216,7 +216,7 @@ class TonProvider {
                         await window.caches.delete('tt-assets');
 
                         await this.send('flushMemoryCache');
-                        // window.location.reload();
+                        window.location.reload();
                     }
                 }
             }
