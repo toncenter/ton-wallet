@@ -1,4 +1,3 @@
-const code = `
 // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md#sample-class-implementation
 class TonProvider {
     constructor() {
@@ -297,22 +296,6 @@ function addBadge(html) {
     badge.innerHTML = html;
     document.body.prepend(badge);
 }
-`;
-
-function injectScript(content) {
-    try {
-        const container = document.head || document.documentElement
-        const scriptTag = document.createElement('script')
-        scriptTag.setAttribute('async', 'false')
-        scriptTag.textContent = content
-        container.insertBefore(scriptTag, container.children[0])
-        container.removeChild(scriptTag)
-    } catch (e) {
-        console.error('ton-wallet provider injection failed.', e)
-    }
-}
-
-injectScript(code); // inject to dapp page
 
 const port = chrome.runtime.connect({name: 'gramWalletContentScript'})
 port.onMessage.addListener(function (msg) {

@@ -30,9 +30,7 @@ https://chrome.google.com/webstore/detail/ton-wallet/nphplpgoakhhjchkkhmiggakijn
 
 `npm install`
 
-`gulp`
-
-`npx webpack --mode=none`
+`npm run build`
 
 # Code
 
