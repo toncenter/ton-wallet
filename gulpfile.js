@@ -15,7 +15,7 @@ gulp.task('copy', function () {
         'src/assets/**',
         'src/libs/**',
         'src/**/*.html',
-        'src/contentscript.js',
+        'src/js/extension/*',
         'src/manifest.json'
     ], {base: 'src'})
         .pipe(gulp.dest('build'));

@@ -3,7 +3,7 @@ const path = require('path');
 module.exports = {
     entry: {
         Controller: './src/js/Controller.js',
-        'view/View': './src/js/view/View.js'
+        'view/View': './src/js/view/View.js',
     },
     optimization: {
         concatenateModules: true,
