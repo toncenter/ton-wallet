@@ -1,5 +1,7 @@
 import storage from './util/storage';
 
+const IS_EXTENSION = self.chrome && chrome.runtime && chrome.runtime.id;
+
 let contentScriptPort = null;
 let popupPort = null;
 const queueToPopup = [];
@@ -120,9 +122,12 @@ class Controller {
             self.view.controller = this;
         }
 
+        this.pendingMessageResolvers = new Map();
+        this._lastMsgId = 1;
+
         this.sendToView('setIsTestnet', IS_TESTNET)
 
-        this._init();
+        this.whenReady = this._init();
     }
 
     /**
@@ -155,26 +160,53 @@ class Controller {
         return this.ton.provider.getWalletInfo(this.myAddress);
     }
 
-    async _init () {
-        const mainnetRpc = 'https://toncenter.com/api/v2/jsonRPC';
-        const testnetRpc = 'https://testnet.toncenter.com/api/v2/jsonRPC';
+    async _init() {
+        return new Promise(async (resolve) => {
+            const mainnetRpc = 'https://toncenter.com/api/v2/jsonRPC';
+            const testnetRpc = 'https://testnet.toncenter.com/api/v2/jsonRPC';
 
-        await storage.removeItem('pwdHash');
+            await storage.removeItem('pwdHash');
 
-        this.ton = new TonWeb(new TonWeb.HttpProvider(IS_TESTNET ? testnetRpc : mainnetRpc));
-        this.myAddress = await storage.getItem('address');
-        if (!this.myAddress || !await storage.getItem('words')) {
-            await storage.clear();
-            this.sendToView('showScreen', {name: 'start'})
-        } else {
-            if (await storage.getItem('isLedger') === 'true') {
-                this.isLedger = true;
-                this.publicKeyHex = await storage.getItem('publicKey');
-                this.sendToView('setIsLedger', this.isLedger);
+            if (IS_EXTENSION && !(await storage.getItem('address'))) {
+                await this._restoreDeprecatedStorage();
             }
 
-            await this.showMain();
+            this.ton = new TonWeb(new TonWeb.HttpProvider(IS_TESTNET ? testnetRpc : mainnetRpc));
+            this.myAddress = await storage.getItem('address');
+            if (!this.myAddress || !await storage.getItem('words')) {
+                await storage.clear();
+                this.sendToView('showScreen', {name: 'start'})
+            } else {
+                if (await storage.getItem('isLedger') === 'true') {
+                    this.isLedger = true;
+                    this.publicKeyHex = await storage.getItem('publicKey');
+                    this.sendToView('setIsLedger', this.isLedger);
+                }
+
+                await this.showMain();
+            }
+
+            resolve();
+        });
+    }
+
+    async _restoreDeprecatedStorage() {
+        const {
+            address, words, walletVersion, isLedger, magic, proxy,
+        } = await this.sendToView('restoreDeprecatedStorage', undefined, true, true);
+
+        if (!address || !words) {
+            return;
         }
+
+        await Promise.all([
+            storage.setItem('address', address),
+            storage.setItem('words', words),
+            storage.setItem('walletVersion', walletVersion),
+            storage.setItem('isLedger', isLedger),
+            storage.setItem('magic', magic),
+            storage.setItem('proxy', proxy),
+        ])
     }
 
     checkContractInitialized(getWalletResponse) {
@@ -785,18 +817,32 @@ class Controller {
 
     // TRANSPORT WITH VIEW
 
-    sendToView(method, params, needQueue) {
+    sendToView(method, params, needQueue, needResult) {
         if (self.view) {
-            self.view.onMessage(method, params);
+            const result = self.view.onMessage(method, params);
+            if (needResult) {
+                return result;
+            }
         } else {
             const msg = {method, params};
-            if (popupPort) {
-                popupPort.postMessage(msg);
-            } else {
-                if (needQueue) {
+            const exec = () => {
+                if (popupPort) {
+                    popupPort.postMessage(msg);
+                } else if (needQueue) {
                     queueToPopup.push(msg);
                 }
             }
+
+            if (!needResult) {
+                exec();
+                return;
+            }
+
+            return new Promise((resolve) => {
+                msg.id = this._lastMsgId++;
+                this.pendingMessageResolvers.set(msg.id, resolve);
+                exec();
+            });
         }
     }
 
@@ -932,18 +978,30 @@ if (chrome.runtime && chrome.runtime.onConnect) {
             contentScriptPort.onDisconnect.addListener(() => {
                 contentScriptPort = null;
             });
-            controller.initDapp()
+            controller.whenReady.then(() => {
+                controller.initDapp();
+            });
         } else if (port.name === 'gramWalletPopup') {
             popupPort = port;
             popupPort.onMessage.addListener(function (msg) {
-                controller.onViewMessage(msg.method, msg.params);
+                if (msg.method === 'response') {
+                    const resolver = controller.pendingMessageResolvers.get(msg.id);
+                    if (resolver) {
+                        resolver(msg.result);
+                        controller.pendingMessageResolvers.delete(msg.id);
+                    }
+                } else {
+                    controller.onViewMessage(msg.method, msg.params);
+                }
             });
             popupPort.onDisconnect.addListener(() => {
                 popupPort = null;
             });
-            controller.initView()
             queueToPopup.forEach(msg => popupPort.postMessage(msg));
             queueToPopup.length = 0;
+            controller.whenReady.then(() => {
+                controller.initView();
+            });
         }
     });
 }

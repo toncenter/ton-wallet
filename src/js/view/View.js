@@ -595,18 +595,23 @@ class View {
             child: [
                 createElement({
                     tag: 'div',
-                child: isReceive ? [
-                    createElement({tag: 'span', clazz: ['tx-amount', 'tx-amount-green'], text: '+' + amountFormatted}),
-                    createElement({tag: 'span', text: ' 💎'}),
-                    createElement({tag: 'span', clazz: 'tx-from', text: ' from:'})
-                ] : [
-                    createElement({tag: 'span', clazz: 'tx-amount', text: amountFormatted}),
-                    createElement({tag: 'span', text: ' 💎'}),
-                    createElement({tag: 'span', clazz: 'tx-from', text: ' to:'})
-                ]}),
+                    child: isReceive ? [
+                        createElement({
+                            tag: 'span',
+                            clazz: ['tx-amount', 'tx-amount-green'],
+                            text: '+' + amountFormatted
+                        }),
+                        createElement({tag: 'span', text: ' 💎'}),
+                        createElement({tag: 'span', clazz: 'tx-from', text: ' from:'})
+                    ] : [
+                        createElement({tag: 'span', clazz: 'tx-amount', text: amountFormatted}),
+                        createElement({tag: 'span', text: ' 💎'}),
+                        createElement({tag: 'span', clazz: 'tx-from', text: ' to:'})
+                    ]
+                }),
                 setAddr(createElement({tag: 'div', clazz: ['tx-addr', 'addr']}), addr),
                 tx.comment ? createElement({tag: 'div', clazz: 'tx-comment', text: tx.comment}) : undefined,
-                createElement({tag: 'div', clazz: 'tx-fee', text: `blockchain fees: ${formatNanograms(tx.fee)}` }),
+                createElement({tag: 'div', clazz: 'tx-fee', text: `blockchain fees: ${formatNanograms(tx.fee)}`}),
                 createElement({tag: 'div', clazz: 'tx-item-date', text: formatTime(tx.date)})
             ]
         })
@@ -869,6 +874,16 @@ class View {
             case 'closePopup':
                 this.closePopup();
                 break;
+
+            case 'restoreDeprecatedStorage':
+                const address = localStorage.getItem('address');
+                const words = localStorage.getItem('words');
+                const walletVersion = localStorage.getItem('walletVersion');
+                const isLedger = localStorage.getItem('isLedger');
+                const magic = localStorage.getItem('magic');
+                const proxy = localStorage.getItem('proxy');
+
+                return {address, words, walletVersion, isLedger, magic, proxy};
         }
     }
 }
@@ -879,7 +894,10 @@ try {
     const port = chrome.runtime.connect({name: 'gramWalletPopup'})
     window.view.port = port;
     port.onMessage.addListener(function (msg) {
-        window.view.onMessage(msg.method, msg.params);
+        const result = window.view.onMessage(msg.method, msg.params);
+        if (result && msg.id) {
+            port.postMessage({method: 'response', id: msg.id, result});
+        }
     });
 } catch (e) {
 
