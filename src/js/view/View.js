@@ -8,6 +8,7 @@ import {
     IMPORT_WORDS_COUNT,
     onInput, setAddr,
     toggle,
+    parseTransferUrl,
 } from "./Utils.js";
 
 import {initLotties, lotties} from "./Lottie.js";
@@ -74,33 +75,24 @@ class View {
         }
 
         $('#toWalletInput').addEventListener('paste', e => {
-            // ton://transfer/EQA0i8-CdGnF_DhUHHf92R1ONH6sIA9vLZ_WLcCIhfBBXwtG
-            // ton://transfer/EQA0i8-CdGnF_DhUHHf92R1ONH6sIA9vLZ_WLcCIhfBBXwtG?amount=1000000000
-            // ton://transfer/EQA0i8-CdGnF_DhUHHf92R1ONH6sIA9vLZ_WLcCIhfBBXwtG?amount=1000000000&text=data
+            const urlString = getClipboardData(e);
+            const transfer = parseTransferUrl(urlString);
 
-            const url = getClipboardData(e);
-
-            if (url.startsWith('ton://transfer/')) {
-                if (!(url.length === 63 || url[63] === '?')) {
-                    e.preventDefault();
-                    return;
-                }
-                let s = url.substring('ton://transfer/'.length);
-                $('#toWalletInput').value = s.substring(0, 48);
-                s = s.substring(49);
-                const pairs = s.split('&');
-                pairs
-                    .map(p => p.split('='))
-                    .forEach(arr => {
-                        if (arr[0] === 'amount') {
-                            $('#amountInput').value = TonWeb.utils.fromNano(new BN(arr[1]));
-                        } else if (arr[0] === 'text') {
-                            $('#commentInput').value = arr[1];
-                        }
-                    });
-
-                e.preventDefault();
+            if (!transfer) {
+                return;
             }
+
+            $('#toWalletInput').value = transfer.address;
+
+            if (transfer.amount) {
+                $('#amountInput').value = TonWeb.utils.fromNano(new BN(transfer.amount));
+            }
+
+            if (transfer.text) {
+                $('#commentInput').value = transfer.text;
+            }
+
+            e.preventDefault();
         });
 
         onInput($('#invoice_amountInput'), () => this.updateInvoiceLink());
