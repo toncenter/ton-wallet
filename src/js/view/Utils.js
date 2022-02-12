@@ -157,6 +157,22 @@ function parseTransferUrl(urlString) {
     return result;
 }
 
+function formatTransferUrl(transfer) {
+    const url = new URL('https://transfer');
+
+    url.pathname = url.pathname + transfer.address;
+
+    if (transfer.amount) {
+        url.searchParams.set('amount', transfer.amount);
+    }
+
+    if (transfer.text) {
+        url.searchParams.set('text', transfer.text);
+    }
+
+    return String(url).replace(/^https/, 'ton');
+}
+
 const IMPORT_WORDS_COUNT = 24;
 
 export {
@@ -173,5 +189,6 @@ export {
     formatDateFull,
     copyToClipboard,
     parseTransferUrl,
+    formatTransferUrl,
     IMPORT_WORDS_COUNT
 };

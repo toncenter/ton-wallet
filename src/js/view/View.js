@@ -9,6 +9,7 @@ import {
     onInput, setAddr,
     toggle,
     parseTransferUrl,
+    formatTransferUrl,
 } from "./Utils.js";
 
 import {initLotties, lotties} from "./Lottie.js";
@@ -644,7 +645,7 @@ class View {
         setAddr($('#receive .addr'), address);
         clearElement($('#qr'));
         const options = {
-            text: 'ton://transfer/' + address,
+            text: formatTransferUrl({ address }),
             width: 185 * window.devicePixelRatio,
             height: 185 * window.devicePixelRatio,
             logo: "assets/gem@large.png",
@@ -656,7 +657,7 @@ class View {
     }
 
     onShareAddressClick(onyAddress) {
-        const data = onyAddress ? this.myAddress : 'ton://transfer/' + this.myAddress;
+        const data = onyAddress ? this.myAddress : formatTransferUrl({ address: this.myAddress });
         const text = onyAddress ? 'Wallet address copied to clipboard' : 'Transfer link copied to clipboard';
         $('#notify').innerText = copyToClipboard(data) ? text : 'Can\'t copy link';
         toggle($('#notify'), true);
@@ -681,21 +682,21 @@ class View {
     };
 
     getInvoiceLink() {
-        let url = 'ton://transfer/' + this.myAddress;
-
-        const params = [];
+        const transfer = {
+            address: this.myAddress,
+        };
 
         const amount = $('#invoice_amountInput').value;
         if (amount) {
-            params.push('amount=' + toNano(Number(amount)));
-        }
-        const comment = $('#invoice_commentInput').value;
-        if (comment) {
-            params.push('text=' + comment);
+            transfer.amount = toNano(Number(amount));
         }
 
-        if (params.length === 0) return url;
-        else return url + '?' + params.join('&');
+        const comment = $('#invoice_commentInput').value;
+        if (comment) {
+            transfer.text = comment;
+        }
+
+        return formatTransferUrl(transfer);
     }
 
     onShareInvoiceClick() {
