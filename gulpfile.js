@@ -1,4 +1,5 @@
-var gulp = require('gulp'),
+var fs = require('fs'),
+    gulp = require('gulp'),
     cssmin = require('gulp-cssmin'),
     del = require('del'),
     deleteLines = require('gulp-delete-lines'),
@@ -8,6 +9,13 @@ var replace = require('gulp-replace');
 
 gulp.task('clean', function () {
     return del(['build']);
+});
+
+gulp.task('contentscript', function () {
+    return gulp.src('src/contentscript.js.tpl')
+        .pipe(replace('%%PROVIDER_CODE%%', fs.readFileSync('./src/tonProvider.js', 'utf8').trim()))
+        .pipe(rename('contentscript.js'))
+        .pipe(gulp.dest('src'));
 });
 
 gulp.task('copy', function () {
@@ -40,6 +48,6 @@ gulp.task('popup-html', function () {
         .pipe(gulp.dest('build'));
 });
 
-gulp.task('build', gulp.series('clean', 'copy', 'minify-css', 'popup-html'));
+gulp.task('build', gulp.series('clean', 'contentscript', 'copy', 'minify-css', 'popup-html'));
 
 gulp.task('default', gulp.series('clean', 'build'));

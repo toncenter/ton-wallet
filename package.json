@@ -17,8 +17,7 @@
     "natives": "^1.1.6"
   },
   "scripts": {
-    "build:contentscript": "sed -e \"/%%PROVIDER_CODE%%/r src/tonProvider.js\" -e \"//d\" src/contentscript.js.tpl > src/contentscript.js",
-    "build": "npm run build:contentscript && gulp && npx webpack --mode=none",
+    "build": "gulp && npx webpack --mode=none",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
