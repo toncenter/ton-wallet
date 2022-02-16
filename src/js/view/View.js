@@ -183,6 +183,7 @@ class View {
             this.sendMessage('onProxyClick', $('#menu_proxy .dropdown-toggle').classList.contains('toggle-on'));
         });
 
+        $('#menu_extension').addEventListener('click', () => window.open('https://chrome.google.com/webstore/detail/ton-wallet/nphplpgoakhhjchkkhmiggakijnkhfnd', '_blank'));
         $('#menu_about').addEventListener('click', () => this.showPopup('about'));
         $('#menu_changePassword').addEventListener('click', () => this.onMessage('showPopup', {name: 'changePassword'}));
         $('#menu_backupWallet').addEventListener('click', () => this.sendMessage('onBackupWalletClick'));
