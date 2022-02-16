@@ -787,7 +787,8 @@ button {
     display: block;
 }
 
-.plugin #menu_extension {
+.plugin #menu_extension_chrome,
+.plugin #menu_extension_firefox {
     display: none;
 }
 
