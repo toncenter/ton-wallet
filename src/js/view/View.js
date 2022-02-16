@@ -885,4 +885,18 @@ try {
 
 }
 
+if (window.top == window && window.console) {
+    const selfXssAttentions = {
+        'ru-RU': ['Внимание!', 'Используя эту консоль, вы можете подвергнуться атаке Self-XSS, что позволит злоумышленникам завладеть вашим кошельком.\nНе вводите и не вставляйте программный код, который не понимаете.'],
+        '*': ['Attention!', 'Using this console, you can be exposed to a Self-XSS attack, allowing attackers to take over your wallet.\nDo not enter or paste program code that you do not understand.']
+    };
 
+    const userLanguage = navigator.language || navigator.userLanguage;
+    let localizedSelfXssAttention = selfXssAttentions[userLanguage];
+    if (!localizedSelfXssAttention) localizedSelfXssAttention = selfXssAttentions['*'];
+
+    console.log(
+        '%c%s', 'color: red; background: yellow; font-size: 24px;', localizedSelfXssAttention[0]
+    );
+    console.log('%c%s', 'font-size: 18px;', localizedSelfXssAttention[1]);
+}
