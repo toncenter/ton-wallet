@@ -86,7 +86,7 @@ async function decrypt(ciphertext, password) {
 // CONTROLLER
 
 const IS_TESTNET = window.location.href.indexOf('testnet') > -1;
-const IS_EXTENSION = !!(chrome.runtime && chrome.runtime.onConnect);
+const IS_EXTENSION = !!(window.chrome && chrome.runtime && chrome.runtime.onConnect);
 
 const ACCOUNT_NUMBER = 0;
 
@@ -911,7 +911,7 @@ class Controller {
 
 const controller = new Controller();
 
-if (chrome.runtime && chrome.runtime.onConnect) {
+if (window.chrome && chrome.runtime && chrome.runtime.onConnect) {
     chrome.runtime.onConnect.addListener(port => {
         if (port.name === 'gramWalletContentScript') {
             contentScriptPort = port;
