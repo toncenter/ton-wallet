@@ -127,7 +127,7 @@ class Controller {
 
         localStorage.removeItem('pwdHash');
 
-        this.ton = new TonWeb(new TonWeb.HttpProvider(IS_TESTNET ? testnetRpc : mainnetRpc/*, {apiKey: IS_EXTENSION ? extensionApiKey : apiKey}*/));
+        this.ton = new TonWeb(new TonWeb.HttpProvider(IS_TESTNET ? testnetRpc : mainnetRpc, {apiKey: IS_EXTENSION ? extensionApiKey : apiKey}));
         this.myAddress = localStorage.getItem('address');
         if (!this.myAddress || !localStorage.getItem('words')) {
             localStorage.clear();
