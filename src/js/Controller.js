@@ -86,6 +86,7 @@ async function decrypt(ciphertext, password) {
 // CONTROLLER
 
 const IS_TESTNET = window.location.href.indexOf('testnet') > -1;
+const IS_EXTENSION = !!(chrome.runtime && chrome.runtime.onConnect);
 
 const ACCOUNT_NUMBER = 0;
 
@@ -120,11 +121,13 @@ class Controller {
 
         const mainnetRpc = 'https://toncenter.com/api/v2/jsonRPC';
         const testnetRpc = 'https://testnet.toncenter.com/api/v2/jsonRPC';
+        const apiKey = '4f96a149e04e0821d20f9e99ee716e20ff52db7238f38663226b1c0f303003e0';
+        const extensionApiKey = '503af517296765c3f1729fcb301b063a00650a50a881eeaddb6307d5d45e21aa';
         this.sendToView('setIsTestnet', IS_TESTNET)
 
         localStorage.removeItem('pwdHash');
 
-        this.ton = new TonWeb(new TonWeb.HttpProvider(IS_TESTNET ? testnetRpc : mainnetRpc));
+        this.ton = new TonWeb(new TonWeb.HttpProvider(IS_TESTNET ? testnetRpc : mainnetRpc/*, {apiKey: IS_EXTENSION ? extensionApiKey : apiKey}*/));
         this.myAddress = localStorage.getItem('address');
         if (!this.myAddress || !localStorage.getItem('words')) {
             localStorage.clear();
