@@ -153,6 +153,18 @@ class Controller {
     }
 
     /**
+     *
+     * @param walletAddress
+     * @returns {Promise<void>}
+     */
+    static async saveWalletAddress(walletAddress) {
+        if (!localStorage.getItem('defaultAddress')) {
+            localStorage.setItem('defaultAddress', localStorage.getItem('address'));
+        }
+        localStorage.setItem('address', walletAddress);
+    }
+
+    /**
      * @param words {string[]}
      * @param password  {string}
      * @return {Promise<void>}
@@ -171,6 +183,20 @@ class Controller {
 
     async getWallet() {
         return this.ton.provider.getWalletInfo(this.myAddress);
+    }
+
+    isUsingCustomWallet() {
+        return !!localStorage.getItem('defaultAddress') && localStorage.getItem('defaultAddress') !== localStorage.getItem('address');
+    }
+
+    async getSeqno(contractAddress, method = "seqno") {
+        try {
+            let result = await this.ton.provider.call(contractAddress, method, []);
+            return parseInt(result.stack[0][1], 16);
+        } catch (e) {
+            console.log(e);
+            return 0;
+        }
     }
 
     checkContractInitialized(getWalletResponse) {
@@ -243,7 +269,7 @@ class Controller {
      */
     async sign(toAddress, amount, comment, keyPair) {
         const wallet = await this.getWallet(this.myAddress);
-        let seqno = wallet.seqno;
+        let seqno = this.isUsingCustomWallet() ? (await this.getSeqno(this.myAddress)) : wallet.seqno;
         if (!seqno) seqno = 0;
 
         const secretKey = keyPair ? keyPair.secretKey : null;
@@ -420,6 +446,20 @@ class Controller {
         this.sendToView('showScreen', {name: 'readyToGo'});
     }
 
+    async onChangeWalletAddress(walletAddress) {
+        if (!walletAddress) {
+            this.sendToView('changeWalletAddressError');
+        } else {
+            await Controller.saveWalletAddress(walletAddress);
+            this.sendToView('closePopup');
+            if (chrome.runtime) {
+                chrome.runtime.reload();
+            } else {
+                window.location.reload();
+            }
+        }
+    }
+
     async onChangePassword(oldPassword, newPassword) {
         let words;
         try {
@@ -490,12 +530,14 @@ class Controller {
 
         if (!needUpdate) return;
 
-        this.getWallet().then(response => {
+        this.getWallet().then(async (response) => {
             const balance = this.getBalance(response);
             const isBalanceChanged = (this.balance === null) || (this.balance.cmp(balance) !== 0);
             this.balance = balance;
 
-            const isContractInitialized = this.checkContractInitialized(response) && response.seqno;
+            const isContractInitialized = this.checkContractInitialized(response)
+                && (this.isUsingCustomWallet() ? await this.getSeqno(this.myAddress) : response.seqno);
+
             console.log('isBalanceChanged', isBalanceChanged);
             console.log('isContractInitialized', isContractInitialized);
 
@@ -691,7 +733,7 @@ class Controller {
             if (this.isLedger) {
 
                 const wallet = await this.getWallet(this.myAddress);
-                let seqno = wallet.seqno;
+                let seqno = this.isUsingCustomWallet() ? await this.getSeqno(this.myAddress) : wallet.seqno;
                 if (!seqno) seqno = 0;
 
                 const query = await this.ledgerApp.transfer(ACCOUNT_NUMBER, this.walletContract, toAddress, amount, seqno, addressFormat);
@@ -828,6 +870,12 @@ class Controller {
                 break;
             case 'onEnterPassword':
                 this.onEnterPassword(params.password);
+                break;
+            case 'onChangeWalletAddress':
+                this.onChangeWalletAddress(params.walletAddress);
+                break;
+            case 'onRestoreWalletAddress':
+                this.onChangeWalletAddress(localStorage.getItem('defaultAddress') || localStorage.getItem('address'));
                 break;
             case 'onChangePassword':
                 this.onChangePassword(params.oldPassword, params.newPassword);

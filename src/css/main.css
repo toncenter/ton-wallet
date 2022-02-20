@@ -388,6 +388,10 @@ button {
     min-width: 180px;
 }
 
+#menuDropdown hr {
+    border-top: 1px solid white;
+}
+
 .dropdown-item {
     font-size: 14px;
     line-height: 30px;
@@ -746,6 +750,14 @@ button {
     margin-bottom: 10px;
 }
 
+#changeWalletAddress {
+    width: 580px;
+}
+
+#changeWalletAddress #changeWalletAddress_newInput {
+    width: 460px;
+}
+
 /* EXTENSION */
 
 #menu_magic {
@@ -793,6 +805,20 @@ button {
 
 .plugin #start_importLedgerHidBtn {
     display: none;
+}
+
+.plugin #changeWalletAddress {
+    width: 360px;
+}
+
+.plugin #changeWalletAddress #changeWalletAddress_newInput {
+    width: 240px;
+}
+
+.plugin #changeWalletAddress tgs-player {
+    transform: scale(0.5) translateY(-50%);
+    width: 75px;
+    height: 75px;
 }
 
 #start_importLedgerHidBtn {
