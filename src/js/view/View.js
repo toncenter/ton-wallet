@@ -186,6 +186,7 @@ class View {
         $('#menu_about').addEventListener('click', () => this.showPopup('about'));
         $('#menu_changePassword').addEventListener('click', () => this.onMessage('showPopup', {name: 'changePassword'}));
         $('#menu_backupWallet').addEventListener('click', () => this.sendMessage('onBackupWalletClick'));
+        $('#menu_switchWallet').addEventListener('click', () => this.sendMessage('showScreen', {name: 'start'}));
         $('#menu_delete').addEventListener('click', () => this.showPopup('delete'));
 
         $('#receive_showAddressOnDeviceBtn').addEventListener('click', () => this.onShowAddressOnDevice());
@@ -312,6 +313,17 @@ class View {
     closePopup() {
         this.showPopup('');
         this.sendMessage('onClosePopup');
+    }
+
+    // START SCREEN
+
+    showWallets(wallets) {
+        clearElement($('#walletsList'));
+        Object.keys(wallets).forEach((key) => {
+            const element = setAddr(createElement({tag: 'div', clazz: ['tx-addr', 'addr']}), key);
+            element.addEventListener('click', () => this.sendMessage('switchWallet', {wallet: wallets[key]}))
+            $('#walletsList').appendChild(element);
+        });
     }
 
     // BACKUP SCREEN
@@ -791,6 +803,7 @@ class View {
                 switch (params.name) {
                     case 'start':
                         this.clearBalance();
+                        this.showWallets(params.wallets);
                         break;
                     case 'created':
                         break;

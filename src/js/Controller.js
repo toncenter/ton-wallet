@@ -130,8 +130,8 @@ class Controller {
         this.ton = new TonWeb(new TonWeb.HttpProvider(IS_TESTNET ? testnetRpc : mainnetRpc, {apiKey: IS_EXTENSION ? extensionApiKey : apiKey}));
         this.myAddress = localStorage.getItem('address');
         if (!this.myAddress || !localStorage.getItem('words')) {
-            localStorage.clear();
-            this.sendToView('showScreen', {name: 'start'})
+            this.clearState();
+            this.sendToView('showScreen', {name: 'start', wallets: Controller.getWallets()})
         } else {
             if (localStorage.getItem('isLedger') === 'true') {
                 this.isLedger = true;
@@ -153,12 +153,15 @@ class Controller {
     }
 
     /**
+     * @param address {string}
      * @param words {string[]}
      * @param password  {string}
      * @return {Promise<void>}
      */
-    static async saveWords(words, password) {
-        localStorage.setItem('words', await encrypt(words.join(','), password));
+    static async saveWords(address, words, password) {
+        const encrypted = await encrypt(words.join(','), password);
+        localStorage.setItem('words', encrypted);
+        Controller.saveWallet(address, { words: encrypted });
     }
 
     /**
@@ -167,6 +170,46 @@ class Controller {
      */
     static async loadWords(password) {
         return (await decrypt(localStorage.getItem('words'), password)).split(',');
+    }
+
+    /**
+     * @param address  {string}
+     * @param data  {{address?: string, words?: string, isLedger?: boolean, walletVersion?: string, ledgerTransportType?: string, publicKey?: string}}
+     * @return {Object.<string, {address?: string, words?: string, isLedger?: boolean, walletVersion?: string, ledgerTransportType?: string, publicKey?: string}>}
+     */
+    static saveWallet(address, data) {
+        const wallets = Controller.getWallets();
+        if (wallets[address]) {
+            wallets[address] = {...wallets[address], ...data};
+        } else {
+            wallets[address] = { ...data };
+        }
+        localStorage.setItem('wallets', JSON.stringify(wallets));
+        return wallets;
+    }
+
+    /**
+     * @param address  {string}
+     * @return {Object.<string, {address?: string, words?: string, isLedger?: boolean, walletVersion?: string, ledgerTransportType?: string, publicKey?: string}>}
+     */
+    static deleteWallet(address) {
+        const wallets = Controller.getWallets();
+        delete wallets[address];
+        localStorage.setItem('wallets', JSON.stringify(wallets));
+        return wallets;
+    }
+
+    /**
+     * @return {Object.<string, {address?: string, words?: string, isLedger?: boolean, walletVersion?: string, ledgerTransportType?: string, publicKey?: string}>}
+     */
+    static getWallets() {
+        let wallets;
+        try {
+            wallets = JSON.parse(localStorage.getItem('wallets'));
+        } finally {
+            wallets = wallets || {};
+        }
+        return wallets;
     }
 
     async getWallet() {
@@ -260,6 +303,7 @@ class Controller {
     // CREATE WALLET
 
     async showCreated() {
+        this.clearState();
         this.sendToView('showScreen', {name: 'created'});
         this.sendToView('disableCreated', true);
         this.myMnemonicWords = await TonWeb.mnemonic.generateMnemonic();
@@ -273,6 +317,7 @@ class Controller {
         });
         this.myAddress = (await this.walletContract.getAddress()).toString(true, true, true);
         localStorage.setItem('walletVersion', walletVersion);
+        Controller.saveWallet(this.myAddress, {walletVersion, address: this.myAddress})
         this.sendToView('disableCreated', false);
     }
 
@@ -348,6 +393,14 @@ class Controller {
         localStorage.setItem('ledgerTransportType', transportType);
         localStorage.setItem('words', 'ledger');
         localStorage.setItem('publicKey', this.publicKeyHex);
+        Controller.saveWallet(this.myAddress, {
+            address: this.myAddress,
+            words: 'ledger',
+            isLedger: true,
+            walletVersion: this.walletContract.getName(),
+            ledgerTransportType: transportType,
+            publicKey: this.publicKeyHex,
+        })
         this.sendToView('setIsLedger', this.isLedger);
         this.sendToView('showScreen', {name: 'readyToGo'});
     }
@@ -355,6 +408,7 @@ class Controller {
     // IMPORT WALLET
 
     showImport() {
+        this.clearState();
         this.sendToView('showScreen', {name: 'import'});
     }
 
@@ -400,6 +454,7 @@ class Controller {
         });
         this.myAddress = (await this.walletContract.getAddress()).toString(true, true, true);
         localStorage.setItem('walletVersion', this.walletContract.getName());
+        Controller.saveWallet(this.myAddress, { walletVersion: this.walletContract.getName() });
         this.showCreatePassword();
     }
 
@@ -413,7 +468,8 @@ class Controller {
         this.isLedger = false;
         localStorage.setItem('isLedger', 'false');
         localStorage.setItem('address', this.myAddress);
-        await Controller.saveWords(this.myMnemonicWords, password);
+        Controller.saveWallet(this.myAddress, { address: this.myAddress, isLedger: false });
+        await Controller.saveWords(this.myAddress, this.myMnemonicWords, password);
         this.myMnemonicWords = null;
 
         this.sendToView('setIsLedger', this.isLedger);
@@ -428,7 +484,7 @@ class Controller {
             this.sendToView('showChangePasswordError');
             return;
         }
-        await Controller.saveWords(words, newPassword);
+        await Controller.saveWords(this.myAddress, words, newPassword);
 
         this.sendToView('closePopup');
     }
@@ -471,7 +527,7 @@ class Controller {
 
     initView() {
         if (!this.myAddress || !localStorage.getItem('words')) {
-            this.sendToView('showScreen', {name: 'start'})
+            this.sendToView('showScreen', {name: 'start', wallets: Controller.getWallets()})
         } else {
             this.sendToView('showScreen', {name: 'main', myAddress: this.myAddress});
             if (this.balance !== null) {
@@ -746,6 +802,13 @@ class Controller {
     // DISCONNECT WALLET
 
     onDisconnectClick() {
+        const wallets = Controller.deleteWallet(this.myAddress);
+        this.clearState();
+        this.sendToView('showScreen', {name: 'start', wallets});
+        this.sendToDapp('ton_accounts', []);
+    }
+
+    clearState() {
         this.myAddress = null;
         this.publicKeyHex = null;
         this.balance = null;
@@ -758,9 +821,9 @@ class Controller {
         this.isLedger = false;
         this.ledgerApp = null;
         clearInterval(this.updateIntervalId);
+        const wallets = Controller.getWallets();
         localStorage.clear();
-        this.sendToView('showScreen', {name: 'start'});
-        this.sendToDapp('ton_accounts', []);
+        localStorage.setItem('wallets', JSON.stringify(wallets));
     }
 
     // MAGIC
@@ -800,6 +863,9 @@ class Controller {
         switch (method) {
             case 'showScreen':
                 switch (params.name) {
+                    case 'start':
+                        this.sendToView('showScreen', {name: 'start', wallets: Controller.getWallets()});
+                        break;
                     case 'created':
                         this.showCreated();
                         break;
@@ -857,6 +923,19 @@ class Controller {
             case 'onProxyClick':
                 localStorage.setItem('proxy', params ? 'true' : 'false');
                 this.doProxy(params);
+                break;
+            case 'switchWallet':
+                this.clearState();
+                this.myAddress = params.wallet.address;
+                Object.keys(params.wallet).forEach((key) => {
+                    localStorage.setItem(key, params.wallet[key]);
+                });
+                if (params.wallet.isLedger) {
+                    this.isLedger = true;
+                    this.publicKeyHex = params.wallet.publicKey;
+                    this.sendToView('setIsLedger', this.isLedger);
+                }
+                this.showMain();
                 break;
         }
     }
