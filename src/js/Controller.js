@@ -239,9 +239,10 @@ class Controller {
      * @param amount    {BN}  Transfer value in nanograms
      * @param comment   {String}  Transfer comment
      * @param keyPair    nacl.KeyPair
+     * @param stateInit? {Cell}
      * @return Promise<{send: Function, estimateFee: Function}>
      */
-    async sign(toAddress, amount, comment, keyPair) {
+    async sign(toAddress, amount, comment, keyPair, stateInit) {
         const wallet = await this.getWallet(this.myAddress);
         let seqno = wallet.seqno;
         if (!seqno) seqno = 0;
@@ -253,7 +254,8 @@ class Controller {
             amount: amount,
             seqno: seqno,
             payload: comment,
-            sendMode: 3
+            sendMode: 3,
+            stateInit
         });
     }
 
@@ -577,15 +579,16 @@ class Controller {
      * @param amount    {BN}    in nanograms
      * @param toAddress {string}
      * @param comment?  {string}
+     * @param stateInit? {Cell}
      * @return {Promise<BN>} in nanograms
      */
-    async getFees(amount, toAddress, comment) {
+    async getFees(amount, toAddress, comment, stateInit) {
         if (!this.isContractInitialized) {
             return TonWeb.utils.toNano(0.010966001);
         }
 
         try {
-            const query = await this.sign(toAddress, amount, comment, null);
+            const query = await this.sign(toAddress, amount, comment, null, stateInit);
             const all_fees = await query.estimateFee();
             const fees = all_fees.source_fees;
             const in_fwd_fee = new BN(fees.in_fwd_fee);
@@ -609,9 +612,10 @@ class Controller {
      * @param amount    {BN} in nanograms
      * @param toAddress {string}
      * @param comment?  {string | Uint8Array}
-     * @param needQueue {boolean}
+     * @param needQueue? {boolean}
+     * @param stateInit? {Cell}
      */
-    async showSendConfirm(amount, toAddress, comment, needQueue) {
+    async showSendConfirm(amount, toAddress, comment, needQueue, stateInit) {
         if (amount.lte(0) || this.balance.lt(amount)) {
             this.sendToView('sendCheckFailed');
             return;
@@ -621,7 +625,7 @@ class Controller {
             return;
         }
 
-        const fee = await this.getFees(amount, toAddress, comment);
+        const fee = await this.getFees(amount, toAddress, comment, stateInit);
 
         if (this.balance.sub(fee).lt(amount)) {
             this.sendToView('sendCheckCantPayFee', {fee});
@@ -637,7 +641,7 @@ class Controller {
                 fee: fee.toString()
             }, needQueue);
 
-            this.send(toAddress, amount, comment, null);
+            this.send(toAddress, amount, comment, null, stateInit);
 
         } else {
 
@@ -645,7 +649,7 @@ class Controller {
                 this.processingVisible = true;
                 this.sendToView('showPopup', {name: 'processing'});
                 const privateKey = await Controller.wordsToPrivateKey(words);
-                this.send(toAddress, amount, comment, privateKey);
+                this.send(toAddress, amount, comment, privateKey, stateInit);
             };
 
             this.sendToView('showPopup', {
@@ -692,11 +696,16 @@ class Controller {
      * @param amount    {BN} in nanograms
      * @param comment   {string}
      * @param privateKey    {string}
+     * @param stateInit? {Cell}
      */
-    async send(toAddress, amount, comment, privateKey) {
+    async send(toAddress, amount, comment, privateKey, stateInit) {
         try {
             let addressFormat = 0;
             if (this.isLedger) {
+
+                if (stateInit) {
+                    throw new Error('stateInit dont supported by Ledger');
+                }
 
                 if (!this.ledgerApp) {
                     await this.createLedger(localStorage.getItem('ledgerTransportType') || 'hid');
@@ -738,7 +747,7 @@ class Controller {
             } else {
 
                 const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
-                const query = await this.sign(toAddress, amount, comment, keyPair);
+                const query = await this.sign(toAddress, amount, comment, keyPair, stateInit);
                 this.sendingData = {toAddress: toAddress, amount: amount, comment: comment, query: query};
                 await this.sendQuery(query);
 
@@ -929,14 +938,19 @@ class Controller {
                 if (!popupPort) {
                     showExtensionPopup();
                 }
-                if (param.dataType === 'hex') {
-                    param.data = TonWeb.utils.hexToBytes(param.data);
-                } else if (param.dataType === 'base64') {
-                    param.data = TonWeb.utils.base64ToBytes(param.data);
-                } else if (param.dataType === 'boc') {
-                    param.data = TonWeb.boc.Cell.fromBoc(TonWeb.utils.base64ToBytes(param.data))[0];
+                if (param.data) {
+                    if (param.dataType === 'hex') {
+                        param.data = TonWeb.utils.hexToBytes(param.data);
+                    } else if (param.dataType === 'base64') {
+                        param.data = TonWeb.utils.base64ToBytes(param.data);
+                    } else if (param.dataType === 'boc') {
+                        param.data = TonWeb.boc.Cell.oneFromBoc(TonWeb.utils.base64ToBytes(param.data));
+                    }
                 }
-                this.showSendConfirm(new BN(param.value), param.to, param.data, needQueue);
+                if (param.stateInit) {
+                    param.stateInit = TonWeb.boc.Cell.oneFromBoc(TonWeb.utils.base64ToBytes(param.stateInit));
+                }
+                this.showSendConfirm(new BN(param.value), param.to, param.data, needQueue, param.stateInit);
                 return true;
             case 'ton_rawSign':
                 const signParam = params[0];
