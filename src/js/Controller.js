@@ -131,7 +131,7 @@ class Controller {
         this.myAddress = localStorage.getItem('address');
         if (!this.myAddress || !localStorage.getItem('words')) {
             localStorage.clear();
-            this.sendToView('showScreen', {name: 'start'})
+            this.sendToView('showScreen', {name: 'start', noAnimation: true})
         } else {
             if (localStorage.getItem('isLedger') === 'true') {
                 this.isLedger = true;
@@ -297,6 +297,24 @@ class Controller {
         if (localStorage.getItem('words')) {
             this.sendToView('showScreen', {name: 'main'});
         } else {
+            this.sendToView('showScreen', {name: 'wordsConfirm', words: this.myMnemonicWords});
+        }
+    }
+
+    onConfirmDone(words) {
+        if (words) {
+            let isValid = true;
+
+            Object.keys(words).forEach(index => {
+                if (this.myMnemonicWords[index] !== words[index]) {
+                    isValid = false;
+                }
+            });
+
+            if (!isValid) {
+                return;
+            }
+
             this.showCreatePassword();
         }
     }
@@ -390,6 +408,10 @@ class Controller {
             }
 
             await this.importImpl(keyPair, walletClass);
+
+            this.sendToView('importCompleted', {state: 'success'});
+        } else {
+            this.sendToView('importCompleted', {state: 'failure'});
         }
     }
 
@@ -418,6 +440,7 @@ class Controller {
 
         this.sendToView('setIsLedger', this.isLedger);
         this.sendToView('showScreen', {name: 'readyToGo'});
+        this.sendToView('privateKeySaved');
     }
 
     async onChangePassword(oldPassword, newPassword) {
@@ -431,6 +454,7 @@ class Controller {
         await Controller.saveWords(words, newPassword);
 
         this.sendToView('closePopup');
+        this.sendToView('passwordChanged');
     }
 
     async onEnterPassword(password) {
@@ -443,6 +467,7 @@ class Controller {
         }
 
         this.afterEnterPassword(words);
+        this.sendToView('passwordEntered');
     }
 
     // MAIN
@@ -471,7 +496,7 @@ class Controller {
 
     initView() {
         if (!this.myAddress || !localStorage.getItem('words')) {
-            this.sendToView('showScreen', {name: 'start'})
+            this.sendToView('showScreen', {name: 'start', noAnimation: true})
         } else {
             this.sendToView('showScreen', {name: 'main', myAddress: this.myAddress});
             if (this.balance !== null) {
@@ -588,13 +613,20 @@ class Controller {
      */
     async showSendConfirm(amount, toAddress, comment, needQueue) {
         if (amount.lte(0) || this.balance.lt(amount)) {
+            this.sendToView('sendCheckFailed');
             return;
         }
         if (!Address.isValid(toAddress)) {
+            this.sendToView('sendCheckFailed');
             return;
         }
 
         const fee = await this.getFees(amount, toAddress, comment);
+
+        if (this.balance.sub(fee).lt(amount)) {
+            this.sendToView('sendCheckCantPayFee', {fee});
+            return;
+        }
 
         if (this.isLedger) {
 
@@ -622,8 +654,9 @@ class Controller {
                 toAddress: toAddress,
                 fee: fee.toString()
             }, needQueue);
-
         }
+
+        this.sendToView('sendCheckSucceeded');
     }
 
     /**
@@ -837,6 +870,15 @@ class Controller {
                 break;
             case 'onBackupDone':
                 this.onBackupDone();
+                break;
+            case 'onConfirmBack':
+                this.showBackup(this.myMnemonicWords);
+                break;
+            case 'onImportBack':
+                this.sendToView('showScreen', {name: 'start'})
+                break;
+            case 'onConfirmDone':
+                this.onConfirmDone(params.words);
                 break;
             case 'showMain':
                 this.showMain();
