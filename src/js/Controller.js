@@ -129,13 +129,14 @@ class Controller {
 
         this.ton = new TonWeb(new TonWeb.HttpProvider(IS_TESTNET ? testnetRpc : mainnetRpc, {apiKey: IS_EXTENSION ? extensionApiKey : apiKey}));
         this.myAddress = localStorage.getItem('address');
+        this.publicKeyHex = localStorage.getItem('publicKey');
+
         if (!this.myAddress || !localStorage.getItem('words')) {
             localStorage.clear();
             this.sendToView('showScreen', {name: 'start', noAnimation: true})
         } else {
             if (localStorage.getItem('isLedger') === 'true') {
                 this.isLedger = true;
-                this.publicKeyHex = localStorage.getItem('publicKey');
                 this.sendToView('setIsLedger', this.isLedger);
             }
 
@@ -274,6 +275,8 @@ class Controller {
             wc: 0
         });
         this.myAddress = (await this.walletContract.getAddress()).toString(true, true, true);
+        this.publicKeyHex = TonWeb.utils.bytesToHex(keyPair.publicKey);
+        localStorage.setItem('publicKey', this.publicKeyHex);
         localStorage.setItem('walletVersion', walletVersion);
         this.sendToView('disableCreated', false);
     }
@@ -423,6 +426,8 @@ class Controller {
             wc: 0
         });
         this.myAddress = (await this.walletContract.getAddress()).toString(true, true, true);
+        this.publicKeyHex = TonWeb.utils.bytesToHex(keyPair.publicKey);
+        localStorage.setItem('publicKey', this.publicKeyHex);
         localStorage.setItem('walletVersion', this.walletContract.getName());
         this.showCreatePassword();
     }
@@ -923,6 +928,24 @@ class Controller {
         }
     }
 
+    requestPublicKey(needQueue) {
+        return new Promise((resolve, reject) => {
+            if (!popupPort) {
+                showExtensionPopup();
+            }
+
+            this.afterEnterPassword = async words => {
+                const privateKey = await Controller.wordsToPrivateKey(words);
+                const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
+                this.publicKeyHex = TonWeb.utils.bytesToHex(keyPair.publicKey);
+                localStorage.setItem('publicKey', this.publicKeyHex);
+                resolve();
+            };
+
+            this.sendToView('showPopup', {name: 'enterPassword'}, needQueue);
+        });
+    }
+
     async onDappMessage(method, params) {
         // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md
         // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1102.md
@@ -931,6 +954,19 @@ class Controller {
         switch (method) {
             case 'ton_requestAccounts':
                 return (this.myAddress ? [this.myAddress] : []);
+            case 'ton_requestWallets':
+                if (!this.myAddress) {
+                    return [];
+                }
+                if (!this.publicKeyHex) {
+                    await this.requestPublicKey(needQueue);
+                }
+                const walletVersion = localStorage.getItem('walletVersion');
+                return [{
+                    address: this.myAddress,
+                    publicKey: this.publicKeyHex,
+                    walletVersion: walletVersion
+                }];
             case 'ton_getBalance':
                 return (this.balance ? this.balance.toString() : '');
             case 'ton_sendTransaction':
