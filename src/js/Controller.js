@@ -492,6 +492,7 @@ class Controller {
 
             this.walletContract = new walletClass(this.ton.provider, {
                 address: this.myAddress,
+                publicKey: this.publicKeyHex ? TonWeb.utils.hexToBytes(this.publicKeyHex) : undefined,
                 wc: 0
             });
         }
@@ -593,6 +594,10 @@ class Controller {
      * @return {Promise<BN>} in nanograms
      */
     async getFees(amount, toAddress, comment, stateInit) {
+        if (!this.isContractInitialized && !this.publicKeyHex) {
+            return TonWeb.utils.toNano(0.010966001);
+        }
+
         const query = await this.sign(toAddress, amount, comment, null, stateInit);
         const all_fees = await query.estimateFee();
         const fees = all_fees.source_fees;
