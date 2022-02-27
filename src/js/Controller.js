@@ -384,37 +384,42 @@ class Controller {
     async import(words) {
         this.myMnemonicWords = words;
         if (this.myMnemonicWords) {
-            const privateKey = await Controller.wordsToPrivateKey(this.myMnemonicWords);
-            const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
+            try {
+                const privateKey = await Controller.wordsToPrivateKey(this.myMnemonicWords);
+                const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
 
-            let hasBalance = [];
+                let hasBalance = [];
 
-            for (let WalletClass of this.ton.wallet.list) {
-                const wallet = new WalletClass(this.ton.provider, {
-                    publicKey: keyPair.publicKey,
-                    wc: 0
-                });
-                const walletAddress = (await wallet.getAddress()).toString(true, true, true);
-                const walletInfo = await this.ton.provider.getWalletInfo(walletAddress);
-                const walletBalance = this.getBalance(walletInfo);
-                if (walletBalance.gt(new BN(0))) {
-                    hasBalance.push({balance: walletBalance, clazz: WalletClass});
+                for (let WalletClass of this.ton.wallet.list) {
+                    const wallet = new WalletClass(this.ton.provider, {
+                        publicKey: keyPair.publicKey,
+                        wc: 0
+                    });
+                    const walletAddress = (await wallet.getAddress()).toString(true, true, true);
+                    const walletInfo = await this.ton.provider.getWalletInfo(walletAddress);
+                    const walletBalance = this.getBalance(walletInfo);
+                    if (walletBalance.gt(new BN(0))) {
+                        hasBalance.push({balance: walletBalance, clazz: WalletClass});
+                    }
+                    console.log(wallet.getName(), walletAddress, walletInfo, walletBalance.toString());
                 }
-                console.log(wallet.getName(), walletAddress, walletInfo, walletBalance.toString());
+
+                let walletClass = this.ton.wallet.all[DEFAULT_WALLET_VERSION];
+
+                if (hasBalance.length > 0) {
+                    hasBalance.sort((a, b) => {
+                        return a.balance.cmp(b.balance);
+                    });
+                    walletClass = hasBalance[hasBalance.length - 1].clazz;
+                }
+
+                await this.importImpl(keyPair, walletClass);
+
+                this.sendToView('importCompleted', {state: 'success'});
+            } catch (e) {
+                console.error(e);
+                this.sendToView('importCompleted', {state: 'failure'});
             }
-
-            let walletClass = this.ton.wallet.all[DEFAULT_WALLET_VERSION];
-
-            if (hasBalance.length > 0) {
-                hasBalance.sort((a, b) => {
-                    return a.balance.cmp(b.balance);
-                });
-                walletClass = hasBalance[hasBalance.length - 1].clazz;
-            }
-
-            await this.importImpl(keyPair, walletClass);
-
-            this.sendToView('importCompleted', {state: 'success'});
         } else {
             this.sendToView('importCompleted', {state: 'failure'});
         }
@@ -588,29 +593,20 @@ class Controller {
      * @return {Promise<BN>} in nanograms
      */
     async getFees(amount, toAddress, comment, stateInit) {
-        if (!this.isContractInitialized) {
-            return TonWeb.utils.toNano(0.010966001);
-        }
+        const query = await this.sign(toAddress, amount, comment, null, stateInit);
+        const all_fees = await query.estimateFee();
+        const fees = all_fees.source_fees;
+        const in_fwd_fee = new BN(fees.in_fwd_fee);
+        const storage_fee = new BN(fees.storage_fee);
+        const gas_fee = new BN(fees.gas_fee);
+        const fwd_fee = new BN(fees.fwd_fee);
 
-        try {
-            const query = await this.sign(toAddress, amount, comment, null, stateInit);
-            const all_fees = await query.estimateFee();
-            const fees = all_fees.source_fees;
-            const in_fwd_fee = new BN(fees.in_fwd_fee);
-            const storage_fee = new BN(fees.storage_fee);
-            const gas_fee = new BN(fees.gas_fee);
-            const fwd_fee = new BN(fees.fwd_fee);
-
-            // const tooltip_text = '<span>External processing fee ' + (fees.in_fwd_fee / 1e9).toString() + ' grams</span></br>' +
-            //     '<span>Storage fee ' + (fees.storage_fee / 1e9).toString() + ' grams</span></br>' +
-            //     '<span>Gas fee ' + (fees.gas_fee / 1e9).toString() + ' grams</span></br>' +
-            //     '<span>Forwarding fees ' + (fees.fwd_fee / 1e9).toString() + ' grams</span>';
-            //
-            return in_fwd_fee.add(storage_fee).add(gas_fee).add(fwd_fee);
-        } catch (err) {
-            console.error(err);
-            return new BN(0);
-        }
+        // const tooltip_text = '<span>External processing fee ' + (fees.in_fwd_fee / 1e9).toString() + ' grams</span></br>' +
+        //     '<span>Storage fee ' + (fees.storage_fee / 1e9).toString() + ' grams</span></br>' +
+        //     '<span>Gas fee ' + (fees.gas_fee / 1e9).toString() + ' grams</span></br>' +
+        //     '<span>Forwarding fees ' + (fees.fwd_fee / 1e9).toString() + ' grams</span>';
+        //
+        return in_fwd_fee.add(storage_fee).add(gas_fee).add(fwd_fee);
     };
 
     /**
@@ -630,7 +626,15 @@ class Controller {
             return;
         }
 
-        const fee = await this.getFees(amount, toAddress, comment, stateInit);
+        let fee;
+
+        try {
+            fee = await this.getFees(amount, toAddress, comment, stateInit);
+        } catch (e) {
+            console.error(e);
+            this.sendToView('sendCheckFailed');
+            return;
+        }
 
         if (this.balance.sub(fee).lt(amount)) {
             this.sendToView('sendCheckCantPayFee', {fee});
