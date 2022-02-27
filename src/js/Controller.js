@@ -282,7 +282,7 @@ class Controller {
     }
 
     async createPrivateKey() {
-        this.showBackup(this.myMnemonicWords);
+        this.showBackup(this.myMnemonicWords, true);
     }
 
     // BACKUP WALLET
@@ -294,8 +294,8 @@ class Controller {
         this.sendToView('showPopup', {name: 'enterPassword'});
     }
 
-    showBackup(words) {
-        this.sendToView('showScreen', {name: 'backup', words});
+    showBackup(words, isFirst) {
+        this.sendToView('showScreen', {name: 'backup', words, isFirst});
     }
 
     onBackupDone() {

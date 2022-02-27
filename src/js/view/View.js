@@ -1051,7 +1051,7 @@ class View {
                     case 'backup':
                         this.clearConfirmWords();
                         this.setBackupWords(params.words);
-                        this.backupShownTime = +new Date();
+                        this.backupShownTime = params.isFirst ? (+new Date()) : 0;
                         break;
                     case 'wordsConfirm':
                         this.clearConfirmWords();
