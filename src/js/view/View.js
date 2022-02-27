@@ -328,7 +328,7 @@ class View {
         $('#send_btn').addEventListener('click', (e) => {
             const amount = Number($('#amountInput').value);
             const amountNano = toNano(amount);
-            if (amountNano.lte(0) || this.balance.lt(amountNano)) {
+            if (!amountNano.gt(new BN(0)) || this.balance.lt(amountNano)) {
                 $('#amountInput').classList.add('error');
                 return;
             }

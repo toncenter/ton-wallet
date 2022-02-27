@@ -621,7 +621,7 @@ class Controller {
      * @param stateInit? {Cell}
      */
     async showSendConfirm(amount, toAddress, comment, needQueue, stateInit) {
-        if (amount.lte(0) || this.balance.lt(amount)) {
+        if (!amount.gt(new BN(0)) || this.balance.lt(amount)) {
             this.sendToView('sendCheckFailed');
             return;
         }
