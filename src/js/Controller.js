@@ -127,13 +127,14 @@ class Controller {
 
         const mainnetRpc = 'https://toncenter.com/api/v2/jsonRPC';
         const testnetRpc = 'https://testnet.toncenter.com/api/v2/jsonRPC';
+        const apiKeyTestNet = '472450bcf39f0c00b371e0ce0a29ead388f15da1915989a1a607ccb0fe4f2441';
         const apiKey = '4f96a149e04e0821d20f9e99ee716e20ff52db7238f38663226b1c0f303003e0';
         const extensionApiKey = '503af517296765c3f1729fcb301b063a00650a50a881eeaddb6307d5d45e21aa';
         this.sendToView('setIsTestnet', IS_TESTNET)
 
         localStorage.removeItem('pwdHash');
 
-        this.ton = new TonWeb(new TonWeb.HttpProvider(IS_TESTNET ? testnetRpc : mainnetRpc, {apiKey: IS_EXTENSION ? extensionApiKey : apiKey}));
+        this.ton = new TonWeb(new TonWeb.HttpProvider(IS_TESTNET ? testnetRpc : mainnetRpc, {apiKey: IS_EXTENSION ? (IS_TESTNET ? apiKeyTestNet : extensionApiKey) : apiKey}));
         this.myAddress = localStorage.getItem('address');
         this.publicKeyHex = localStorage.getItem('publicKey');
 
