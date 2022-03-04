@@ -1,15 +1,18 @@
 import {
-    $, clearElement,
+    $, $$, clearElement,
     copyToClipboard,
     createElement,
     formatDate,
     formatDateFull,
     formatTime,
     IMPORT_WORDS_COUNT,
+    CONFIRM_WORDS_COUNT,
     onInput, setAddr,
     toggle,
     parseTransferUrl,
     formatTransferUrl,
+    toggleFaded,
+    triggerClass
 } from "./Utils.js";
 
 import {initLotties, lotties} from "./Lottie.js";
@@ -19,12 +22,21 @@ const toNano = TonWeb.utils.toNano;
 const formatNanograms = TonWeb.utils.fromNano;
 const BN = TonWeb.utils.BN;
 
-function toggleLottie(lottie, visible) {
+function toggleLottie(lottie, visible, params) {
+    params = params || {};
+    clearTimeout(lottie.hideTimeout);
     if (visible) {
         lottie.player.play();
     } else {
         lottie.player.stop();
-        lottie.ctx.clearRect(0, 0, 1000, 1000);
+
+        if (params.hideDelay) {
+            lottie.hideTimeout = setTimeout(() => {
+                lottie.ctx.clearRect(0, 0, 1000, 1000);
+            }, params.hideDelay)
+        } else {
+            lottie.ctx.clearRect(0, 0, 1000, 1000);
+        }
     }
 }
 
@@ -43,8 +55,23 @@ class View {
         this.currentScreenName = null;
         /** @type   {boolean} */
         this.isTestnet = false;
+        /** @type   {string} */
+        this.popup = ''; // current opened popup
 
-        this.createImportInputs();
+        this.createWordInputs({
+            count: IMPORT_WORDS_COUNT,
+            dropdownId: '#wordsPopup',
+            inputId: '#importsInput',
+            containerId: '#importWords',
+            multiColumns: true
+        });
+        this.createWordInputs({
+            count: CONFIRM_WORDS_COUNT,
+            dropdownId: '#wordsConfirmPopup',
+            inputId: '#confirmInput',
+            containerId: '#confirmWords',
+            multiColumns: false
+        });
 
         initLotties().then(() => {
             const lottie = lotties[this.currentScreenName];
@@ -122,14 +149,105 @@ class View {
         //     window.open('https://exchange.mercuryo.io/?currency=TONCOIN&address=' + this.myAddress, '_blank');
         // });
 
-        $('#import_alertBtn').addEventListener('click', () => alert('Too Bad. Without the secret words, you can\'t restore access to your wallet.'));
-        $('#import_continueBtn').addEventListener('click', async () => this.sendMessage('import', {words: await this.getImportWords()}));
+        $('#import_backBtn').addEventListener('click', () => {
+            this.isBack = true;
+            this.sendMessage('onImportBack')
+        });
+
+        $('#import_alertBtn').addEventListener('click', () => {
+            this.showAlert({
+                title: 'Too Bad',
+                message: 'Without the secret words, you can\'t restore access to your wallet.',
+                buttons: [
+                    {
+                        label: 'CANCEL',
+                        callback: () => {
+                            this.isBack = true;
+                            this.sendMessage('onImportBack');
+                        }
+                    },
+                    {
+                        label: 'ENTER WORDS',
+                        callback: () => {
+                            this.closePopup();
+                        }
+                    },
+                ]
+            });
+        });
+        $('#import_continueBtn').addEventListener('click', async (e) => {
+            this.toggleButtonLoader(e.currentTarget, true);
+            this.sendMessage('import', {words: await this.getImportWords()})
+        });
 
         $('#createdContinueButton').addEventListener('click', () => this.sendMessage('createPrivateKey'));
 
-        $('#backup_continueBtn').addEventListener('click', () => this.sendMessage('onBackupDone'));
+        $('#backup_continueBtn').addEventListener('click', () => {
+            const currentTime = +new Date();
+            if (currentTime - this.backupShownTime < 60000) { //1 minute
+                this.showAlert({
+                    title: 'Sure done?',
+                    message: 'You didn\'t have enough time to write these words down.',
+                    buttons: [
+                        {
+                            label: 'I\'M SURE',
+                            callback: () => {
+                                this.sendMessage('onBackupDone');
+                            }
+                        },
+                        {
+                            label: 'OK, SORRY',
+                            callback: () => {
+                                this.closePopup();
+                            }
+                        },
+                    ]
+                });
+            } else {
+                this.sendMessage('onBackupDone')
+            }
+        });
 
-        $('#createPassword_continueBtn').addEventListener('click', () => {
+        $('#wordsConfirm_backBtn').addEventListener('click', () => {
+            this.isBack = true;
+            this.sendMessage('onConfirmBack');
+        });
+
+        $('#wordsConfirm_continueBtn').addEventListener('click', () => {
+            const confirmWords = this.getConfirmWords();
+
+            if (!confirmWords.isWordsFromList) {
+                return;
+            }
+
+            if (!confirmWords.isRightWords) {
+                this.showAlert({
+                    title: 'Incorrect words',
+                    message: 'The secret words you have entered do not match the ones in the list.',
+                    buttons: [
+                        {
+                            label: 'SEE WORDS',
+                            callback: () => {
+                                this.isBack = true;
+                                this.sendMessage('onConfirmBack');
+                            }
+                        },
+                        {
+                            label: 'TRY AGAIN',
+                            callback: () => {
+                                this.closePopup();
+                            }
+                        },
+                    ]
+                });
+            } else {
+                this.sendMessage('onConfirmDone', {words: confirmWords.words});
+            }
+        });
+
+
+
+        $('#createPassword_continueBtn').addEventListener('click', (e) => {
             const password = $('#createPassword_input').value;
             const passwordRepeat = $('#createPassword_repeatInput').value;
 
@@ -140,6 +258,7 @@ class View {
             } else if (password !== passwordRepeat) {
                 $('#createPassword_repeatInput').classList.add('error');
             } else {
+                this.toggleButtonLoader(e.currentTarget, true);
                 this.sendMessage('passwordCreated', {password});
             }
         });
@@ -199,10 +318,10 @@ class View {
 
         $('#connectLedger_cancelBtn').addEventListener('click', () => this.closePopup());
 
-        $('#send_btn').addEventListener('click', () => {
+        $('#send_btn').addEventListener('click', (e) => {
             const amount = Number($('#amountInput').value);
             const amountNano = toNano(amount);
-            if (amountNano.lte(0) || this.balance.lt(amountNano)) {
+            if (!amountNano.gt(new BN(0)) || this.balance.lt(amountNano)) {
                 $('#amountInput').classList.add('error');
                 return;
             }
@@ -213,6 +332,7 @@ class View {
             }
             const comment = $('#commentInput').value;
 
+            this.toggleButtonLoader(e.currentTarget, true);
             this.sendMessage('onSend', {amount: amountNano.toString(), toAddress, comment});
         });
         $('#send_closeBtn').addEventListener('click', () => this.closePopup());
@@ -230,7 +350,7 @@ class View {
         $('#about_closeBtn').addEventListener('click', () => this.closePopup());
 
         $('#changePassword_cancelBtn').addEventListener('click', () => this.closePopup());
-        $('#changePassword_okBtn').addEventListener('click', async () => {
+        $('#changePassword_okBtn').addEventListener('click', async (e) => {
             const oldPassword = $('#changePassword_oldInput').value;
             const newPassword = $('#changePassword_newInput').value;
             const passwordRepeat = $('#changePassword_repeatInput').value;
@@ -247,13 +367,15 @@ class View {
                 return;
             }
 
+            this.toggleButtonLoader(e.currentTarget, true);
             this.sendMessage('onChangePassword', {oldPassword, newPassword});
         });
 
         $('#enterPassword_cancelBtn').addEventListener('click', () => this.closePopup());
-        $('#enterPassword_okBtn').addEventListener('click', async () => {
+        $('#enterPassword_okBtn').addEventListener('click', async (e) => {
             const password = $('#enterPassword_input').value;
 
+            this.toggleButtonLoader(e.currentTarget, true);
             this.sendMessage('onEnterPassword', {password})
         });
 
@@ -266,40 +388,71 @@ class View {
     showScreen(name) {
         this.closePopup();
 
-        const screens = ['start', 'created', 'backup', 'import', 'createPassword', 'readyToGo', 'main'];
+        const screens = ['start', 'created', 'backup', 'wordsConfirm', 'import', 'createPassword', 'readyToGo', 'main'];
 
         screens.forEach(screen => {
-            const display = screen === 'main' ? 'flex' : 'block';
-            toggle($('#' + screen), name === screen ? display : false);
+            toggleFaded($('#' + screen), name === screen, {
+                isBack: this.isBack,
+            });
 
             const lottie = lotties[screen];
             if (lottie) {
-                toggleLottie(lottie, name === screen);
+                toggleLottie(lottie, name === screen, {hideDelay: 300}); //300ms, as for screen show/hide animation duration in CSS
             }
         });
         this.currentScreenName = name;
 
+        this.isBack = false;
+
         window.scrollTo(0, 0);
+    }
+
+    toggleButtonLoader(el, enable) {
+        el.disabled = enable;
+        enable ? el.classList.add('btn-loader') : el.classList.remove('btn-loader');
+    }
+
+    showAlert(params) {
+        $('#alert .popup-title').innerText = params.title;
+        $('#alert .popup-black-text').innerText = params.message;
+        $('#alert .popup-footer').innerHTML = '';
+
+        if (params.buttons) {
+            params.buttons.forEach(button => {
+                const el = createElement({
+                    tag: 'button',
+                    clazz: 'btn-lite',
+                    text: button.label
+                });
+                $('#alert .popup-footer').appendChild(el);
+                el.addEventListener('click', button.callback);
+            });
+        }
+
+        this.showPopup('alert');
     }
 
     showPopup(name) {
         $('#enterPassword_input').value = '';
 
-        toggle($('#modal'), name !== '');
+        //popups switching without animations
+        if (this.popup && name) {
+            triggerClass(document.body, 'disable-animations', 20);
+        }
 
-        const popups = ['receive', 'invoice', 'invoiceQr', 'send', 'sendConfirm', 'signConfirm', 'processing', 'done', 'menuDropdown', 'about', 'delete', 'changePassword', 'enterPassword', 'transaction', 'connectLedger'];
+        toggleFaded($('#modal'), name !== '');
+
+        const popups = ['alert', 'receive', 'invoice', 'invoiceQr', 'send', 'sendConfirm', 'signConfirm', 'processing', 'done', 'menuDropdown', 'about', 'delete', 'changePassword', 'enterPassword', 'transaction', 'connectLedger'];
 
         popups.forEach(popup => {
-            toggle($('#' + popup), name === popup);
+            toggleFaded($('#' + popup), name === popup);
             const lottie = lotties[popup];
             if (lottie) {
                 toggleLottie(lottie, name === popup);
             }
         });
-    }
 
-    isPopupVisible(name) {
-        return $('#' + name).style.display === 'block';
+        this.popup = name;
     }
 
     closePopup() {
@@ -344,30 +497,30 @@ class View {
         clearElement($('#createWords'));
     }
 
-    // IMPORT SCREEN
+    // IMPORT && CONFIRM SCREENS
 
-    createImportInputs() {
+    createWordInputs(params) {
+
         const onEnter = input => {
             const i = Number(input.getAttribute('tabindex'));
-            if (i === IMPORT_WORDS_COUNT) {
+            if (i === params.count) {
 
             } else {
-                $('#importInput' + i).focus();
+                $(params.inputId + i).focus();
             }
         };
 
-        this.importDropDown = new DropDown($('#wordsPopup'), onEnter, this.mnemonicWords);
-
+        const dropdown = new DropDown($(params.dropdownId), onEnter, this.mnemonicWords);
         let lastInput = null;
 
         const showWordsPopup = input => {
             const text = input.value;
             if (text === null || text.length === 0) {
-                toggle($('#wordsPopup'), false);
+                toggle($(params.dropdownId), false);
                 return;
             }
 
-            this.importDropDown.show(input, text.toLowerCase());
+            dropdown.show(input, text.toLowerCase());
         };
 
         function onWordInput(e) {
@@ -384,7 +537,7 @@ class View {
         };
 
         const onFocusOut = (e) => {
-            toggle($('#wordsPopup'), false);
+            toggle($(params.dropdownId), false);
             if (lastInput) {
                 const value = lastInput.value.toLowerCase().trim();
                 if (value.length > 0 && this.mnemonicWords.indexOf(value) === -1) {
@@ -399,19 +552,19 @@ class View {
             const input = e.target;
             switch (e.key) {
                 case 'Enter':
-                    const selectedText = this.importDropDown.getSelectedText();
+                    const selectedText = dropdown.getSelectedText();
                     if (selectedText) {
                         input.value = selectedText;
                         input.classList.remove('error');
-                        this.importDropDown.hide();
+                        dropdown.hide();
                     }
                     onEnter(input);
                     break;
                 case 'ArrowUp':
-                    this.importDropDown.up();
+                    dropdown.up();
                     break;
                 case 'ArrowDown':
-                    this.importDropDown.down();
+                    dropdown.down();
                     break;
             }
         };
@@ -419,12 +572,12 @@ class View {
         const onPaste = (event) => {
             const text = (event.clipboardData || window.clipboardData).getData('text');
             let arr = text.split(' ');
-            if (arr.length !== IMPORT_WORDS_COUNT) {
+            if (arr.length !== params.count) {
                 arr = text.split(',');
             }
-            if (arr.length === IMPORT_WORDS_COUNT) {
-                for (let i = 0; i < IMPORT_WORDS_COUNT; i++) {
-                    const input = $('#importInput' + i);
+            if (arr.length === params.count) {
+                for (let i = 0; i < params.count; i++) {
+                    const input = $(params.inputId + i);
                     const value = arr[i].toLowerCase().trim();
                     if (!value || this.mnemonicWords.indexOf(value) === -1) {
                         input.classList.add('error');
@@ -442,9 +595,10 @@ class View {
             const span = createElement({tag: 'span', clazz: 'word-num', text: (n + 1) + '.'});
             inputContainer.appendChild(span);
             const input = createElement({tag: 'input'});
-            input.id = 'importInput' + n;
+            input.id = params.inputId.slice(1) + n;
             input.type = 'text';
             input.tabIndex = n + 1;
+            input.autocomplete = 'off';
             inputContainer.appendChild(input);
 
             input.addEventListener('focusin', onFocusIn);
@@ -453,21 +607,56 @@ class View {
             input.addEventListener('paste', onPaste);
             onInput(input, onWordInput);
 
-            $('#importWords').appendChild(inputContainer);
+            $(params.containerId).appendChild(inputContainer);
         };
 
-        for (let i = 0; i < IMPORT_WORDS_COUNT / 2; i++) {
-            createInput(i);
-            createInput(i + IMPORT_WORDS_COUNT / 2);
+        if (params.multiColumns) {
+            for (let i = 0; i < params.count / 2; i++) {
+                createInput(i);
+                createInput(i + params.count / 2);
+            }
+        } else {
+            for (let i = 0; i < params.count ; i++) {
+                createInput(i);
+            }
         }
     }
 
     clearImportWords() {
         toggle($('#wordsPopup'), false);
         for (let i = 0; i < IMPORT_WORDS_COUNT; i++) {
-            const input = $('#importInput' + i);
+            const input = $('#importsInput' + i);
             input.value = '';
             input.classList.remove('error');
+        }
+    }
+
+    clearConfirmWords() {
+        toggle($('#wordsConfirmPopup'), false);
+        for (let i = 0; i < CONFIRM_WORDS_COUNT; i++) {
+            const input = $('#confirmInput' + i);
+            input.value = '';
+            input.setAttribute('data-word', '');
+            input.classList.remove('error');
+        }
+    }
+
+    setConfirmWords(words) {
+        const nums = Array(IMPORT_WORDS_COUNT)
+            .fill(0)
+            .map((_, i) => ({i, rnd: Math.random()}))
+            .sort((a, b) => a.rnd - b.rnd)
+            .map(i => i.i)
+            .slice(0, CONFIRM_WORDS_COUNT)
+            .sort((a, b) => a-b);
+
+        const spans = $$('#confirmWordsNums span');
+        for (let i = 0; i < CONFIRM_WORDS_COUNT; i++) {
+            const input = $('#confirmInput' + i);
+            input.setAttribute('data-index', nums[i]);
+            input.setAttribute('data-word', words[nums[i]]);
+            spans[i].innerText = nums[i] + 1;
+            input.parentNode.children[0].innerText = (nums[i] + 1) + '.';
         }
     }
 
@@ -475,7 +664,7 @@ class View {
         let isValid = true;
         const words = [];
         for (let i = 0; i < IMPORT_WORDS_COUNT; i++) {
-            const input = $('#importInput' + i);
+            const input = $('#importsInput' + i);
             const value = input.value.toLowerCase().trim();
             if (!value || this.mnemonicWords.indexOf(value) === -1) {
                 input.classList.add('error');
@@ -488,13 +677,40 @@ class View {
             isValid = await TonWeb.mnemonic.validateMnemonic(words);
             if (!isValid) {
                 for (let i = 0; i < IMPORT_WORDS_COUNT; i++) {
-                    const input = $('#importInput' + i);
+                    const input = $('#importsInput' + i);
                     input.classList.add('error');
                 }
             }
         }
 
         return isValid ? words : null;
+    }
+
+    getConfirmWords() {
+        let isWordsFromList = true;
+        let isRightWords = true;
+        const words = {};
+
+        for (let i = 0; i < CONFIRM_WORDS_COUNT; i++) {
+            const input = $('#confirmInput' + i);
+            const value = input.value.toLowerCase().trim();
+            const index = input.getAttribute('data-index');
+            const validValue = input.getAttribute('data-word');
+            if (!value || this.mnemonicWords.indexOf(value) === -1) {
+                input.classList.add('error');
+                isWordsFromList = false;
+            }
+            if (value !== validValue) {
+                isRightWords = false;
+            }
+            words[index] = value;
+        }
+
+        return {
+            isWordsFromList,
+            isRightWords,
+            words: isWordsFromList && isRightWords ? words : null
+        }
     }
 
     // CREATE PASSWORD SCREEN
@@ -519,8 +735,8 @@ class View {
     }
 
     onSettingsClick() {
-        toggle($('#modal'), true);
-        toggle($('#menuDropdown'), true);
+        toggleFaded($('#modal'), true);
+        toggleFaded($('#menuDropdown'), true);
         toggle($('#menu_changePassword'), !this.isLedger);
         toggle($('#menu_backupWallet'), !this.isLedger);
     }
@@ -660,15 +876,13 @@ class View {
         const data = onyAddress ? this.myAddress : formatTransferUrl({ address: this.myAddress });
         const text = onyAddress ? 'Wallet address copied to clipboard' : 'Transfer link copied to clipboard';
         $('#notify').innerText = copyToClipboard(data) ? text : 'Can\'t copy link';
-        toggle($('#notify'), true);
-        setTimeout(() => toggle($('#notify'), false), 2000);
+        triggerClass($('#notify'), 'faded-show', 2000)
     }
 
     onShowAddressOnDevice() {
         this.sendMessage('showAddressOnDevice');
         $('#notify').innerText = 'Please check the address on your device';
-        toggle($('#notify'), true);
-        setTimeout(() => toggle($('#notify'), false), 2000);
+        triggerClass($('#notify'), 'faded-show', 2000)
     }
 
     // RECEIVE INVOICE POPUP
@@ -701,8 +915,7 @@ class View {
 
     onShareInvoiceClick() {
         $('#notify').innerText = copyToClipboard(this.getInvoiceLink()) ? 'Transfer link copied to clipboard' : 'Can\'t copy link';
-        toggle($('#notify'), true);
-        setTimeout(() => toggle($('#notify'), false), 2000);
+        triggerClass($('#notify'), 'faded-show', 2000)
     }
 
     // RECEIVE INVOICE QR POPUP
@@ -770,32 +983,78 @@ class View {
                 }
                 break;
 
+            case 'privateKeySaved':
+                this.toggleButtonLoader($('#createPassword_continueBtn'), false);
+                break;
+
+            case 'passwordChanged':
+                this.toggleButtonLoader($('#changePassword_okBtn'), false);
+                break;
+
             case 'showChangePasswordError':
+                this.toggleButtonLoader($('#changePassword_okBtn'), false);
                 $('#changePassword_oldInput').classList.add('error');
                 break;
 
+            case 'passwordEntered':
+                this.toggleButtonLoader($('#enterPassword_okBtn'), false);
+                break;
+
             case 'showEnterPasswordError':
+                this.toggleButtonLoader($('#enterPassword_okBtn'), false);
                 $('#enterPassword_input').classList.add('error');
                 break;
 
+            case 'importCompleted':
+                this.toggleButtonLoader($('#import_continueBtn'), false);
+                break;
+
+            case 'sendCheckFailed':
+            case 'sendCheckSucceeded':
+                this.toggleButtonLoader($('#send_btn'), false);
+                break;
+
+            case 'sendCheckCantPayFee':
+                this.toggleButtonLoader($('#send_btn'), false);
+                $('#amountInput').classList.add('error');
+
+                $('#notify').innerText = `Estimated fee is ~${formatNanograms(params.fee)} TON`;
+                triggerClass($('#notify'), 'faded-show', 3000)
+
+                break;
+
             case 'showScreen':
+                if (params.noAnimation) {
+                    triggerClass(document.body, 'disable-animations', 300);
+                }
+
                 this.showScreen(params.name);
 
                 switch (params.name) {
                     case 'start':
                         this.clearBalance();
+                        this.clearImportWords();
                         break;
                     case 'created':
                         break;
                     case 'import':
                         this.clearImportWords();
-                        $('#importInput0').focus();
+                        $('#importsInput0').focus();
                         break;
                     case 'backup':
+                        this.clearConfirmWords();
                         this.setBackupWords(params.words);
+                        this.backupShownTime = params.isFirst ? (+new Date()) : 0;
+                        break;
+                    case 'wordsConfirm':
+                        this.clearConfirmWords();
+                        this.clearBackupWords();
+                        $('#confirmInput0').focus();
+                        this.setConfirmWords(params.words);
                         break;
                     case 'createPassword':
                         this.clearImportWords();
+                        this.clearConfirmWords();
                         this.clearCreatePassword();
                         $('#createPassword_input').focus();
                         break;

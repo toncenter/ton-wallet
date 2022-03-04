@@ -16,6 +16,30 @@ function toggle(div, visible) {
     div.style.display = d;
 }
 
+function toggleFaded(div, isVisible, params) {
+    params = params || {};
+    if (params.isBack) {
+        div.classList.add('isBack');
+    } else {
+        div.classList.remove('isBack');
+    }
+    if (isVisible) {
+        div.classList.add('faded-show');
+        div.classList.remove('faded-hide');
+    } else {
+        div.classList.remove('faded-show');
+        div.classList.add('faded-hide');
+    }
+}
+
+function triggerClass(div, className, duration) {
+    div.classList.add(className);
+
+    setTimeout(() => {
+        div.classList.remove(className);
+    }, duration);
+}
+
 function createElement(params) {
     const item = document.createElement(params.tag);
     if (params.clazz) {
@@ -174,11 +198,14 @@ function formatTransferUrl(transfer) {
 }
 
 const IMPORT_WORDS_COUNT = 24;
+const CONFIRM_WORDS_COUNT = 3;
 
 export {
     $,
     $$,
     toggle,
+    toggleFaded,
+    triggerClass,
     createElement,
     clearElement,
     onInput,
@@ -190,5 +217,6 @@ export {
     copyToClipboard,
     parseTransferUrl,
     formatTransferUrl,
-    IMPORT_WORDS_COUNT
+    IMPORT_WORDS_COUNT,
+    CONFIRM_WORDS_COUNT
 };
