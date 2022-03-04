@@ -1,13 +1,9 @@
-const code = `
-%%PROVIDER_CODE%%
-`;
-
-function injectScript(content) {
+function injectScript() {
     try {
         const container = document.head || document.documentElement
         const scriptTag = document.createElement('script')
         scriptTag.setAttribute('async', 'false')
-        scriptTag.textContent = content
+        scriptTag.src = chrome.runtime.getURL('/js/extension/tonProvider.js');
         container.insertBefore(scriptTag, container.children[0])
         container.removeChild(scriptTag)
     } catch (e) {
@@ -15,12 +11,12 @@ function injectScript(content) {
     }
 }
 
-injectScript(code); // inject to dapp page
+injectScript(); // inject to dapp page
 
-const port = chrome.runtime.connect({name: 'gramWalletContentScript'})
+const port = chrome.runtime.connect({ name: 'gramWalletContentScript' });
 port.onMessage.addListener(function (msg) {
     // Receive msg from Controller.js and resend to dapp page
-    self.postMessage(msg, "*"); // todo: origin
+    self.postMessage(msg, '*'); // todo: origin
 });
 
 self.addEventListener('message', function (event) {

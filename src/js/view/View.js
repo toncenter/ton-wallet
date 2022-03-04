@@ -1128,6 +1128,17 @@ class View {
             case 'closePopup':
                 this.closePopup();
                 break;
+
+            case 'restoreDeprecatedStorage':
+                const address = localStorage.getItem('address');
+                const words = localStorage.getItem('words');
+                const walletVersion = localStorage.getItem('walletVersion');
+                const isLedger = localStorage.getItem('isLedger');
+                const magic = localStorage.getItem('magic');
+                const proxy = localStorage.getItem('proxy');
+
+                return {address, words, walletVersion, isLedger, magic, proxy};
+
         }
     }
 }
@@ -1138,7 +1149,10 @@ try {
     const port = chrome.runtime.connect({name: 'gramWalletPopup'})
     window.view.port = port;
     port.onMessage.addListener(function (msg) {
-        window.view.onMessage(msg.method, msg.params);
+        const result = window.view.onMessage(msg.method, msg.params);
+        if (result && msg.id) {
+            port.postMessage({method: 'response', id: msg.id, result});
+        }
     });
 } catch (e) {
 
