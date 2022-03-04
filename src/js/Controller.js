@@ -83,6 +83,11 @@ async function decrypt(ciphertext, password) {
     return plaintext;                                                                   // return the plaintext
 }
 
+// CONTROLLER
+
+const IS_TESTNET = window.location.href.indexOf('testnet') > -1;
+const IS_EXTENSION = !!(window.chrome && chrome.runtime && chrome.runtime.onConnect);
+
 const ACCOUNT_NUMBER = 0;
 
 const DEFAULT_WALLET_VERSION = 'v3R2';
@@ -120,20 +125,24 @@ class Controller {
             window.view.controller = this;
         }
 
-        // Send current testnet state to View
-        this.sendToView('setIsTestnet', this.isTestnet);
+        const mainnetRpc = 'https://toncenter.com/api/v2/jsonRPC';
+        const testnetRpc = 'https://testnet.toncenter.com/api/v2/jsonRPC';
+        const apiKey = '4f96a149e04e0821d20f9e99ee716e20ff52db7238f38663226b1c0f303003e0';
+        const extensionApiKey = '503af517296765c3f1729fcb301b063a00650a50a881eeaddb6307d5d45e21aa';
+        this.sendToView('setIsTestnet', IS_TESTNET)
 
         localStorage.removeItem('pwdHash');
 
-        this.ton = new TonWeb(new TonWeb.HttpProvider(this.isTestnet ? TESTNET_RPC : MAINNET_RPC));
+        this.ton = new TonWeb(new TonWeb.HttpProvider(IS_TESTNET ? testnetRpc : mainnetRpc, {apiKey: IS_EXTENSION ? extensionApiKey : apiKey}));
         this.myAddress = localStorage.getItem('address');
+        this.publicKeyHex = localStorage.getItem('publicKey');
+
         if (!this.myAddress || !localStorage.getItem('words')) {
             localStorage.clear();
-            this.sendToView('showScreen', {name: 'start'})
+            this.sendToView('showScreen', {name: 'start', noAnimation: true})
         } else {
             if (localStorage.getItem('isLedger') === 'true') {
                 this.isLedger = true;
-                this.publicKeyHex = localStorage.getItem('publicKey');
                 this.sendToView('setIsLedger', this.isLedger);
             }
 
@@ -237,9 +246,10 @@ class Controller {
      * @param amount    {BN}  Transfer value in nanograms
      * @param comment   {String}  Transfer comment
      * @param keyPair    nacl.KeyPair
+     * @param stateInit? {Cell}
      * @return Promise<{send: Function, estimateFee: Function}>
      */
-    async sign(toAddress, amount, comment, keyPair) {
+    async sign(toAddress, amount, comment, keyPair, stateInit) {
         const wallet = await this.getWallet(this.myAddress);
         let seqno = wallet.seqno;
         if (!seqno) seqno = 0;
@@ -251,7 +261,8 @@ class Controller {
             amount: amount,
             seqno: seqno,
             payload: comment,
-            sendMode: 3
+            sendMode: 3,
+            stateInit
         });
     }
 
@@ -270,12 +281,14 @@ class Controller {
             wc: 0
         });
         this.myAddress = (await this.walletContract.getAddress()).toString(true, true, true);
+        this.publicKeyHex = TonWeb.utils.bytesToHex(keyPair.publicKey);
+        localStorage.setItem('publicKey', this.publicKeyHex);
         localStorage.setItem('walletVersion', walletVersion);
         this.sendToView('disableCreated', false);
     }
 
     async createPrivateKey() {
-        this.showBackup(this.myMnemonicWords);
+        this.showBackup(this.myMnemonicWords, true);
     }
 
     // BACKUP WALLET
@@ -287,14 +300,32 @@ class Controller {
         this.sendToView('showPopup', {name: 'enterPassword'});
     }
 
-    showBackup(words) {
-        this.sendToView('showScreen', {name: 'backup', words});
+    showBackup(words, isFirst) {
+        this.sendToView('showScreen', {name: 'backup', words, isFirst});
     }
 
     onBackupDone() {
         if (localStorage.getItem('words')) {
             this.sendToView('showScreen', {name: 'main'});
         } else {
+            this.sendToView('showScreen', {name: 'wordsConfirm', words: this.myMnemonicWords});
+        }
+    }
+
+    onConfirmDone(words) {
+        if (words) {
+            let isValid = true;
+
+            Object.keys(words).forEach(index => {
+                if (this.myMnemonicWords[index] !== words[index]) {
+                    isValid = false;
+                }
+            });
+
+            if (!isValid) {
+                return;
+            }
+
             this.showCreatePassword();
         }
     }
@@ -359,35 +390,44 @@ class Controller {
     async import(words) {
         this.myMnemonicWords = words;
         if (this.myMnemonicWords) {
-            const privateKey = await Controller.wordsToPrivateKey(this.myMnemonicWords);
-            const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
+            try {
+                const privateKey = await Controller.wordsToPrivateKey(this.myMnemonicWords);
+                const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
 
-            let hasBalance = [];
+                let hasBalance = [];
 
-            for (let WalletClass of this.ton.wallet.list) {
-                const wallet = new WalletClass(this.ton.provider, {
-                    publicKey: keyPair.publicKey,
-                    wc: 0
-                });
-                const walletAddress = (await wallet.getAddress()).toString(true, true, true);
-                const walletInfo = await this.ton.provider.getWalletInfo(walletAddress);
-                const walletBalance = this.getBalance(walletInfo);
-                if (walletBalance.gt(new BN(0))) {
-                    hasBalance.push({balance: walletBalance, clazz: WalletClass});
+                for (let WalletClass of this.ton.wallet.list) {
+                    const wallet = new WalletClass(this.ton.provider, {
+                        publicKey: keyPair.publicKey,
+                        wc: 0
+                    });
+                    const walletAddress = (await wallet.getAddress()).toString(true, true, true);
+                    const walletInfo = await this.ton.provider.getWalletInfo(walletAddress);
+                    const walletBalance = this.getBalance(walletInfo);
+                    if (walletBalance.gt(new BN(0))) {
+                        hasBalance.push({balance: walletBalance, clazz: WalletClass});
+                    }
+                    console.log(wallet.getName(), walletAddress, walletInfo, walletBalance.toString());
                 }
-                console.log(wallet.getName(), walletAddress, walletInfo, walletBalance.toString());
+
+                let walletClass = this.ton.wallet.all[DEFAULT_WALLET_VERSION];
+
+                if (hasBalance.length > 0) {
+                    hasBalance.sort((a, b) => {
+                        return a.balance.cmp(b.balance);
+                    });
+                    walletClass = hasBalance[hasBalance.length - 1].clazz;
+                }
+
+                await this.importImpl(keyPair, walletClass);
+
+                this.sendToView('importCompleted', {state: 'success'});
+            } catch (e) {
+                console.error(e);
+                this.sendToView('importCompleted', {state: 'failure'});
             }
-
-            let walletClass = this.ton.wallet.all[DEFAULT_WALLET_VERSION];
-
-            if (hasBalance.length > 0) {
-                hasBalance.sort((a, b) => {
-                    return a.balance.cmp(b.balance);
-                });
-                walletClass = hasBalance[hasBalance.length - 1].clazz;
-            }
-
-            await this.importImpl(keyPair, walletClass);
+        } else {
+            this.sendToView('importCompleted', {state: 'failure'});
         }
     }
 
@@ -397,6 +437,8 @@ class Controller {
             wc: 0
         });
         this.myAddress = (await this.walletContract.getAddress()).toString(true, true, true);
+        this.publicKeyHex = TonWeb.utils.bytesToHex(keyPair.publicKey);
+        localStorage.setItem('publicKey', this.publicKeyHex);
         localStorage.setItem('walletVersion', this.walletContract.getName());
         this.showCreatePassword();
     }
@@ -416,6 +458,7 @@ class Controller {
 
         this.sendToView('setIsLedger', this.isLedger);
         this.sendToView('showScreen', {name: 'readyToGo'});
+        this.sendToView('privateKeySaved');
     }
 
     async onChangePassword(oldPassword, newPassword) {
@@ -429,6 +472,7 @@ class Controller {
         await Controller.saveWords(words, newPassword);
 
         this.sendToView('closePopup');
+        this.sendToView('passwordChanged');
     }
 
     async onEnterPassword(password) {
@@ -441,6 +485,7 @@ class Controller {
         }
 
         this.afterEnterPassword(words);
+        this.sendToView('passwordEntered');
     }
 
     // MAIN
@@ -453,6 +498,7 @@ class Controller {
 
             this.walletContract = new walletClass(this.ton.provider, {
                 address: this.myAddress,
+                publicKey: this.publicKeyHex ? TonWeb.utils.hexToBytes(this.publicKeyHex) : undefined,
                 wc: 0
             });
         }
@@ -469,7 +515,7 @@ class Controller {
 
     initView() {
         if (!this.myAddress || !localStorage.getItem('words')) {
-            this.sendToView('showScreen', {name: 'start'})
+            this.sendToView('showScreen', {name: 'start', noAnimation: true})
         } else {
             this.sendToView('showScreen', {name: 'main', myAddress: this.myAddress});
             if (this.balance !== null) {
@@ -482,6 +528,9 @@ class Controller {
     }
 
     update(force) {
+        // if (!document.hasFocus()) {
+        //     return;
+        // }
         const needUpdate = (this.processingVisible && this.sendingData) || (this.balance === null) || force;
 
         if (!needUpdate) return;
@@ -548,49 +597,61 @@ class Controller {
      * @param amount    {BN}    in nanograms
      * @param toAddress {string}
      * @param comment?  {string}
+     * @param stateInit? {Cell}
      * @return {Promise<BN>} in nanograms
      */
-    async getFees(amount, toAddress, comment) {
-        if (!this.isContractInitialized) {
+    async getFees(amount, toAddress, comment, stateInit) {
+        if (!this.isContractInitialized && !this.publicKeyHex) {
             return TonWeb.utils.toNano(0.010966001);
         }
 
-        try {
-            const query = await this.sign(toAddress, amount, comment, null);
-            const all_fees = await query.estimateFee();
-            const fees = all_fees.source_fees;
-            const in_fwd_fee = new BN(fees.in_fwd_fee);
-            const storage_fee = new BN(fees.storage_fee);
-            const gas_fee = new BN(fees.gas_fee);
-            const fwd_fee = new BN(fees.fwd_fee);
+        const query = await this.sign(toAddress, amount, comment, null, stateInit);
+        const all_fees = await query.estimateFee();
+        const fees = all_fees.source_fees;
+        const in_fwd_fee = new BN(fees.in_fwd_fee);
+        const storage_fee = new BN(fees.storage_fee);
+        const gas_fee = new BN(fees.gas_fee);
+        const fwd_fee = new BN(fees.fwd_fee);
 
-            // const tooltip_text = '<span>External processing fee ' + (fees.in_fwd_fee / 1e9).toString() + ' grams</span></br>' +
-            //     '<span>Storage fee ' + (fees.storage_fee / 1e9).toString() + ' grams</span></br>' +
-            //     '<span>Gas fee ' + (fees.gas_fee / 1e9).toString() + ' grams</span></br>' +
-            //     '<span>Forwarding fees ' + (fees.fwd_fee / 1e9).toString() + ' grams</span>';
-            //
-            return in_fwd_fee.add(storage_fee).add(gas_fee).add(fwd_fee);
-        } catch (err) {
-            console.error(err);
-            return new BN(0);
-        }
+        // const tooltip_text = '<span>External processing fee ' + (fees.in_fwd_fee / 1e9).toString() + ' grams</span></br>' +
+        //     '<span>Storage fee ' + (fees.storage_fee / 1e9).toString() + ' grams</span></br>' +
+        //     '<span>Gas fee ' + (fees.gas_fee / 1e9).toString() + ' grams</span></br>' +
+        //     '<span>Forwarding fees ' + (fees.fwd_fee / 1e9).toString() + ' grams</span>';
+        //
+        return in_fwd_fee.add(storage_fee).add(gas_fee).add(fwd_fee);
     };
 
     /**
      * @param amount    {BN} in nanograms
      * @param toAddress {string}
      * @param comment?  {string | Uint8Array}
-     * @param needQueue {boolean}
+     * @param needQueue? {boolean}
+     * @param stateInit? {Cell}
      */
-    async showSendConfirm(amount, toAddress, comment, needQueue) {
-        if (amount.lte(0) || this.balance.lt(amount)) {
+    async showSendConfirm(amount, toAddress, comment, needQueue, stateInit) {
+        if (!amount.gt(new BN(0)) || this.balance.lt(amount)) {
+            this.sendToView('sendCheckFailed');
             return;
         }
         if (!Address.isValid(toAddress)) {
+            this.sendToView('sendCheckFailed');
             return;
         }
 
-        const fee = await this.getFees(amount, toAddress, comment);
+        let fee;
+
+        try {
+            fee = await this.getFees(amount, toAddress, comment, stateInit);
+        } catch (e) {
+            console.error(e);
+            this.sendToView('sendCheckFailed');
+            return;
+        }
+
+        if (this.balance.sub(fee).lt(amount)) {
+            this.sendToView('sendCheckCantPayFee', {fee});
+            return;
+        }
 
         if (this.isLedger) {
 
@@ -601,7 +662,7 @@ class Controller {
                 fee: fee.toString()
             }, needQueue);
 
-            this.send(toAddress, amount, comment, null);
+            this.send(toAddress, amount, comment, null, stateInit);
 
         } else {
 
@@ -609,7 +670,7 @@ class Controller {
                 this.processingVisible = true;
                 this.sendToView('showPopup', {name: 'processing'});
                 const privateKey = await Controller.wordsToPrivateKey(words);
-                this.send(toAddress, amount, comment, privateKey);
+                this.send(toAddress, amount, comment, privateKey, stateInit);
             };
 
             this.sendToView('showPopup', {
@@ -618,8 +679,9 @@ class Controller {
                 toAddress: toAddress,
                 fee: fee.toString()
             }, needQueue);
-
         }
+
+        this.sendToView('sendCheckSucceeded');
     }
 
     /**
@@ -655,11 +717,16 @@ class Controller {
      * @param amount    {BN} in nanograms
      * @param comment   {string}
      * @param privateKey    {string}
+     * @param stateInit? {Cell}
      */
-    async send(toAddress, amount, comment, privateKey) {
+    async send(toAddress, amount, comment, privateKey, stateInit) {
         try {
             let addressFormat = 0;
             if (this.isLedger) {
+
+                if (stateInit) {
+                    throw new Error('stateInit dont supported by Ledger');
+                }
 
                 if (!this.ledgerApp) {
                     await this.createLedger(localStorage.getItem('ledgerTransportType') || 'hid');
@@ -701,7 +768,7 @@ class Controller {
             } else {
 
                 const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
-                const query = await this.sign(toAddress, amount, comment, keyPair);
+                const query = await this.sign(toAddress, amount, comment, keyPair, stateInit);
                 this.sendingData = {toAddress: toAddress, amount: amount, comment: comment, query: query};
                 await this.sendQuery(query);
 
@@ -834,6 +901,15 @@ class Controller {
             case 'onBackupDone':
                 this.onBackupDone();
                 break;
+            case 'onConfirmBack':
+                this.showBackup(this.myMnemonicWords);
+                break;
+            case 'onImportBack':
+                this.sendToView('showScreen', {name: 'start'})
+                break;
+            case 'onConfirmDone':
+                this.onConfirmDone(params.words);
+                break;
             case 'showMain':
                 this.showMain();
                 break;
@@ -876,6 +952,24 @@ class Controller {
         }
     }
 
+    requestPublicKey(needQueue) {
+        return new Promise((resolve, reject) => {
+            if (!popupPort) {
+                showExtensionPopup();
+            }
+
+            this.afterEnterPassword = async words => {
+                const privateKey = await Controller.wordsToPrivateKey(words);
+                const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
+                this.publicKeyHex = TonWeb.utils.bytesToHex(keyPair.publicKey);
+                localStorage.setItem('publicKey', this.publicKeyHex);
+                resolve();
+            };
+
+            this.sendToView('showPopup', {name: 'enterPassword'}, needQueue);
+        });
+    }
+
     async onDappMessage(method, params) {
         // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md
         // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1102.md
@@ -884,6 +978,19 @@ class Controller {
         switch (method) {
             case 'ton_requestAccounts':
                 return (this.myAddress ? [this.myAddress] : []);
+            case 'ton_requestWallets':
+                if (!this.myAddress) {
+                    return [];
+                }
+                if (!this.publicKeyHex) {
+                    await this.requestPublicKey(needQueue);
+                }
+                const walletVersion = localStorage.getItem('walletVersion');
+                return [{
+                    address: this.myAddress,
+                    publicKey: this.publicKeyHex,
+                    walletVersion: walletVersion
+                }];
             case 'ton_getBalance':
                 return (this.balance ? this.balance.toString() : '');
             case 'ton_sendTransaction':
@@ -891,14 +998,19 @@ class Controller {
                 if (!popupPort) {
                     showExtensionPopup();
                 }
-                if (param.dataType === 'hex') {
-                    param.data = TonWeb.utils.hexToBytes(param.data);
-                } else if (param.dataType === 'base64') {
-                    param.data = TonWeb.utils.base64ToBytes(param.data);
-                } else if (param.dataType === 'boc') {
-                    param.data = TonWeb.boc.Cell.fromBoc(TonWeb.utils.base64ToBytes(param.data))[0];
+                if (param.data) {
+                    if (param.dataType === 'hex') {
+                        param.data = TonWeb.utils.hexToBytes(param.data);
+                    } else if (param.dataType === 'base64') {
+                        param.data = TonWeb.utils.base64ToBytes(param.data);
+                    } else if (param.dataType === 'boc') {
+                        param.data = TonWeb.boc.Cell.oneFromBoc(TonWeb.utils.base64ToBytes(param.data));
+                    }
                 }
-                this.showSendConfirm(new BN(param.value), param.to, param.data, needQueue);
+                if (param.stateInit) {
+                    param.stateInit = TonWeb.boc.Cell.oneFromBoc(TonWeb.utils.base64ToBytes(param.stateInit));
+                }
+                this.showSendConfirm(new BN(param.value), param.to, param.data, needQueue, param.stateInit);
                 return true;
             case 'ton_rawSign':
                 const signParam = params[0];
@@ -915,7 +1027,7 @@ class Controller {
 
 const controller = new Controller();
 
-if (chrome.runtime && chrome.runtime.onConnect) {
+if (window.chrome && chrome.runtime && chrome.runtime.onConnect) {
     chrome.runtime.onConnect.addListener(port => {
         if (port.name === 'gramWalletContentScript') {
             contentScriptPort = port;
