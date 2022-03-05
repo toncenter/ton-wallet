@@ -6,7 +6,7 @@ const queueToPopup = [];
 
 const showExtensionPopup = () => {
     const cb = (currentPopup) => {
-        this._popupId = currentPopup.id
+        // this._popupId = currentPopup.id
     };
     const creation = chrome.windows.create({
         url: 'popup.html',
@@ -14,7 +14,7 @@ const showExtensionPopup = () => {
         width: 400,
         height: 600,
         top: 0,
-        left: self.innerWidth - 400,
+        left: 0,
     }, cb);
 }
 
@@ -1098,10 +1098,19 @@ if (IS_EXTENSION) {
             popupPort.onDisconnect.addListener(() => {
                 popupPort = null;
             });
-            queueToPopup.forEach(msg => popupPort.postMessage(msg));
-            queueToPopup.length = 0;
+
+            const runQueueToPopup = () => {
+                queueToPopup.forEach(msg => popupPort.postMessage(msg));
+                queueToPopup.length = 0;
+            }
+
+            if (!controller.myAddress) { // if controller not initialized yet
+                runQueueToPopup();
+            }
+
             controller.whenReady.then(async () => {
-                controller.initView();
+                await controller.initView();
+                runQueueToPopup();
             });
         }
     });
