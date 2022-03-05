@@ -1133,11 +1133,11 @@ class View {
                 const address = localStorage.getItem('address');
                 const words = localStorage.getItem('words');
                 const walletVersion = localStorage.getItem('walletVersion');
-                const isLedger = localStorage.getItem('isLedger');
                 const magic = localStorage.getItem('magic');
                 const proxy = localStorage.getItem('proxy');
+                localStorage.clear();
 
-                return {address, words, walletVersion, isLedger, magic, proxy};
+                return {address, words, walletVersion, magic, proxy};
 
         }
     }

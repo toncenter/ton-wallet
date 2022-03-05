@@ -205,7 +205,7 @@ class Controller {
 
     async _restoreDeprecatedStorage() {
         const {
-            address, words, walletVersion, isLedger, magic, proxy,
+            address, words, walletVersion, magic, proxy,
         } = await this.sendToView('restoreDeprecatedStorage', undefined, true, true);
 
         if (!address || !words) {
@@ -216,7 +216,6 @@ class Controller {
             storage.setItem('address', address),
             storage.setItem('words', words),
             storage.setItem('walletVersion', walletVersion),
-            storage.setItem('isLedger', isLedger),
             storage.setItem('magic', magic),
             storage.setItem('proxy', proxy),
         ])
@@ -908,42 +907,42 @@ class Controller {
             case 'showScreen':
                 switch (params.name) {
                     case 'created':
-                        this.showCreated();
+                        await this.showCreated();
                         break;
                     case 'import':
                         this.showImport();
                         break;
                     case 'importLedger':
-                        this.importLedger(params.transportType);
+                        await this.importLedger(params.transportType);
                         break;
                 }
                 break;
             case 'import':
-                this.import(params.words);
+                await this.import(params.words);
                 break;
             case 'createPrivateKey':
-                this.createPrivateKey();
+                await this.createPrivateKey();
                 break;
             case 'passwordCreated':
-                this.savePrivateKey(params.password);
+                await this.savePrivateKey(params.password);
                 break;
             case 'update':
                 this.update(true);
                 break;
             case 'showAddressOnDevice':
-                this.showAddressOnDevice();
+                await this.showAddressOnDevice();
                 break;
             case 'onEnterPassword':
-                this.onEnterPassword(params.password);
+                await this.onEnterPassword(params.password);
                 break;
             case 'onChangePassword':
-                this.onChangePassword(params.oldPassword, params.newPassword);
+                await this.onChangePassword(params.oldPassword, params.newPassword);
                 break;
             case 'onSend':
-                this.showSendConfirm(new BN(params.amount), params.toAddress, params.comment);
+                await this.showSendConfirm(new BN(params.amount), params.toAddress, params.comment);
                 break;
             case 'onBackupDone':
-                this.onBackupDone();
+                await this.onBackupDone();
                 break;
             case 'onConfirmBack':
                 this.showBackup(this.myMnemonicWords);
@@ -955,13 +954,13 @@ class Controller {
                 this.onConfirmDone(params.words);
                 break;
             case 'showMain':
-                this.showMain();
+                await this.showMain();
                 break;
             case 'onBackupWalletClick':
                 this.onBackupWalletClick();
                 break;
             case 'disconnect':
-                this.onDisconnectClick();
+                await this.onDisconnectClick();
                 break;
             case 'onClosePopup':
                 this.processingVisible = false;
@@ -1063,7 +1062,7 @@ class Controller {
 
 const controller = new Controller();
 
-if (chrome.runtime && chrome.runtime.onConnect) {
+if (IS_EXTENSION) {
     chrome.runtime.onConnect.addListener(port => {
         if (port.name === 'gramWalletContentScript') {
             contentScriptPort = port;
@@ -1099,10 +1098,10 @@ if (chrome.runtime && chrome.runtime.onConnect) {
             popupPort.onDisconnect.addListener(() => {
                 popupPort = null;
             });
-            queueToPopup.forEach(msg => popupPort.postMessage(msg));
-            queueToPopup.length = 0;
-            controller.whenReady.then(() => {
-                controller.initView();
+            controller.whenReady.then(async () => {
+                await controller.initView();
+                queueToPopup.forEach(msg => popupPort.postMessage(msg));
+                queueToPopup.length = 0;
             });
         }
     });
