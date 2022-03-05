@@ -88,7 +88,7 @@ async function decrypt(ciphertext, password) {
 // CONTROLLER
 
 const IS_TESTNET = self.location.href.indexOf('testnet') > -1;
-const IS_EXTENSION = !!(self.chrome && chrome.runtime && chrome.runtime.id);
+const IS_EXTENSION = !!(self.chrome && chrome.runtime && chrome.runtime.onConnect);
 
 const ACCOUNT_NUMBER = 0;
 
@@ -1098,10 +1098,10 @@ if (IS_EXTENSION) {
             popupPort.onDisconnect.addListener(() => {
                 popupPort = null;
             });
+            queueToPopup.forEach(msg => popupPort.postMessage(msg));
+            queueToPopup.length = 0;
             controller.whenReady.then(async () => {
-                await controller.initView();
-                queueToPopup.forEach(msg => popupPort.postMessage(msg));
-                queueToPopup.length = 0;
+                controller.initView();
             });
         }
     });
