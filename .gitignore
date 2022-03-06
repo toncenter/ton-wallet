@@ -3,6 +3,7 @@
 node_modules
 .env
 build/
+build-firefox/
 build.tar
 deploy.sh
 deploy_plugin.sh

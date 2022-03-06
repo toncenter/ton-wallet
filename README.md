@@ -26,6 +26,14 @@ https://chrome.google.com/webstore/detail/ton-wallet/nphplpgoakhhjchkkhmiggakijn
 
 - Click "Load unpacked extension" and specify ton-wallet/build folder
 
+# Mozilla Firefox Add-on Developer Mode
+
+- Open Mozilla Firefox
+
+- Go to about:debugging#/runtime/this-firefox
+
+- Click "Load Temporary Add-on" and select ton-wallet/build-firefox/manifest.json file
+
 # Build
 
 `npm install`

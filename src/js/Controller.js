@@ -570,8 +570,8 @@ class Controller {
             this.balance = balance;
 
             const isContractInitialized = this.checkContractInitialized(response) && response.seqno;
-            console.log('isBalanceChanged', isBalanceChanged);
-            console.log('isContractInitialized', isContractInitialized);
+            // console.log('isBalanceChanged', isBalanceChanged);
+            // console.log('isContractInitialized', isContractInitialized);
 
             if (!this.isContractInitialized && isContractInitialized) {
                 this.isContractInitialized = true;
