@@ -260,8 +260,6 @@ class TonProvider {
     }
 }
 
-console.log('[TON Wallet] Plugin is here');
-
 window.ton = new TonProvider();
 
 function toggleMagicBadge(isTurnedOn) {

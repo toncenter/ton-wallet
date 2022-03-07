@@ -9,6 +9,8 @@ import {
     CONFIRM_WORDS_COUNT,
     onInput, setAddr,
     toggle,
+    parseTransferUrl,
+    formatTransferUrl,
     toggleFaded,
     triggerClass
 } from "./Utils.js";
@@ -37,6 +39,8 @@ function toggleLottie(lottie, visible, params) {
         }
     }
 }
+
+const IS_FIREFOX = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
 
 class View {
     constructor(mnemonicWords) {
@@ -101,33 +105,24 @@ class View {
         }
 
         $('#toWalletInput').addEventListener('paste', e => {
-            // ton://transfer/EQA0i8-CdGnF_DhUHHf92R1ONH6sIA9vLZ_WLcCIhfBBXwtG
-            // ton://transfer/EQA0i8-CdGnF_DhUHHf92R1ONH6sIA9vLZ_WLcCIhfBBXwtG?amount=1000000000
-            // ton://transfer/EQA0i8-CdGnF_DhUHHf92R1ONH6sIA9vLZ_WLcCIhfBBXwtG?amount=1000000000&text=data
+            const urlString = getClipboardData(e);
+            const transfer = parseTransferUrl(urlString);
 
-            const url = getClipboardData(e);
-
-            if (url.startsWith('ton://transfer/')) {
-                if (!(url.length === 63 || url[63] === '?')) {
-                    e.preventDefault();
-                    return;
-                }
-                let s = url.substring('ton://transfer/'.length);
-                $('#toWalletInput').value = s.substring(0, 48);
-                s = s.substring(49);
-                const pairs = s.split('&');
-                pairs
-                    .map(p => p.split('='))
-                    .forEach(arr => {
-                        if (arr[0] === 'amount') {
-                            $('#amountInput').value = TonWeb.utils.fromNano(new BN(arr[1]));
-                        } else if (arr[0] === 'text') {
-                            $('#commentInput').value = arr[1];
-                        }
-                    });
-
-                e.preventDefault();
+            if (!transfer) {
+                return;
             }
+
+            $('#toWalletInput').value = transfer.address;
+
+            if (transfer.amount) {
+                $('#amountInput').value = TonWeb.utils.fromNano(new BN(transfer.amount));
+            }
+
+            if (transfer.text) {
+                $('#commentInput').value = transfer.text;
+            }
+
+            e.preventDefault();
         });
 
         onInput($('#invoice_amountInput'), () => this.updateInvoiceLink());
@@ -286,26 +281,16 @@ class View {
 
         $('#modal').addEventListener('click', () => this.closePopup());
 
+        if (IS_FIREFOX) {
+            toggle($('#menu_magic'), false);
+            toggle($('.about-magic'), false);
+        }
+
         $('#menu_magic').addEventListener('click', () => {
             $('#menu_magic .dropdown-toggle').classList.toggle('toggle-on');
             const isTurnedOn = $('#menu_magic .dropdown-toggle').classList.contains('toggle-on');
             $('#menu_telegram').classList.toggle('menu_telegram-show', isTurnedOn);
             this.sendMessage('onMagicClick', isTurnedOn);
-        });
-
-        $('#menu_testnet').addEventListener('click', () => {
-            $('#menu_testnet .dropdown-toggle').classList.toggle('toggle-on');
-            const isTurnedOn = $('#menu_testnet .dropdown-toggle').classList.contains('toggle-on');
-            this.isTestnet = isTurnedOn;
-            $('.your-balance').innerText = isTurnedOn ? 'Your testnet balance' : 'Your mainnet balance';
-            $('#menu_testnet').classList.toggle('menu_telegram-show', isTurnedOn);
-
-            // Update controller
-            this.sendMessage('onTestnetClick', isTurnedOn);
-
-            // Update balance, etc.
-            this.setUpdating(true);
-            this.sendMessage('update')
         });
 
         $('#menu_telegram').addEventListener('click', () => {
@@ -317,6 +302,8 @@ class View {
             this.sendMessage('onProxyClick', $('#menu_proxy .dropdown-toggle').classList.contains('toggle-on'));
         });
 
+        $('#menu_extension_chrome').addEventListener('click', () => window.open('https://chrome.google.com/webstore/detail/ton-wallet/nphplpgoakhhjchkkhmiggakijnkhfnd', '_blank'));
+        $('#menu_extension_firefox').addEventListener('click', () => window.open('https://addons.mozilla.org/ru/firefox/addon/', '_blank'));
         $('#menu_about').addEventListener('click', () => this.showPopup('about'));
         $('#menu_changePassword').addEventListener('click', () => this.onMessage('showPopup', {name: 'changePassword'}));
         $('#menu_backupWallet').addEventListener('click', () => this.sendMessage('onBackupWalletClick'));
@@ -883,7 +870,7 @@ class View {
         setAddr($('#receive .addr'), address);
         clearElement($('#qr'));
         const options = {
-            text: 'ton://transfer/' + address,
+            text: formatTransferUrl({ address }),
             width: 185 * window.devicePixelRatio,
             height: 185 * window.devicePixelRatio,
             logo: "assets/gem@large.png",
@@ -895,7 +882,7 @@ class View {
     }
 
     onShareAddressClick(onyAddress) {
-        const data = onyAddress ? this.myAddress : 'ton://transfer/' + this.myAddress;
+        const data = onyAddress ? this.myAddress : formatTransferUrl({ address: this.myAddress });
         const text = onyAddress ? 'Wallet address copied to clipboard' : 'Transfer link copied to clipboard';
         $('#notify').innerText = copyToClipboard(data) ? text : 'Can\'t copy link';
         triggerClass($('#notify'), 'faded-show', 2000)
@@ -918,21 +905,21 @@ class View {
     };
 
     getInvoiceLink() {
-        let url = 'ton://transfer/' + this.myAddress;
-
-        const params = [];
+        const transfer = {
+            address: this.myAddress,
+        };
 
         const amount = $('#invoice_amountInput').value;
         if (amount) {
-            params.push('amount=' + toNano(Number(amount)));
-        }
-        const comment = $('#invoice_commentInput').value;
-        if (comment) {
-            params.push('text=' + comment);
+            transfer.amount = toNano(Number(amount));
         }
 
-        if (params.length === 0) return url;
-        else return url + '?' + params.join('&');
+        const comment = $('#invoice_commentInput').value;
+        if (comment) {
+            transfer.text = comment;
+        }
+
+        return formatTransferUrl(transfer);
     }
 
     onShareInvoiceClick() {
@@ -980,7 +967,6 @@ class View {
 
             case 'setIsTestnet':
                 this.isTestnet = params;
-                $('#menu_testnet .dropdown-toggle').classList.toggle('toggle-on', params);
                 $('.your-balance').innerText = params ? 'Your testnet balance' : 'Your mainnet balance';
                 break;
 
@@ -994,8 +980,8 @@ class View {
 
             case 'setIsMagic':
                 const isTurnedOn = params;
-                $('#menu_magic .dropdown-toggle').classList.toggle('toggle-on', isTurnedOn);
-                $('#menu_telegram').classList.toggle('menu_telegram-show', isTurnedOn);
+                $('#menu_magic .dropdown-toggle').classList.toggle('toggle-on', isTurnedOn && !IS_FIREFOX);
+                $('#menu_telegram').classList.toggle('menu_telegram-show', isTurnedOn && !IS_FIREFOX);
                 break;
 
             case 'setIsProxy':
@@ -1144,6 +1130,17 @@ class View {
             case 'closePopup':
                 this.closePopup();
                 break;
+
+            case 'restoreDeprecatedStorage':
+                const address = localStorage.getItem('address');
+                const words = localStorage.getItem('words');
+                const walletVersion = localStorage.getItem('walletVersion');
+                const magic = localStorage.getItem('magic');
+                const proxy = localStorage.getItem('proxy');
+                localStorage.clear();
+
+                return {address, words, walletVersion, magic, proxy};
+
         }
     }
 }
@@ -1154,10 +1151,28 @@ try {
     const port = chrome.runtime.connect({name: 'gramWalletPopup'})
     window.view.port = port;
     port.onMessage.addListener(function (msg) {
-        window.view.onMessage(msg.method, msg.params);
+        const result = window.view.onMessage(msg.method, msg.params);
+        if (result && msg.id) {
+            port.postMessage({method: 'response', id: msg.id, result});
+        }
     });
 } catch (e) {
 
 }
 
 
+if (window.top == window && window.console) {
+    const selfXssAttentions = {
+        'ru-RU': ['Внимание!', 'Используя эту консоль, вы можете подвергнуться атаке Self-XSS, что позволит злоумышленникам завладеть вашим кошельком.\nНе вводите и не вставляйте программный код, который не понимаете.'],
+        '*': ['Attention!', 'Using this console, you can be exposed to a Self-XSS attack, allowing attackers to take over your wallet.\nDo not enter or paste program code that you do not understand.']
+    };
+
+    const userLanguage = navigator.language || navigator.userLanguage;
+    let localizedSelfXssAttention = selfXssAttentions[userLanguage];
+    if (!localizedSelfXssAttention) localizedSelfXssAttention = selfXssAttentions['*'];
+
+    console.log(
+        '%c%s', 'color: red; background: yellow; font-size: 24px;', localizedSelfXssAttention[0]
+    );
+    console.log('%c%s', 'font-size: 18px;', localizedSelfXssAttention[1]);
+}

@@ -126,6 +126,77 @@ function copyToClipboard(text) {
     return result;
 }
 
+// ton://transfer/EQA0i8-CdGnF_DhUHHf92R1ONH6sIA9vLZ_WLcCIhfBBXwtG
+// ton://transfer/EQA0i8-CdGnF_DhUHHf92R1ONH6sIA9vLZ_WLcCIhfBBXwtG?amount=1000000000
+// ton://transfer/EQA0i8-CdGnF_DhUHHf92R1ONH6sIA9vLZ_WLcCIhfBBXwtG?amount=1000000000&text=data
+// ton://transfer/EQA0i8-CdGnF_DhUHHf92R1ONH6sIA9vLZ_WLcCIhfBBXwtG?amount=1000000000&text=foo%3A%2F%2Fbar%2C%2Fbaz%3Famount%3D1%26text%3D%D1%80%D1%83
+function parseTransferUrl(urlString) {
+    if (!urlString.startsWith('ton://')) {
+        return undefined;
+    }
+
+    let url;
+
+    try {
+        url = new URL(urlString.replace(/^ton/, 'https'));
+    } catch (error) {
+        if (error.code === 'ERR_INVALID_URL') {
+            console.warn(error);
+            return undefined;
+        }
+
+        throw error;
+    }
+
+    if (url.host !== 'transfer') {
+        return undefined;
+    }
+
+    if (!url.pathname) {
+        return undefined;
+    }
+
+    const [ _, address ] = url.pathname.split('/')
+
+    if (!address) {
+        return undefined;
+    }
+
+    const result = {
+        address,
+    };
+
+    const amount = url.searchParams.get('amount');
+
+    if (amount) {
+        result.amount = amount;
+    }
+
+    const text = url.searchParams.get('text');
+
+    if (text) {
+        result.text = text;
+    }
+
+    return result;
+}
+
+function formatTransferUrl(transfer) {
+    const url = new URL('https://transfer');
+
+    url.pathname = url.pathname + transfer.address;
+
+    if (transfer.amount) {
+        url.searchParams.set('amount', transfer.amount);
+    }
+
+    if (transfer.text) {
+        url.searchParams.set('text', transfer.text);
+    }
+
+    return String(url).replace(/^https/, 'ton');
+}
+
 const IMPORT_WORDS_COUNT = 24;
 const CONFIRM_WORDS_COUNT = 3;
 
@@ -144,6 +215,8 @@ export {
     formatDate,
     formatDateFull,
     copyToClipboard,
+    parseTransferUrl,
+    formatTransferUrl,
     IMPORT_WORDS_COUNT,
     CONFIRM_WORDS_COUNT
 };

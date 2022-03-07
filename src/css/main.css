@@ -969,7 +969,11 @@ button {
     display: block;
 }
 
-.plugin #menu_extension {
+.plugin #menu_extension_chrome {
+    display: none;
+}
+
+#menu_extension_firefox {
     display: none;
 }
 
