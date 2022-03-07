@@ -77,10 +77,6 @@ input.error {
     color: #999999;
 }
 
-:-ms-input-placeholder { /* Internet Explorer 10-11 */
-    color: #999999;
-}
-
 ::placeholder {
     color: #999999;
 }
