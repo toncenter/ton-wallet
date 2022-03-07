@@ -9,6 +9,8 @@ import {
     CONFIRM_WORDS_COUNT,
     onInput, setAddr,
     toggle,
+    parseTransferUrl,
+    formatTransferUrl,
     toggleFaded,
     triggerClass
 } from "./Utils.js";
@@ -103,33 +105,24 @@ class View {
         }
 
         $('#toWalletInput').addEventListener('paste', e => {
-            // ton://transfer/EQA0i8-CdGnF_DhUHHf92R1ONH6sIA9vLZ_WLcCIhfBBXwtG
-            // ton://transfer/EQA0i8-CdGnF_DhUHHf92R1ONH6sIA9vLZ_WLcCIhfBBXwtG?amount=1000000000
-            // ton://transfer/EQA0i8-CdGnF_DhUHHf92R1ONH6sIA9vLZ_WLcCIhfBBXwtG?amount=1000000000&text=data
+            const urlString = getClipboardData(e);
+            const transfer = parseTransferUrl(urlString);
 
-            const url = getClipboardData(e);
-
-            if (url.startsWith('ton://transfer/')) {
-                if (!(url.length === 63 || url[63] === '?')) {
-                    e.preventDefault();
-                    return;
-                }
-                let s = url.substring('ton://transfer/'.length);
-                $('#toWalletInput').value = s.substring(0, 48);
-                s = s.substring(49);
-                const pairs = s.split('&');
-                pairs
-                    .map(p => p.split('='))
-                    .forEach(arr => {
-                        if (arr[0] === 'amount') {
-                            $('#amountInput').value = TonWeb.utils.fromNano(new BN(arr[1]));
-                        } else if (arr[0] === 'text') {
-                            $('#commentInput').value = arr[1];
-                        }
-                    });
-
-                e.preventDefault();
+            if (!transfer) {
+                return;
             }
+
+            $('#toWalletInput').value = transfer.address;
+
+            if (transfer.amount) {
+                $('#amountInput').value = TonWeb.utils.fromNano(new BN(transfer.amount));
+            }
+
+            if (transfer.text) {
+                $('#commentInput').value = transfer.text;
+            }
+
+            e.preventDefault();
         });
 
         onInput($('#invoice_amountInput'), () => this.updateInvoiceLink());
@@ -877,7 +870,7 @@ class View {
         setAddr($('#receive .addr'), address);
         clearElement($('#qr'));
         const options = {
-            text: 'ton://transfer/' + address,
+            text: formatTransferUrl({ address }),
             width: 185 * window.devicePixelRatio,
             height: 185 * window.devicePixelRatio,
             logo: "assets/gem@large.png",
@@ -889,7 +882,7 @@ class View {
     }
 
     onShareAddressClick(onyAddress) {
-        const data = onyAddress ? this.myAddress : 'ton://transfer/' + this.myAddress;
+        const data = onyAddress ? this.myAddress : formatTransferUrl({ address: this.myAddress });
         const text = onyAddress ? 'Wallet address copied to clipboard' : 'Transfer link copied to clipboard';
         $('#notify').innerText = copyToClipboard(data) ? text : 'Can\'t copy link';
         triggerClass($('#notify'), 'faded-show', 2000)
@@ -912,21 +905,21 @@ class View {
     };
 
     getInvoiceLink() {
-        let url = 'ton://transfer/' + this.myAddress;
-
-        const params = [];
+        const transfer = {
+            address: this.myAddress,
+        };
 
         const amount = $('#invoice_amountInput').value;
         if (amount) {
-            params.push('amount=' + toNano(Number(amount)));
-        }
-        const comment = $('#invoice_commentInput').value;
-        if (comment) {
-            params.push('text=' + comment);
+            transfer.amount = toNano(Number(amount));
         }
 
-        if (params.length === 0) return url;
-        else return url + '?' + params.join('&');
+        const comment = $('#invoice_commentInput').value;
+        if (comment) {
+            transfer.text = comment;
+        }
+
+        return formatTransferUrl(transfer);
     }
 
     onShareInvoiceClick() {
