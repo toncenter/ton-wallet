@@ -33,7 +33,7 @@ function toggleLottie(lottie, visible, params) {
         if (params.hideDelay) {
             lottie.hideTimeout = setTimeout(() => {
                 lottie.ctx.clearRect(0, 0, 1000, 1000);
-            }, params.hideDelay)
+            }, params.hideDelay);
         } else {
             lottie.ctx.clearRect(0, 0, 1000, 1000);
         }
@@ -143,7 +143,7 @@ class View {
 
         $("#start_importLedgerHidBtn").addEventListener('click', () => {
             this.showPopup('connectLedger');
-            this.sendMessage('showScreen', {name: 'importLedger', transportType: 'hid'})
+            this.sendMessage('showScreen', {name: 'importLedger', transportType: 'hid'});
         });
         // $("#start_importLedgerBleBtn").addEventListener('click', () => this.sendMessage('showScreen', {name: 'importLedger', transportType: 'ble'}));
 
@@ -153,7 +153,7 @@ class View {
 
         $('#import_backBtn').addEventListener('click', () => {
             this.isBack = true;
-            this.sendMessage('onImportBack')
+            this.sendMessage('onImportBack');
         });
 
         $('#import_alertBtn').addEventListener('click', () => {
@@ -179,7 +179,7 @@ class View {
         });
         $('#import_continueBtn').addEventListener('click', async (e) => {
             this.toggleButtonLoader(e.currentTarget, true);
-            this.sendMessage('import', {words: await this.getImportWords()})
+            this.sendMessage('import', {words: await this.getImportWords()});
         });
 
         $('#createdContinueButton').addEventListener('click', () => this.sendMessage('createPrivateKey'));
@@ -206,7 +206,7 @@ class View {
                     ]
                 });
             } else {
-                this.sendMessage('onBackupDone')
+                this.sendMessage('onBackupDone');
             }
         });
 
@@ -248,7 +248,6 @@ class View {
         });
 
 
-
         $('#createPassword_continueBtn').addEventListener('click', (e) => {
             const password = $('#createPassword_input').value;
             const passwordRepeat = $('#createPassword_repeatInput').value;
@@ -269,7 +268,7 @@ class View {
 
         $('#main_refreshBtn').addEventListener('click', () => {
             this.setUpdating(true);
-            this.sendMessage('update')
+            this.sendMessage('update');
         });
         $('#main_settingsButton').addEventListener('click', () => this.onSettingsClick());
 
@@ -385,7 +384,7 @@ class View {
             const password = $('#enterPassword_input').value;
 
             this.toggleButtonLoader(e.currentTarget, true);
-            this.sendMessage('onEnterPassword', {password})
+            this.sendMessage('onEnterPassword', {password});
         });
 
         $('#delete_cancelBtn').addEventListener('click', () => this.closePopup());
@@ -597,7 +596,7 @@ class View {
                 }
                 event.preventDefault();
             }
-        }
+        };
 
         const createInput = (n) => {
             const inputContainer = createElement({tag: 'div', clazz: 'word-item'});
@@ -625,7 +624,7 @@ class View {
                 createInput(i + params.count / 2);
             }
         } else {
-            for (let i = 0; i < params.count ; i++) {
+            for (let i = 0; i < params.count; i++) {
                 createInput(i);
             }
         }
@@ -657,7 +656,7 @@ class View {
             .sort((a, b) => a.rnd - b.rnd)
             .map(i => i.i)
             .slice(0, CONFIRM_WORDS_COUNT)
-            .sort((a, b) => a-b);
+            .sort((a, b) => a - b);
 
         const spans = $$('#confirmWordsNums span');
         for (let i = 0; i < CONFIRM_WORDS_COUNT; i++) {
@@ -719,7 +718,7 @@ class View {
             isWordsFromList,
             isRightWords,
             words: isWordsFromList && isRightWords ? words : null
-        }
+        };
     }
 
     // CREATE PASSWORD SCREEN
@@ -794,7 +793,7 @@ class View {
                 this.addDateSeparator(txDate);
                 date = txDate;
             }
-            this.addTx(tx)
+            this.addTx(tx);
         });
     }
 
@@ -813,21 +812,26 @@ class View {
             child: [
                 createElement({
                     tag: 'div',
-                child: isReceive ? [
-                    createElement({tag: 'span', clazz: ['tx-amount', 'tx-amount-green'], text: '+' + amountFormatted}),
-                    createElement({tag: 'span', text: ' 💎'}),
-                    createElement({tag: 'span', clazz: 'tx-from', text: ' from:'})
-                ] : [
-                    createElement({tag: 'span', clazz: 'tx-amount', text: amountFormatted}),
-                    createElement({tag: 'span', text: ' 💎'}),
-                    createElement({tag: 'span', clazz: 'tx-from', text: ' to:'})
-                ]}),
+                    child: isReceive ? [
+                        createElement({
+                            tag: 'span',
+                            clazz: ['tx-amount', 'tx-amount-green'],
+                            text: '+' + amountFormatted
+                        }),
+                        createElement({tag: 'span', text: ' 💎'}),
+                        createElement({tag: 'span', clazz: 'tx-from', text: ' from:'})
+                    ] : [
+                        createElement({tag: 'span', clazz: 'tx-amount', text: amountFormatted}),
+                        createElement({tag: 'span', text: ' 💎'}),
+                        createElement({tag: 'span', clazz: 'tx-from', text: ' to:'})
+                    ]
+                }),
                 setAddr(createElement({tag: 'div', clazz: ['tx-addr', 'addr']}), addr),
                 tx.comment ? createElement({tag: 'div', clazz: 'tx-comment', text: tx.comment}) : undefined,
-                createElement({tag: 'div', clazz: 'tx-fee', text: `blockchain fees: ${formatNanograms(tx.fee)}` }),
+                createElement({tag: 'div', clazz: 'tx-fee', text: `blockchain fees: ${formatNanograms(tx.fee)}`}),
                 createElement({tag: 'div', clazz: 'tx-item-date', text: formatTime(tx.date)})
             ]
-        })
+        });
 
         item.addEventListener('click', () => this.onTransactionClick(tx));
 
@@ -870,7 +874,7 @@ class View {
         setAddr($('#receive .addr'), address);
         clearElement($('#qr'));
         const options = {
-            text: formatTransferUrl({ address }),
+            text: formatTransferUrl({address}),
             width: 185 * window.devicePixelRatio,
             height: 185 * window.devicePixelRatio,
             logo: "assets/gem@large.png",
@@ -882,16 +886,16 @@ class View {
     }
 
     onShareAddressClick(onyAddress) {
-        const data = onyAddress ? this.myAddress : formatTransferUrl({ address: this.myAddress });
+        const data = onyAddress ? this.myAddress : formatTransferUrl({address: this.myAddress});
         const text = onyAddress ? 'Wallet address copied to clipboard' : 'Transfer link copied to clipboard';
         $('#notify').innerText = copyToClipboard(data) ? text : 'Can\'t copy link';
-        triggerClass($('#notify'), 'faded-show', 2000)
+        triggerClass($('#notify'), 'faded-show', 2000);
     }
 
     onShowAddressOnDevice() {
         this.sendMessage('showAddressOnDevice');
         $('#notify').innerText = 'Please check the address on your device';
-        triggerClass($('#notify'), 'faded-show', 2000)
+        triggerClass($('#notify'), 'faded-show', 2000);
     }
 
     // RECEIVE INVOICE POPUP
@@ -924,7 +928,7 @@ class View {
 
     onShareInvoiceClick() {
         $('#notify').innerText = copyToClipboard(this.getInvoiceLink()) ? 'Transfer link copied to clipboard' : 'Can\'t copy link';
-        triggerClass($('#notify'), 'faded-show', 2000)
+        triggerClass($('#notify'), 'faded-show', 2000);
     }
 
     // RECEIVE INVOICE QR POPUP
@@ -1028,7 +1032,7 @@ class View {
                 $('#amountInput').classList.add('error');
 
                 $('#notify').innerText = `Estimated fee is ~${formatNanograms(params.fee)} TON`;
-                triggerClass($('#notify'), 'faded-show', 3000)
+                triggerClass($('#notify'), 'faded-show', 3000);
 
                 break;
 
@@ -1148,7 +1152,7 @@ class View {
 window.view = new View(TonWeb.mnemonic.wordlists.EN);
 
 try {
-    const port = chrome.runtime.connect({name: 'gramWalletPopup'})
+    const port = chrome.runtime.connect({name: 'gramWalletPopup'});
     window.view.port = port;
     port.onMessage.addListener(function (msg) {
         const result = window.view.onMessage(msg.method, msg.params);

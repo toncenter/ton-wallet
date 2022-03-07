@@ -4,7 +4,7 @@ export default class DropDown {
     constructor(container, onEnter, mnemonicWords) {
         this.container = container;
         this.onEnter = onEnter;
-        this.mnemonicWords = mnemonicWords
+        this.mnemonicWords = mnemonicWords;
     }
 
     show(input, text) {

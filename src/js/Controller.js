@@ -16,7 +16,7 @@ const showExtensionPopup = () => {
         top: 0,
         left: 0,
     }, cb);
-}
+};
 
 const BN = TonWeb.utils.BN;
 const nacl = TonWeb.utils.nacl;
@@ -124,7 +124,7 @@ class Controller {
         this.pendingMessageResolvers = new Map();
         this._lastMsgId = 1;
 
-        this.sendToView('setIsTestnet', IS_TESTNET)
+        this.sendToView('setIsTestnet', IS_TESTNET);
 
         this.whenReady = this._init();
     }
@@ -189,7 +189,7 @@ class Controller {
 
             if (!this.myAddress || !(await storage.getItem('words'))) {
                 await storage.clear();
-                this.sendToView('showScreen', {name: 'start', noAnimation: true})
+                this.sendToView('showScreen', {name: 'start', noAnimation: true});
             } else {
                 if ((await storage.getItem('isLedger')) === 'true') {
                     this.isLedger = true;
@@ -218,7 +218,7 @@ class Controller {
             storage.setItem('walletVersion', walletVersion),
             storage.setItem('magic', magic),
             storage.setItem('proxy', proxy),
-        ])
+        ]);
     }
 
     async getTransactions(limit = 20) {
@@ -373,7 +373,7 @@ class Controller {
                 transport = await TonWeb.ledger.BluetoothTransport.create();
                 break;
             default:
-                throw new Error('unknown transportType' + transportType)
+                throw new Error('unknown transportType' + transportType);
         }
 
         transport.setDebugMode(true);
@@ -382,7 +382,7 @@ class Controller {
         const ledgerVersion = (await this.ledgerApp.getAppConfiguration()).version;
         console.log('ledgerAppConfig=', ledgerVersion);
         if (!ledgerVersion.startsWith('2')) {
-            alert('Please update your Ledger TON-app to v2.0.1 or upper or use old wallet version https://tonwallet.me/prev/')
+            alert('Please update your Ledger TON-app to v2.0.1 or upper or use old wallet version https://tonwallet.me/prev/');
             throw new Error('outdated ledger ton-app version');
         }
         const {publicKey} = await this.ledgerApp.getPublicKey(ACCOUNT_NUMBER, false); // todo: можно сохранять publicKey и не запрашивать это
@@ -545,7 +545,7 @@ class Controller {
 
     async initView() {
         if (!this.myAddress || !(await storage.getItem('words'))) {
-            this.sendToView('showScreen', {name: 'start', noAnimation: true})
+            this.sendToView('showScreen', {name: 'start', noAnimation: true});
         } else {
             this.sendToView('showScreen', {name: 'main', myAddress: this.myAddress});
             if (this.balance !== null) {
@@ -887,7 +887,7 @@ class Controller {
                 } else if (needQueue) {
                     queueToPopup.push(msg);
                 }
-            }
+            };
 
             if (!needResult) {
                 exec();
@@ -948,7 +948,7 @@ class Controller {
                 this.showBackup(this.myMnemonicWords);
                 break;
             case 'onImportBack':
-                this.sendToView('showScreen', {name: 'start'})
+                this.sendToView('showScreen', {name: 'start'});
                 break;
             case 'onConfirmDone':
                 this.onConfirmDone(params.words);
@@ -1105,7 +1105,7 @@ if (IS_EXTENSION) {
             const runQueueToPopup = () => {
                 queueToPopup.forEach(msg => popupPort.postMessage(msg));
                 queueToPopup.length = 0;
-            }
+            };
 
             if (!controller.myAddress) { // if controller not initialized yet
                 runQueueToPopup();
