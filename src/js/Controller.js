@@ -1067,6 +1067,12 @@ if (IS_EXTENSION) {
         if (port.name === 'gramWalletContentScript') {
             contentScriptPort = port;
             contentScriptPort.onMessage.addListener(async msg => {
+                if (msg.type === 'gramWalletAPI_ton_provider_connect') {
+                    controller.whenReady.then(() => {
+                        controller.initDapp();
+                    });
+                }
+
                 if (!msg.message) return;
                 const result = await controller.onDappMessage(msg.message.method, msg.message.params);
                 if (contentScriptPort) {
@@ -1078,9 +1084,6 @@ if (IS_EXTENSION) {
             });
             contentScriptPort.onDisconnect.addListener(() => {
                 contentScriptPort = null;
-            });
-            controller.whenReady.then(() => {
-                controller.initDapp();
             });
         } else if (port.name === 'gramWalletPopup') {
             popupPort = port;
