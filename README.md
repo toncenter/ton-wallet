@@ -36,15 +36,13 @@ https://addons.mozilla.org/ru/firefox/addon/
 
 - Go to about:debugging#/runtime/this-firefox
 
-- Click "Load Temporary Add-on" and select ton-wallet/build/manifest.json file
+- Click "Load Temporary Add-on" and select ton-wallet/build-firefox/manifest.json file
 
 # Build
 
 `npm install`
 
-`gulp`
-
-`npx webpack --mode=none`
+`npm run build`
 
 # Code
 

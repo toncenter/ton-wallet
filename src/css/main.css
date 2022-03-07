@@ -10,6 +10,11 @@ body.plugin {
     min-height: 600px;
 }
 
+body.disable-animations * {
+    transition-duration: 0s !important;
+    animation-duration: 0s !important;
+}
+
 .body-container {
     position: absolute;
     left: 0;
@@ -35,7 +40,7 @@ a, a:focus, a:active, a:after {
 input {
     width: 100%;
     border: none;
-    border-bottom: 1px solid #e7e7e7;
+    border-bottom: 1px solid transparent;
     height: 40px;
     margin-top: 10px;
     margin-bottom: 10px;
@@ -47,15 +52,26 @@ input {
     user-select: auto;
     -webkit-user-select: auto;
     -moz-user-select: auto;
+
+    background-image: linear-gradient(rgba(215, 77, 77, 0), rgba(215, 77, 77, 0)), linear-gradient(rgba(60, 164, 219, 0), rgba(60, 164, 219, 0)), linear-gradient(#e7e7e7, #e7e7e7);
+    background-size: 0% 1px, 0% 1px, 100% 1px;
+    background-position: bottom center;
+    background-repeat: no-repeat;
+    transition: 0.2s background-image, 0s 0.2s background-size;
 }
 
 input:focus {
-    border-bottom: 1px solid #3CA4DB;
+    background-image: linear-gradient(rgba(215, 77, 77, 0), rgba(215, 77, 77, 0)), linear-gradient(rgba(60, 164, 219, 1), rgba(60, 164, 219, 1)), linear-gradient(#e7e7e7, #e7e7e7);
+    background-size: 100% 1px, 100% 1px, 100% 1px;
+    transition: 0.2s background-image, 0.2s background-size;
 }
 
 input.error {
-    border-bottom: 1px solid #D74D4D;
+    background-image: linear-gradient(rgba(215, 77, 77, 1), rgba(215, 77, 77, 1)), linear-gradient(rgba(60, 164, 219, 0), rgba(60, 164, 219, 0)), linear-gradient(#e7e7e7, #e7e7e7);
+    background-size: 100% 1px, 100% 1px, 100% 1px;
+    transition: 0.2s background-image, 0.2s background-size;
 }
+
 
 ::-webkit-input-placeholder { /* Edge */
     color: #999999;
@@ -119,6 +135,64 @@ button {
     background-color: #2E2F31;
 }
 
+.btn-loader {
+    pointer-events: none;
+}
+
+.btn-loader:after {
+    content: '';
+    position: absolute;
+    transform: translate(8px, 2px);
+    width: 8px;
+    height: 8px;
+    border: 3px solid white;
+    border-left: 3px solid transparent;
+    border-radius: 50%;
+    animation: loading-animation-spin 2s infinite linear;
+}
+
+.btn-lite.btn-loader:after {
+    transform: translate(6px, 3px);
+    width: 6px;
+    height: 6px;
+    border: 2px solid #3CA4DB;
+    border-left: 2px solid transparent;
+    animation: loading-animation-spin-small 2s infinite linear;
+}
+
+.btn-back {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    width: 40px;
+    height: 40px;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 20px 20px;
+    border: none;
+    background-color: transparent;
+    background-image: url("../assets/arrow.svg");
+    transform: scaleX(-1);
+    border-radius: 100%;
+    background-color: white;
+}
+
+.btn-back:hover {
+   background-color: #F7F7F7;
+}
+
+@keyframes loading-animation-spin {
+    to {
+        transform: translate(8px, 2px) rotate(1turn);
+    }
+}
+
+@keyframes loading-animation-spin-small {
+    to {
+        transform: translate(6px, 3px) rotate(1turn);
+    }
+}
+
 .screen {
     position: absolute;
     left: 0;
@@ -129,12 +203,82 @@ button {
 }
 
 .middle {
-    position: absolute;
-    text-align: center;
-    top: 50%;
-    left: 0;
     width: 100%;
-    transform: translate(0, -50%);
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.middle-content {
+    text-align: center;
+}
+
+.screen.faded-show {
+    opacity: 1;
+    visibility: inherit !important;
+    transition: 0.3s opacity, 0.3s visibility step-start;
+}
+
+.screen.faded-hide {
+    opacity: 0;
+    visibility: hidden;
+    transition: 0.3s opacity, 0.3s visibility step-end;
+    animation: 99999999s 0.3s screen-delayed-overflow;
+}
+
+.screen.faded-show .middle {
+    animation: screen-show-left 0.3s ease-out;
+}
+
+.screen.faded-hide .middle {
+    animation: screen-hide-left 0.3s ease-in;
+}
+
+.screen.faded-show.isBack .middle {
+    animation: screen-show-right 0.3s ease-out;
+}
+
+.screen.faded-hide.isBack .middle {
+    animation: screen-hide-right 0.3s ease-in;
+}
+
+.screen.faded-show .screen-lottie {
+    opacity: 1;
+    transform: scale(1);
+    transition: 0.2s opacity, transform 0.2s;
+}
+
+.screen.faded-hide .screen-lottie {
+    opacity: 0;
+    transform: scale(0.3);
+    transition: 0.2s opacity, transform 0.25s;
+}
+
+
+@keyframes screen-delayed-overflow {
+    from { overflow: hidden }
+}
+
+@keyframes screen-hide-left {
+    from { transform: translateX(0px) }
+    to { transform: translateX(-25px) }
+}
+
+@keyframes screen-hide-right {
+    from { transform: translateX(0px) }
+    to { transform: translateX(25px) }
+}
+
+@keyframes screen-show-left {
+    from { transform: translateX(25px) }
+    to { transform: translateX(0px) }
+}
+
+@keyframes screen-show-right {
+    from { transform: translateX(-25px) }
+    to { transform: translateX(0px) }
 }
 
 .addr {
@@ -187,6 +331,16 @@ button {
     color: white;
     font-size: 14px;
     text-align: center;
+
+    opacity: 0;
+    visibility: hidden;
+    transition: 0.15s opacity, 0.15s visibility step-end;
+}
+
+#notify.faded-show {
+    opacity: 1;
+    visibility: inherit !important;
+    transition: 0.15s opacity, 0.15s visibility step-start;
 }
 
 /* SET PASSWORD */
@@ -197,7 +351,7 @@ button {
     font-size: 15px;
 }
 
-/* IMPORT */
+/* IMPORT && BACKUP && CONFIRM */
 
 #import .btn-lite {
     font-weight: normal;
@@ -205,13 +359,16 @@ button {
     margin-bottom: 10px;
 }
 
-#importWords {
+#importWords,
+#confirmWords,
+#createWords {
     max-width: 276px;
     margin-left: auto;
     margin-right: auto;
 }
 
-#wordsPopup {
+#wordsPopup,
+#wordsConfirmPopup {
     position: absolute;
     background: white;
     padding-top: 4px;
@@ -227,6 +384,10 @@ button {
     text-align: left;
 
     border: 1px solid #DCDCDC;
+}
+
+#wordsConfirmPopup {
+    width: 190px;
 }
 
 .words-popup-item {
@@ -245,13 +406,6 @@ button {
     background: #f0f0f0;
 }
 
-#createWords {
-    margin-top: 10px;
-    max-width: 272px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
 .word-item {
     float: left;
 }
@@ -265,16 +419,22 @@ button {
     margin-right: 4px;
 }
 
-#import .word-num {
+#import .word-num,
+#wordsConfirm .word-num {
     margin-right: 8px;
     margin-left: 16px;
 }
 
-#import input {
+#import input,
+#wordsConfirm input {
     width: 92px;
     height: 32px;
     margin-top: 0;
     margin-bottom: 0;
+}
+
+#wordsConfirm input {
+    width: 190px;
 }
 
 .create-word-item {
@@ -289,6 +449,7 @@ button {
 /* MAIN> */
 
 #main {
+    display: flex;
     flex-direction: column;
 }
 
@@ -520,7 +681,7 @@ button {
 /* POPUP */
 
 #modal {
-    position: absolute;
+    position: fixed;
     left: 0;
     top: 0;
     width: 100%;
@@ -533,12 +694,33 @@ button {
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
+    box-shadow: 0px 8px 24px rgba(0, 0, 0, .25);
 
     width: 320px;
     background-color: white;
     border-radius: 4px;
     padding: 20px;
     font-size: 14px;
+}
+
+.popup#alert {
+    position: fixed;
+}
+
+.popup.faded-show,
+#menuDropdown.faded-show,
+#modal.faded-show {
+    opacity: 1;
+    visibility: inherit !important;
+    transition: 0.15s opacity, 0.15s visibility step-start;
+}
+
+.popup.faded-hide,
+#menuDropdown.faded-hide,
+#modal.faded-hide {
+    opacity: 0;
+    visibility: hidden;
+    transition: 0.15s opacity, 0.15s visibility step-end;
 }
 
 .popup-title {
@@ -787,8 +969,12 @@ button {
     display: block;
 }
 
-.plugin #menu_extension_chrome,
-.plugin #menu_extension_firefox {
+
+.plugin #menu_extension_chrome {
+    display: none;
+}
+
+#menu_extension_firefox {
     display: none;
 }
 

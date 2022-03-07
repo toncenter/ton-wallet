@@ -18,6 +18,7 @@
   },
   "scripts": {
     "build": "gulp && npx webpack --mode=none",
+    "build:docs": "npm run build && cp -r build/ docs/",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
