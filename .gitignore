@@ -4,7 +4,8 @@ node_modules
 .env
 build/
 build-firefox/
-build.tar
+build-firefox.zip
+build.zip
 deploy.sh
 deploy_plugin.sh
 old/

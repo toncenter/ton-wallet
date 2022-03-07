@@ -38,6 +38,8 @@ function toggleLottie(lottie, visible, params) {
     }
 }
 
+const IS_FIREFOX = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+
 class View {
     constructor(mnemonicWords) {
         /** @type   {[string]} */
@@ -285,6 +287,11 @@ class View {
         $('#sendButton').addEventListener('click', () => this.onMessage('showPopup', {name: 'send'}));
 
         $('#modal').addEventListener('click', () => this.closePopup());
+
+        if (IS_FIREFOX) {
+            toggle($('#menu_magic'), false);
+            toggle($('.about-magic'), false);
+        }
 
         $('#menu_magic').addEventListener('click', () => {
             $('#menu_magic .dropdown-toggle').classList.toggle('toggle-on');
@@ -980,8 +987,8 @@ class View {
 
             case 'setIsMagic':
                 const isTurnedOn = params;
-                $('#menu_magic .dropdown-toggle').classList.toggle('toggle-on', isTurnedOn);
-                $('#menu_telegram').classList.toggle('menu_telegram-show', isTurnedOn);
+                $('#menu_magic .dropdown-toggle').classList.toggle('toggle-on', isTurnedOn && !IS_FIREFOX);
+                $('#menu_telegram').classList.toggle('menu_telegram-show', isTurnedOn && !IS_FIREFOX);
                 break;
 
             case 'setIsProxy':
