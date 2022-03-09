@@ -9,7 +9,7 @@ const showExtensionPopup = () => {
         // this._popupId = currentPopup.id
     };
     const creation = chrome.windows.create({
-        url: 'popup.html',
+        url: 'index.html',
         type: 'popup',
         width: 400,
         height: 600,

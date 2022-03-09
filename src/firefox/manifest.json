@@ -9,7 +9,7 @@
 
   "browser_action": {
     "default_icon": "assets/icon_32x32.png",
-    "default_popup": "popup.html"
+    "default_popup": "index.html"
   },
   "background": {
     "scripts": [

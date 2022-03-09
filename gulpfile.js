@@ -4,7 +4,6 @@ const cssmin = require('gulp-cssmin');
 const del = require('del');
 const deleteLines = require('gulp-delete-lines');
 const path = require('path');
-const rename = require('gulp-rename');
 const replace = require('gulp-replace');
 const webpack = require('webpack');
 
@@ -29,12 +28,6 @@ const copy = (type, done) => {
         'src/assets/**/*',
         'src/libs/**/*'
     ], { base: 'src' })];
-
-    if (type === TYPES.DOCS) {
-        streams.push(src([
-            'src/index.html'
-        ], { base: 'src' }));
-    }
 
     if (type === TYPES.CHROMIUM) {
         streams.push(src([
@@ -83,14 +76,16 @@ const js = (type, done) => {
     });
 };
 
-const popup = (type, done) => {
-    if (type === TYPES.DOCS) return done();
+const page = type => {
+    let stream = src('src/index.html');
 
-    return src('src/index.html')
-        .pipe(replace('<body>', '<body class="plugin">'))
-        .pipe(deleteLines({ filters: [/Controller.js/i] }))
-        .pipe(rename('popup.html'))
-        .pipe(dest(DESTINATIONS[type]));
+    if (type !== TYPES.DOCS) {
+        stream = stream
+            .pipe(replace('<body>', '<body class="plugin">'))
+            .pipe(deleteLines({ filters: [/Controller.js/i] }));
+    }
+
+    return stream.pipe(dest(DESTINATIONS[type]));
 };
 
 const createSeries = type => {
@@ -99,7 +94,7 @@ const createSeries = type => {
         copy.bind(null, type),
         css.bind(null, type),
         js.bind(null, type),
-        popup.bind(null, type)
+        page.bind(null, type)
     );
 };
 
