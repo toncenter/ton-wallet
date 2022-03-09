@@ -2,6 +2,8 @@
 <html lang="en" translate="no">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https://toncenter.com/api/v2/jsonRPC https://testnet.toncenter.com/api/v2/jsonRPC">
     <title>TON Wallet</title>
     <meta name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui, viewport-fit=cover">
@@ -19,7 +21,7 @@
 
     <!-- Start Screen -->
 
-    <div id="start" class="screen" style="visibility: hidden">
+    <div id="start" class="screen visibility-hidden">
         <div class="middle">
             <div class="middle-content">
                 <tgs-player data-name="start" src="assets/lottie/intro.tgs"
@@ -34,20 +36,20 @@
                     without intermediaries.
                 </div>
 
-                <div style="margin-top: 95px">
+                <div class="mt-95">
                     <button id="start_createBtn" class="btn-blue screen-btn">Create My Wallet</button>
                 </div>
-                <div style="margin-top: 20px">
-                    <button id="start_importBtn" class="btn-lite" style="font-weight: normal">Import existing wallet
+                <div class="mt-20">
+                    <button id="start_importBtn" class="btn-lite font-weight-normal">Import existing wallet
                     </button>
                 </div>
-                <div style="margin-top: 10px">
-                    <button id="start_importLedgerHidBtn" class="btn-lite" style="font-weight: normal">Connect Ledger
+                <div class="mt-10">
+                    <button id="start_importLedgerHidBtn" class="btn-lite font-weight-normal">Connect Ledger
                     </button>
                 </div>
 
-        <!--            <div style="margin-top: 10px">-->
-        <!--                <button id="start_importLedgerBleBtn" class="btn-lite" style="font-weight: normal">Connect Ledger via Bluetooth-->
+        <!--            <div class="mt-10">-->
+        <!--                <button id="start_importLedgerBleBtn" class="btn-lite font-weight-normal">Connect Ledger via Bluetooth-->
         <!--                </button>-->
         <!--            </div>-->
             </div>
@@ -56,13 +58,13 @@
 
     <!-- Import Screen -->
 
-    <div id="import" class="screen" style="text-align: center; visibility: hidden">
+    <div id="import" class="screen text-align-center visibility-hidden">
         <button id="import_backBtn" class="btn-back"></button>
         <div class="middle">
             <div class="middle-content">
 
-                <div class="screen-title" style="margin-top: 80px">24 Secret Words</div>
-                <div class="screen-text" style="margin-bottom: 10px">
+                <div class="screen-title mt-80">24 Secret Words</div>
+                <div class="screen-text mb-10">
                     Please restore access to your <b>non-hardware</b> wallet by<br>
                     entering the 24 secret words you wrote<br>
                     down when creating the wallet.
@@ -74,11 +76,11 @@
 
                 </div>
 
-                <div id="wordsPopup" style="display: none">
+                <div id="wordsPopup" class="display-none">
                 </div>
 
-                <div style="clear: both">
-                    <button id="import_continueBtn" class="btn-blue screen-btn" style="margin-top: 30px; margin-bottom: 20px">
+                <div class="clear-both">
+                    <button id="import_continueBtn" class="btn-blue screen-btn mt-30 mb-20">
                         Continue
                     </button>
                 </div>
@@ -88,7 +90,7 @@
 
     <!-- Created Screen -->
 
-    <div id="created" class="screen" style="visibility: hidden">
+    <div id="created" class="screen visibility-hidden">
         <div class="middle">
             <div class="middle-content">
                 <tgs-player data-name="created" src="assets/lottie/created.tgs"
@@ -110,8 +112,8 @@
                 </div>
 
                 <div>
-                    <button id="createdContinueButton" class="btn-blue screen-btn"
-                            style="margin-top: 18px; margin-bottom: 20px">Continue
+                    <button id="createdContinueButton" class="btn-blue screen-btn mt-18 mb-20">
+                        Continue
                     </button>
                 </div>
             </div>
@@ -120,12 +122,12 @@
 
     <!-- Backup Screen -->
 
-    <div id="backup" class="screen" style="text-align: center; visibility: hidden">
+    <div id="backup" class="screen text-align-center visibility-hidden">
         <div class="middle">
             <div class="middle-content">
                 <tgs-player data-name="backup" src="assets/lottie/paper.tgs"
                             width="120" height="120"
-                            class="screen-lottie" style="margin-top: 30px">
+                            class="screen-lottie mt-30">
                 </tgs-player>
 
                 <div class="screen-title">24 secret words</div>
@@ -141,12 +143,12 @@
                     access to this device.
                 </div>
 
-                <div id="createWords" style="margin-top: 10px">
+                <div id="createWords" class="mt-10">
 
                 </div>
 
-                <div style="clear: both">
-                    <button id="backup_continueBtn" class="btn-blue screen-btn" style="margin-top: 26px; margin-bottom: 20px">
+                <div class="clear-both">
+                    <button id="backup_continueBtn" class="btn-blue screen-btn mt-26 mb-20">
                         Continue
                     </button>
                 </div>
@@ -156,14 +158,14 @@
 
     <!-- Words Confirm Screen -->
 
-    <div id="wordsConfirm" class="screen" style="text-align: center; visibility: hidden">
+    <div id="wordsConfirm" class="screen text-align-center visibility-hidden">
         <button id="wordsConfirm_backBtn" class="btn-back"></button>
         <div class="middle">
             <div class="middle-content">
 
                 <tgs-player data-name="wordsConfirm" src="assets/lottie/confirm.tgs"
                             width="120" height="120"
-                            class="screen-lottie" style="margin-top: 30px">
+                            class="screen-lottie mt-30">
                 </tgs-player>
 
                 <div class="screen-title">Test Time!</div>
@@ -179,11 +181,11 @@
                 <div id="confirmWords">
                 </div>
 
-                <div id="wordsConfirmPopup" style="display: none">
+                <div id="wordsConfirmPopup" class="display-none">
                 </div>
 
-                <div style="clear: both">
-                    <button id="wordsConfirm_continueBtn" class="btn-blue screen-btn" style="margin-top: 26px; margin-bottom: 20px">
+                <div class="clear-both">
+                    <button id="wordsConfirm_continueBtn" class="btn-blue screen-btn mt-26 mb-20">
                         Continue
                     </button>
                 </div>
@@ -193,7 +195,7 @@
 
     <!-- Create Password Screen -->
 
-    <div id="createPassword" class="screen" style="visibility: hidden">
+    <div id="createPassword" class="screen visibility-hidden">
         <div class="middle">
             <div class="middle-content">
                 <tgs-player data-name="createPassword" src="assets/lottie/lock.tgs"
@@ -208,7 +210,7 @@
                     for confirming your payments
                 </div>
 
-                <div style="margin-top: 54px">
+                <div class="mt-54">
                     <input id="createPassword_input" placeholder="Enter your password" type="password">
                 </div>
                 <div>
@@ -216,8 +218,8 @@
                 </div>
 
                 <div>
-                    <button id="createPassword_continueBtn" class="btn-blue screen-btn"
-                            style="margin-top: 38px; margin-bottom: 20px">Continue
+                    <button id="createPassword_continueBtn" class="btn-blue screen-btn mt-38 mb-20">
+                        Continue
                     </button>
                 </div>
             </div>
@@ -226,7 +228,7 @@
 
     <!-- Ready To Go Screen -->
 
-    <div id="readyToGo" class="screen" style="visibility: hidden">
+    <div id="readyToGo" class="screen visibility-hidden">
         <div class="middle">
             <div class="middle-content">
                 <tgs-player data-name="readyToGo" src="assets/lottie/done.tgs"
@@ -243,8 +245,8 @@
                 </div>
 
                 <div>
-                    <button id="readyToGo_continueBtn" class="btn-blue screen-btn"
-                            style="margin-top: 170px; margin-bottom: 20px">View My Wallet
+                    <button id="readyToGo_continueBtn" class="btn-blue screen-btn mt-170 mb-20">
+                        View My Wallet
                     </button>
                 </div>
             </div>
@@ -253,36 +255,31 @@
 
     <!-- Main Screen -->
 
-    <div id="main" class="screen" style="visibility: hidden">
+    <div id="main" class="screen visibility-hidden">
         <div class="head">
             <div class="head-row">
-                <button id="main_refreshBtn" class="btn-round"
-                        style="background-image: url('assets/refresh.svg')">
-                </button>
+                <button id="main_refreshBtn" class="btn-round bg-refresh"></button>
 
                 <div id="updateLabel"></div>
 
-                <button id="main_settingsButton" class="btn-round"
-                        style="background-image: url('assets/menu.svg')">
-                </button>
+                <button id="main_settingsButton" class="btn-round bg-menu"></button>
             </div>
 
             <div id="balance">💎</div>
             <div class="your-balance">Your balance</div>
 
 <!--            <button id="main_buyBtn" class="btn-blue">-->
-<!--                <div class="btn-icon" style="background-image: url('assets/down-left.svg')"></div>-->
+<!--                <div class="btn-icon bg-down-left"></div>-->
 <!--                Buy-->
 <!--            </button>-->
 
             <button id="main_receiveBtn" class="btn-blue">
-                <div class="btn-icon" style="background-image: url('assets/down-left.svg')"></div>
+                <div class="btn-icon bg-down-left"></div>
                 Receive
             </button>
 
-            <button id="sendButton" class="btn-blue" style="display: none">
-                <div class="btn-icon"
-                     style="background-image: url('assets/down-left.svg'); transform: rotate(180deg)"></div>
+            <button id="sendButton" class="btn-blue display-none">
+                <div class="btn-icon bg-down-left rotate-180"></div>
                 Send
             </button>
         </div>
@@ -290,7 +287,7 @@
         <div id="transactionsContainer">
             <div id="transactionsList">
             </div>
-            <div id="walletCreated" style="display: none">
+            <div id="walletCreated" class="display-none">
                 <tgs-player data-name="main"
                             width="150" height="150"
                             src="assets/lottie/empty.tgs">
@@ -303,11 +300,11 @@
 
     <!-- Modal -->
 
-    <div id="modal" style="visibility: hidden"></div>
+    <div id="modal" class="visibility-hidden"></div>
 
     <!-- Menu Dropdown -->
 
-    <div id="menuDropdown" style="visibility: hidden">
+    <div id="menuDropdown" class="visibility-hidden">
         <div id="menu_extension_chrome" class="dropdown-item">Chrome Extension</div>
         <div id="menu_extension_firefox" class="dropdown-item">Firefox Add-on</div>
         <div id="menu_about" class="dropdown-item">About</div>
@@ -321,7 +318,7 @@
 
     <!-- Alert Popup-->
 
-    <div id="alert" class="popup" style="visibility: hidden">
+    <div id="alert" class="popup visibility-hidden">
         <div class="popup-title"></div>
         <div class="popup-black-text"></div>
         <div class="popup-footer"></div>
@@ -329,7 +326,7 @@
 
     <!-- Receive Popup-->
 
-    <div id="receive" class="popup" style="visibility: hidden">
+    <div id="receive" class="popup visibility-hidden">
         <div class="popup-title">Receive TON</div>
         <div class="popup-text">Share this address to receive TON.
         </div>
@@ -351,7 +348,7 @@
 
     <!-- Invoice Popup -->
 
-    <div id="invoice" class="popup" style="visibility: hidden">
+    <div id="invoice" class="popup visibility-hidden">
         <div class="popup-title">Create Invoice</div>
 
         <div>
@@ -366,13 +363,13 @@
             the payment to save the sender some time.
         </div>
 
-        <div class="input-label" style="margin-top: 24px; margin-bottom: 18px">Invoice URL</div>
+        <div class="input-label mt-24 mb-18">Invoice URL</div>
 
         <div id="invoice_link" class="popup-black-text">
             ton://transfer/
         </div>
 
-        <div class="popup-grey-text" style="margin-top: 24px">
+        <div class="popup-grey-text mt-24">
             Share this address to receive TON.
         </div>
 
@@ -384,7 +381,7 @@
 
     <!-- Invoice QR Popup-->
 
-    <div id="invoiceQr" class="popup" style="visibility: hidden">
+    <div id="invoiceQr" class="popup visibility-hidden">
         <div class="popup-title">Invoice QR</div>
 
         <div class="qr-container">
@@ -404,14 +401,14 @@
 
     <!-- Transaction Popup -->
 
-    <div id="transaction" class="popup" style="visibility: hidden">
+    <div id="transaction" class="popup visibility-hidden">
         <div class="popup-title">Transaction</div>
 
         <div id="transactionAmount">+0.1 TON</div>
         <div id="transactionFee">0.1 transaction fee</div>
         <div id="transactionStorageFee">0.1 storage fee</div>
 
-        <div id="transactionSenderLabel" class="input-label" style="margin-top: 20px">Sender</div>
+        <div id="transactionSenderLabel" class="input-label mt-20">Sender</div>
 
         <div id="transactionSender" class="addr">
 
@@ -429,14 +426,14 @@
 
         </div>
 
-        <button id="transaction_sendBtn" class="btn-blue" style="margin-top: 20px">Send TON to this address</button>
+        <button id="transaction_sendBtn" class="btn-blue mt-20">Send TON to this address</button>
 
         <button id="transaction_closeBtn" class="popup-close-btn"></button>
     </div>
 
     <!-- Send Popup -->
 
-    <div id="send" class="popup" style="visibility: hidden">
+    <div id="send" class="popup visibility-hidden">
         <div class="popup-title">Send TON</div>
 
         <div class="input-label">Recipient wallet address</div>
@@ -448,7 +445,7 @@
             ton:// link
         </div>
 
-        <div style="position: relative; width: 100%">
+        <div class="position-relative w-100">
             <div class="input-label">Amount</div>
             <div id="sendBalance">Balance:</div>
         </div>
@@ -463,15 +460,15 @@
 
     <!-- Send Confirm Popup -->
 
-    <div id="sendConfirm" class="popup" style="visibility: hidden; padding-bottom: 10px">
+    <div id="sendConfirm" class="popup pb-10 visibility-hidden">
         <div class="popup-title">Confirmation</div>
         <div class="popup-black-text">Do you want to send <b id="sendConfirmAmount">x TON</b> to:</div>
 
         <div id="sendConfirmAddr" class="addr"></div>
 
-        <div id="sendConfirmFee" class="popup-grey-text" style="text-align: center">Fee: ~x TON</div>
+        <div id="sendConfirmFee" class="popup-grey-text text-align-center">Fee: ~x TON</div>
 
-        <div class="popup-grey-text" style="text-align: center">Note: Your comment will not be <b>encrypted</b></div>
+        <div class="popup-grey-text text-align-center">Note: Your comment will not be <b>encrypted</b></div>
 
         <button id="sendConfirm_closeBtn" class="popup-close-btn"></button>
 
@@ -483,13 +480,13 @@
 
     <!-- Sign Confirm Popup -->
 
-    <div id="signConfirm" class="popup" style="visibility: hidden; padding-bottom: 10px">
+    <div id="signConfirm" class="popup pb-10 visibility-hidden">
         <div class="popup-title">Confirmation</div>
         <div class="popup-black-text">Do you want to sign:</div>
 
         <div id="signConfirmData" class="addr"></div>
 
-        <div class="popup-grey-text" style="text-align: center; font-weight: bold; color: #D74D4D">Signing custom data is very dangerous. Use only if you know what you are doing.</div>
+        <div class="popup-grey-text text-align-center font-weight-bold text-danger">Signing custom data is very dangerous. Use only if you know what you are doing.</div>
 
         <button id="signConfirm_closeBtn" class="popup-close-btn"></button>
 
@@ -501,7 +498,7 @@
 
     <!-- Processing Popup -->
 
-    <div id="processing" class="popup" style="visibility: hidden; text-align: center">
+    <div id="processing" class="popup text-align-center visibility-hidden">
         <tgs-player data-name="processing" src="assets/lottie/money.tgs" width="150" height="150"></tgs-player>
         <div class="popup-title">Sending TON</div>
         <div class="popup-grey-text">Please wait a few seconds for your<br>transaction to be processed..</div>
@@ -511,7 +508,7 @@
 
     <!-- Done Popup -->
 
-    <div id="done" class="popup" style="visibility: hidden; text-align: center; padding-bottom: 10px">
+    <div id="done" class="popup text-align-center pb-10 visibility-hidden">
         <tgs-player data-name="done" src="assets/lottie/done.tgs" width="150" height="150"></tgs-player>
         <div class="popup-title">Done!</div>
         <div class="popup-grey-text">1 TON have been send</div>
@@ -523,14 +520,14 @@
 
     <!-- About Popup -->
 
-    <div id="about" class="popup" style="visibility: hidden; text-align: center; padding-bottom: 10px">
+    <div id="about" class="popup text-align-center pb-10 visibility-hidden">
         <div class="popup-title">TON Wallet</div>
         <div class="popup-grey-text">
             Version: 1.1.33
         </div>
         <tgs-player data-name="about" src="assets/lottie/intro.tgs" width="150" height="150"></tgs-player>
 
-        <div class="popup-grey-text" style="line-height: 24px">
+        <div class="popup-grey-text line-height-24">
             API provider: <a href="https://toncenter.com" target="_blank">toncenter.com</a><br>
             <a href="https://github.com/toncenter/ton-wallet" target="_blank">GitHub</a>,
             <a href="https://github.com/toncenter/ton-wallet/issues" target="_blank">Issue Tracker</a>
@@ -553,17 +550,17 @@
 
     <!-- Change Password Popup -->
 
-    <div id="changePassword" class="popup" style="visibility: hidden; padding-bottom: 10px">
+    <div id="changePassword" class="popup pb-10 visibility-hidden">
         <div class="popup-title">Change Password</div>
 
         <tgs-player data-name="changePassword" src="assets/lottie/lock.tgs" width="150" height="150"></tgs-player>
 
         <input id="changePassword_oldInput" placeholder="Enter your old password" type="password"
-               style="text-align: center; width: 200px; margin-left: 40px; font-size: 15px">
+               class="input-password">
         <input id="changePassword_newInput" placeholder="Enter a new password" type="password"
-               style="text-align: center; width: 200px; margin-left: 40px; font-size: 15px;margin-top: 20px">
+               class="input-password mt-20">
         <input id="changePassword_repeatInput" placeholder="Repeat the new password" type="password"
-               style="text-align: center; width: 200px; margin-left: 40px; font-size: 15px">
+               class="input-password">
 
         <div class="popup-footer">
             <button id="changePassword_cancelBtn" class="btn-lite">CANCEL</button>
@@ -573,12 +570,12 @@
 
     <!-- Enter Password Popup -->
 
-    <div id="enterPassword" class="popup" style="visibility: hidden; padding-bottom: 10px">
+    <div id="enterPassword" class="popup pb-10 visibility-hidden">
         <div class="popup-title">Password</div>
 
         <tgs-player data-name="enterPassword" src="assets/lottie/lock.tgs" width="150" height="150"></tgs-player>
         <input id="enterPassword_input" placeholder="Enter your password" type="password"
-               style="text-align: center; width: 200px; margin-left: 40px; font-size: 15px">
+               class="input-password">
 
         <div class="popup-footer">
             <button id="enterPassword_cancelBtn" class="btn-lite">CANCEL</button>
@@ -588,7 +585,7 @@
 
     <!-- Log Out Popup -->
 
-    <div id="delete" class="popup" style="visibility: hidden; padding-bottom: 10px">
+    <div id="delete" class="popup pb-10 visibility-hidden">
         <div class="popup-title">Log Out</div>
         <div class="popup-black-text">
             This will disconnect the wallet from this<br>
@@ -596,7 +593,7 @@
             wallet using <b>24 secret words</b> - or import<br>
             another wallet.
         </div>
-        <div class="popup-black-text" style="margin-top: 20px">
+        <div class="popup-black-text mt-20">
             Wallets are located in the decentralized<br>
             TON Blockchain. If you want the wallet to<br>
             be deleted simply transfer all the TON<br>
@@ -611,15 +608,15 @@
 
     <!-- Connect Ledger Popup -->
 
-    <div id="connectLedger" class="popup" style="visibility: hidden; padding-bottom: 10px">
+    <div id="connectLedger" class="popup pb-10 visibility-hidden">
         <div class="popup-title">Connect Ledger</div>
         <div class="popup-black-text">
             Please use Edge/Google Chrome v89 or later.
         </div>
-        <div class="popup-black-text" style="margin-top: 20px">
+        <div class="popup-black-text mt-20">
             Turn off Ledger Live.
         </div>
-        <div class="popup-black-text" style="margin-top: 20px">
+        <div class="popup-black-text mt-20">
             If it does not connect, then try reconnecting the device.
         </div>
 
@@ -630,7 +627,7 @@
 
     <!-- Notify-->
 
-    <div id="notify" style="visibility: hidden"></div>
+    <div id="notify" class="visibility-hidden"></div>
 </div>
 
 <!-- Scripts -->

@@ -77,10 +77,6 @@ input.error {
     color: #999999;
 }
 
-:-ms-input-placeholder { /* Internet Explorer 10-11 */
-    color: #999999;
-}
-
 ::placeholder {
     color: #999999;
 }
@@ -969,6 +965,7 @@ button {
     display: block;
 }
 
+
 .plugin #menu_extension_chrome {
     display: none;
 }
@@ -983,4 +980,127 @@ button {
 
 #start_importLedgerHidBtn {
     display: none;
+}
+
+.input-password {
+    text-align: center;
+    width: 200px;
+    margin-left: 40px;
+    font-size: 15px;
+}
+
+.display-none {
+    display: none;
+}
+
+.visibility-hidden {
+    visibility: hidden;
+}
+
+.rotate-180 {
+    transform: rotate(180deg);
+}
+
+.position-relative {
+    position: relative;
+}
+
+.clear-both {
+    clear: both;
+}
+
+.font-weight-normal {
+    font-weight: normal;
+}
+
+.font-weight-bold {
+    font-weight: bold;
+}
+
+.text-danger {
+    color: #D74D4D;
+}
+
+.line-height-24 {
+    line-height: 24px;
+}
+
+.text-align-center {
+    text-align: center;
+}
+
+.bg-down-left {
+    background-image: url('../assets/down-left.svg')
+}
+
+.bg-menu {
+    background-image: url('../assets/menu.svg')
+}
+
+.bg-refresh {
+    background-image: url('../assets/refresh.svg')
+}
+
+.w-100 {
+    width: 100%;
+}
+
+.mb-10 {
+    margin-bottom: 10px;
+}
+
+.mb-18 {
+    margin-bottom: 18px;
+}
+
+.mb-20 {
+    margin-bottom: 20px;
+}
+
+.mt-10 {
+    margin-top: 10px;
+}
+
+.mt-18 {
+    margin-top: 18px;
+}
+
+.mt-20 {
+    margin-top: 20px;
+}
+
+.mt-24 {
+    margin-top: 24px;
+}
+
+.mt-26 {
+    margin-top: 26px;
+}
+
+.mt-30 {
+    margin-top: 30px;
+}
+
+.mt-38 {
+    margin-top: 38px;
+}
+
+.mt-54 {
+    margin-top: 54px;
+}
+
+.mt-80 {
+    margin-top: 95px;
+}
+
+.mt-95 {
+    margin-top: 95px;
+}
+
+.mt-170 {
+    margin-top: 170px;
+}
+
+.pb-10 {
+    padding-bottom: 10px;
 }

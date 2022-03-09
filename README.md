@@ -6,7 +6,7 @@ Available on https://wallet.ton.org (earlier https://tonwallet.me).
 
 ## Security
 
-Private keys do not leave your device, the keys are stored in the browser memory, encrypted with a password that is entered during transaction generation. 
+Private keys do not leave your device, the keys are stored in the browser memory, encrypted with a password that is entered during transaction generation.
 
 ## Issues and Proposals
 
@@ -15,6 +15,10 @@ Please post your Issues and Proposals as Issues in this repository.
 # Google Chrome Extension
 
 https://chrome.google.com/webstore/detail/ton-wallet/nphplpgoakhhjchkkhmiggakijnkhfnd
+
+# Mozilla Firefox Add-on
+
+https://addons.mozilla.org/ru/firefox/addon/
 
 # Google Chrome Extension Developer Mode
 
