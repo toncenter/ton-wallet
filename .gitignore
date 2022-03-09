@@ -1,12 +1,9 @@
 .idea/
+dist/
+node_modules/
+old/
 .DS_Store
-node_modules
 .env
-build/
-build-firefox/
-build-firefox.zip
-build.zip
 deploy.sh
 deploy_plugin.sh
-old/
 plugin.zip

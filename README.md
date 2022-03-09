@@ -20,15 +20,27 @@ https://chrome.google.com/webstore/detail/ton-wallet/nphplpgoakhhjchkkhmiggakijn
 
 https://addons.mozilla.org/ru/firefox/addon/
 
-# Google Chrome Extension Developer Mode
+# Build
 
-- Open Google Chrome
+```
+npm install
+npm run build {target}
+```
+
+Possible targets and bundle file destinations folder:
+- `docs` - ton-wallet/docs
+- `chromium` - ton-wallet/dist/chromium
+- `firefox` - ton-wallet/dist/firefox
+
+# Chromium-based browsers Extension Developer Mode
+
+- Open web browser
 
 - Go to chrome://extensions/
 
 - Enable "Developer Mode" in top right corner
 
-- Click "Load unpacked extension" and specify ton-wallet/build folder
+- Click "Load unpacked extension" and specify `ton-wallet/dist/firefox` folder
 
 # Mozilla Firefox Add-on Developer Mode
 
@@ -36,13 +48,7 @@ https://addons.mozilla.org/ru/firefox/addon/
 
 - Go to about:debugging#/runtime/this-firefox
 
-- Click "Load Temporary Add-on" and select ton-wallet/build-firefox/manifest.json file
-
-# Build
-
-`npm install`
-
-`npm run build`
+- Click "Load Temporary Add-on" and select `ton-wallet/build-firefox/manifest.json` file
 
 # Code
 

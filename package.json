@@ -6,20 +6,16 @@
   "devDependencies": {
     "del": "^3.0.0",
     "gulp": "^4.0.2",
-    "gulp-concat": "^2.6.1",
     "gulp-concat-css": "^2.3.0",
     "gulp-cssmin": "^0.2.0",
     "gulp-delete-lines": "^0.0.7",
     "gulp-rename": "^2.0.0",
     "gulp-replace": "^1.0.0",
-    "webpack": "^4.41.6",
-    "webpack-cli": "^3.3.11",
-    "natives": "^1.1.6"
+    "natives": "^1.1.6",
+    "webpack": "^4.41.6"
   },
   "scripts": {
-    "build": "gulp && npx webpack --mode=none",
-    "build:docs": "npm run build && cp -r build/ docs/",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "gulp"
   },
   "repository": {
     "type": "git",
