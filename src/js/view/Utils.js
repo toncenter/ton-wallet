@@ -156,7 +156,7 @@ function parseTransferUrl(urlString) {
         return undefined;
     }
 
-    const [ _, address ] = url.pathname.split('/')
+    const [_, address] = url.pathname.split('/');
 
     if (!address) {
         return undefined;

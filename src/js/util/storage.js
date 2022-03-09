@@ -4,12 +4,12 @@
 
 export default self.localStorage || {
     setItem(key, value) {
-        return chrome.storage.local.set({ [key]: value });
+        return chrome.storage.local.set({[key]: value});
     },
 
     getItem(key) {
         return chrome.storage.local.get(key)
-            .then(({ [key]: value }) => value);
+            .then(({[key]: value}) => value);
     },
 
     removeItem(key) {

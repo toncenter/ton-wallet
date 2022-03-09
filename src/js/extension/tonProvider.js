@@ -228,7 +228,7 @@ class TonProvider {
     _connect() {
         // Send to TON Wallet
         window.postMessage(
-            { type: 'gramWalletAPI_ton_provider_connect' },
+            {type: 'gramWalletAPI_ton_provider_connect'},
             this.targetOrigin,
         );
 
@@ -260,6 +260,7 @@ class TonProvider {
 }
 
 window.ton = new TonProvider();
+window.dispatchEvent(new Event('tonready'));
 
 function toggleMagicBadge(isTurnedOn) {
     if (isTurnedOn) {
