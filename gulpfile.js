@@ -60,7 +60,7 @@ const js = (type, done) => {
         mode: 'none',
         entry: {
             Controller: './src/js/Controller.js',
-            'view/View': './src/js/view/View.js'
+            View: './src/js/view/View.js'
         },
         optimization: {
             concatenateModules: true,
