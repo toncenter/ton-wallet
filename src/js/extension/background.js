@@ -16,7 +16,7 @@ if(!window.importScripts) {
 }
 
 importScripts(
-    '/libs/tonweb-0.0.33.js',
-    '/libs/tonweb-mnemonic-1.0.1.js',
+    '/libs/tonweb.js',
+    '/libs/tonweb-mnemonic.js',
     '/js/Controller.js',
 );
