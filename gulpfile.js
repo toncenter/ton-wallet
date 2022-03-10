@@ -43,7 +43,9 @@ const copy = (type, done) => {
         ], { base: 'src/firefox' }));
     }
 
-    return parallel(...streams.map(stream => () => stream.pipe(dest(DESTINATIONS[type]))))(done);
+    return parallel(...streams.map(stream => function copy() {
+        return stream.pipe(dest(DESTINATIONS[type]));
+    }))(done);
 };
 
 const css = type => {
