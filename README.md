@@ -22,9 +22,22 @@ https://addons.mozilla.org/ru/firefox/addon/
 
 # Build
 
+Install development dependencies:
+
 ```
 npm install
+```
+
+Build required target:
+
+```
 npm run build {target}
+```
+
+For development needs, you can use watch script:
+
+```
+npm run watch {target}
 ```
 
 Possible targets and bundle file destinations folder:

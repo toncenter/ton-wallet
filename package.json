@@ -14,7 +14,8 @@
     "webpack": "^4.41.6"
   },
   "scripts": {
-    "build": "gulp"
+    "build": "gulp",
+    "watch": "gulp watch"
   },
   "repository": {
     "type": "git",
