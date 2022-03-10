@@ -1,4 +1,4 @@
-const { dest, parallel, run, series, src, task, watch } = require('gulp');
+const { dest, parallel, series, src, task, watch } = require('gulp');
 const concatCss = require('gulp-concat-css');
 const cssmin = require('gulp-cssmin');
 const del = require('del');
@@ -102,4 +102,4 @@ task('docs', createSeries(TYPES.DOCS));
 task('chromium', createSeries(TYPES.CHROMIUM));
 task('firefox', createSeries(TYPES.FIREFOX));
 
-task('watch', watch.bind(null, 'src/**/*', series(process.argv[3])))
+if(process.argv[3]) task('watch', watch.bind(null, 'src/**/*', series(process.argv[3])))
