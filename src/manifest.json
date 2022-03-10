@@ -12,7 +12,7 @@
     "webRequest"
   ],
   "background": {
-    "service_worker": "/js/extension/serviceWorker.js"
+    "service_worker": "/js/extension/background.js"
   },
   "content_security_policy": {
     "extension_pages": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https://toncenter.com/api/v2/jsonRPC https://testnet.toncenter.com/api/v2/jsonRPC"
@@ -25,7 +25,7 @@
         "https://*/*"
       ],
       "js": [
-        "/js/extension/contentScript.js"
+        "/js/extension/content-script.js"
       ],
       "run_at": "document_start",
       "all_frames": true
@@ -34,7 +34,7 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "/js/extension/tonProvider.js"
+        "/js/extension/ton-provider.js"
       ],
       "matches": [
         "file://*/*",

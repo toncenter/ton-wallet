@@ -28,19 +28,18 @@ const clean = type => {
 const copy = (type, done) => {
     const streams = [src([
         'src/assets/**/*',
+        'src/js/extension/**/*',
         'src/libs/**/*'
     ], { base: 'src' })];
 
     if (type === TYPES.CHROMIUM) {
         streams.push(src([
-            'src/js/extension/**/*',
             'src/manifest.json'
         ], { base: 'src' }));
     }
 
     if (type === TYPES.FIREFOX) {
         streams.push(src([
-            'src/firefox/contentscript.js',
             'src/firefox/manifest.json'
         ], { base: 'src/firefox' }));
     }

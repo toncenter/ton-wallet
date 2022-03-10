@@ -3,7 +3,7 @@ function injectScript() {
         const container = document.head || document.documentElement;
         const scriptTag = document.createElement('script');
         scriptTag.async = false;
-        scriptTag.src = chrome.runtime.getURL('/js/extension/tonProvider.js');
+        scriptTag.src = chrome.runtime.getURL('/js/extension/ton-provider.js');
         container.insertBefore(scriptTag, container.children[0]);
         container.removeChild(scriptTag);
     } catch (e) {
