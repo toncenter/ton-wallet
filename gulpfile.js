@@ -76,7 +76,7 @@ const js = (type, done) => {
     });
 };
 
-const page = type => {
+const html = type => {
     let stream = src('src/index.html');
 
     if (type !== TYPES.DOCS) {
@@ -94,7 +94,7 @@ const createSeries = type => {
         copy.bind(null, type),
         css.bind(null, type),
         js.bind(null, type),
-        page.bind(null, type)
+        html.bind(null, type)
     );
 };
 
