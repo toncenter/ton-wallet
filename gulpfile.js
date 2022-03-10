@@ -7,6 +7,8 @@ const path = require('path');
 const replace = require('gulp-replace');
 const webpack = require('webpack');
 
+const REVISION = 54;
+
 const TYPES = {
     DOCS: 0,
     CHROMIUM: 1,
@@ -79,7 +81,8 @@ const js = (type, done) => {
 };
 
 const html = type => {
-    let stream = src('src/index.html');
+    let stream = src('src/index.html')
+        .pipe(replace('{{REVISION}}', REVISION));
 
     if (type !== TYPES.DOCS) {
         stream = stream
