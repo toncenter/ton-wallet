@@ -5,6 +5,7 @@ const del = require('del');
 const deleteLines = require('gulp-delete-lines');
 const path = require('path');
 const replace = require('gulp-replace');
+const rename = require("gulp-rename");
 const webpack = require('webpack');
 
 const REVISION = 54;
@@ -33,15 +34,15 @@ const copy = (type, done) => {
     ], { base: 'src' })];
 
     if (type === TYPES.CHROMIUM) {
-        streams.push(src([
-            'src/manifest.json'
-        ], { base: 'src' }));
+        streams.push(
+            src('build/manifest/v3.json', { base: 'build/manifest' }).pipe(rename('manifest.json'))
+        );
     }
 
     if (type === TYPES.FIREFOX) {
-        streams.push(src([
-            'src/firefox/manifest.json'
-        ], { base: 'src/firefox' }));
+        streams.push(
+            src('build/manifest/v2.json', { base: 'build/manifest' }).pipe(rename('manifest.json'))
+        );
     }
 
     return parallel(...streams.map(stream => function copy() {
