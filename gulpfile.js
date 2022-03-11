@@ -107,4 +107,6 @@ task('docs', createSeries(TYPES.DOCS));
 task('chromium', createSeries(TYPES.CHROMIUM));
 task('firefox', createSeries(TYPES.FIREFOX));
 
-if(process.argv[3]) task('watch', watch.bind(null, 'src/**/*', series(process.argv[3])))
+if(process.argv[3]) {
+    task('watch', watch.bind(null, ['build/**/*', 'src/**/*'], series(process.argv[3])));
+}
