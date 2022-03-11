@@ -8,7 +8,7 @@
   "content_security_policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https://toncenter.com/api/v2/jsonRPC https://testnet.toncenter.com/api/v2/jsonRPC",
 
   "browser_action": {
-    "default_icon": "assets/icon_32x32.png",
+    "default_icon": "assets/icon.png",
     "default_popup": "index.html"
   },
   "background": {
