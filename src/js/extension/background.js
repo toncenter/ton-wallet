@@ -1,4 +1,4 @@
-if(!window.importScripts) {
+if(typeof importScripts !== 'function') {
     const injectScript = path => {
         return new Promise(resolve => {
             const scriptTag = document.createElement('script');
