@@ -167,7 +167,7 @@ button {
     background-size: 20px 20px;
     border: none;
     background-color: transparent;
-    background-image: url("../assets/arrow.svg");
+    background-image: url("../assets/ui/arrow.svg");
     transform: scaleX(-1);
     border-radius: 100%;
     background-color: white;
@@ -770,7 +770,7 @@ button {
     background-size: 40%;
     border: none;
     background-color: transparent;
-    background-image: url("../assets/close.svg");
+    background-image: url("../assets/ui/close.svg");
 }
 
 .popup-footer {
@@ -1030,15 +1030,15 @@ button {
 }
 
 .bg-down-left {
-    background-image: url('../assets/down-left.svg')
+    background-image: url('../assets/ui/down-left.svg')
 }
 
 .bg-menu {
-    background-image: url('../assets/menu.svg')
+    background-image: url('../assets/ui/menu.svg')
 }
 
 .bg-refresh {
-    background-image: url('../assets/refresh.svg')
+    background-image: url('../assets/ui/refresh.svg')
 }
 
 .w-100 {

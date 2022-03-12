@@ -877,7 +877,7 @@ class View {
             text: formatTransferUrl({address}),
             width: 185 * window.devicePixelRatio,
             height: 185 * window.devicePixelRatio,
-            logo: "assets/gem.png",
+            logo: "assets/ui/gem.png",
             logoWidth: 44 * window.devicePixelRatio,
             logoHeight: 44 * window.devicePixelRatio,
             correctLevel: QRCode.CorrectLevel.L
@@ -943,7 +943,7 @@ class View {
             text: link,
             width: 185 * window.devicePixelRatio,
             height: 185 * window.devicePixelRatio,
-            logo: "assets/gem.png",
+            logo: "assets/ui/gem.png",
             logoWidth: 44 * window.devicePixelRatio,
             logoHeight: 44 * window.devicePixelRatio,
             correctLevel: QRCode.CorrectLevel.L
