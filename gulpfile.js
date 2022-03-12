@@ -8,7 +8,7 @@ const replace = require('gulp-replace');
 const rename = require("gulp-rename");
 const webpack = require('webpack');
 
-const REVISION = 54;
+const REVISION = 55;
 
 const TYPES = {
     DOCS: 0,
