@@ -28,10 +28,19 @@ const clean = type => {
 
 const copy = (type, done) => {
     const streams = [src([
-        'src/assets/**/*',
-        'src/js/extension/**/*',
+        'src/assets/lottie/**/*',
+        'src/assets/ui/**/*',
         'src/libs/**/*'
     ], { base: 'src' })];
+
+    if (type === TYPES.DOCS) {
+        streams.push(src('src/assets/favicon/**/*', { base: 'src' }));
+    } else {
+        streams.push(src([
+            'src/assets/extension/**/*',
+            'src/js/extension/**/*'
+        ], { base: 'src' }));
+    }
 
     if (type === TYPES.CHROMIUM) {
         streams.push(
