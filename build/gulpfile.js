@@ -79,7 +79,7 @@ const js = (type, done) => {
         },
         output: {
             filename: '[name].js',
-            path: path.resolve(__dirname, `./${DESTINATIONS[type]}/js`)
+            path: path.resolve(process.cwd(), `./${DESTINATIONS[type]}/js`)
         },
     }, (err, stats) => {
         if (err) return done(err);
@@ -116,6 +116,6 @@ task('docs', createSeries(TYPES.DOCS));
 task('chromium', createSeries(TYPES.CHROMIUM));
 task('firefox', createSeries(TYPES.FIREFOX));
 
-if(process.argv[3]) {
-    task('watch', watch.bind(null, ['build/**/*', 'src/**/*'], series(process.argv[3])));
+if(process.argv[7]) {
+    task('watch', watch.bind(null, ['build/**/*', 'src/**/*'], series(process.argv[7])));
 }
