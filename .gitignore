@@ -1,9 +1,5 @@
 .idea/
 dist/
 node_modules/
-old/
 .DS_Store
 .env
-deploy.sh
-deploy_plugin.sh
-plugin.zip
