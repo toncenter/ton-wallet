@@ -909,7 +909,9 @@ class View {
     };
 
     getInvoiceLink() {
-        return TonWeb.utils.formatTransferUrl(this.myAddress, $('#invoice_amountInput').value, $('#invoice_commentInput').value);
+        const amountString = $('#invoice_amountInput').value;
+        const amount = amountString ? TonWeb.utils.toNano(amountString) : undefined;
+        return TonWeb.utils.formatTransferUrl(this.myAddress, amount, $('#invoice_commentInput').value);
     }
 
     onShareInvoiceClick() {
