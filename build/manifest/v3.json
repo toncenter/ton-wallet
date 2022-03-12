@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "TON Wallet",
   "description": "Set up your own TON Wallet on The Open Network",
-  "version": "1.1.34",
+  "version": "{{TON_WALLET_VERSION}}",
   "icons": {
     "16": "/assets/extension/icon-16.png",
     "19": "/assets/extension/icon-19.png",

@@ -1,5 +1,5 @@
 const REQUIRED_ENVIRONMENT_VARIABLES = [
-    'STATIC_FILES_REVISION',
+    'TON_WALLET_VERSION',
     'TONCENTER_API_KEY_WEB',
     'TONCENTER_API_KEY_EXTENSION'
 ];
@@ -50,13 +50,17 @@ const copy = (type, done) => {
 
     if (type === TYPES.CHROMIUM) {
         streams.push(
-            src('build/manifest/v3.json', { base: 'build/manifest' }).pipe(rename('manifest.json'))
+            src('build/manifest/v3.json', { base: 'build/manifest' })
+                .pipe(replace('{{TON_WALLET_VERSION}}', process.env.TON_WALLET_VERSION))
+                .pipe(rename('manifest.json'))
         );
     }
 
     if (type === TYPES.FIREFOX) {
         streams.push(
-            src('build/manifest/v2.json', { base: 'build/manifest' }).pipe(rename('manifest.json'))
+            src('build/manifest/v2.json', { base: 'build/manifest' })
+                .pipe(replace('{{TON_WALLET_VERSION}}', process.env.TON_WALLET_VERSION))
+                .pipe(rename('manifest.json'))
         );
     }
 
@@ -101,7 +105,7 @@ const js = (type, done) => {
 
 const html = type => {
     let stream = src('src/index.html')
-        .pipe(replace('{{STATIC_FILES_REVISION}}', process.env.STATIC_FILES_REVISION));
+        .pipe(replace('{{TON_WALLET_VERSION}}', process.env.TON_WALLET_VERSION));
 
     if (type !== TYPES.DOCS) {
         stream = stream

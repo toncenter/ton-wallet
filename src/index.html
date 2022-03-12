@@ -40,7 +40,7 @@
     <meta name="msapplication-config" content="assets/favicon/browserconfig.xml">
     <meta name="theme-color" content="#ffffff">
 
-    <link rel="stylesheet" href="css/main.css?{{STATIC_FILES_REVISION}}">
+    <link rel="stylesheet" href="css/main.css?v={{TON_WALLET_VERSION}}">
 </head>
 <body>
 
@@ -550,7 +550,7 @@
     <div id="about" class="popup text-align-center pb-10 visibility-hidden">
         <div class="popup-title">TON Wallet</div>
         <div class="popup-grey-text">
-            Version: 1.1.34
+            Version: {{TON_WALLET_VERSION}}
         </div>
         <tgs-player data-name="about" src="assets/lottie/intro.tgs" width="150" height="150"></tgs-player>
 
@@ -663,11 +663,11 @@
 <script type="text/javascript" src="libs/lottie-web/5.6.3/lottie_canvas.min.js"></script>
 <script type="text/javascript" src="libs/EasyQRcodeJS.js"></script>
 
-<script type="text/javascript" src="libs/tonweb.js?{{STATIC_FILES_REVISION}}"></script>
-<script type="text/javascript" src="libs/tonweb-mnemonic.js?{{STATIC_FILES_REVISION}}"></script>
+<script type="text/javascript" src="libs/tonweb.js?v={{TON_WALLET_VERSION}}"></script>
+<script type="text/javascript" src="libs/tonweb-mnemonic.js?v={{TON_WALLET_VERSION}}"></script>
 
-<script src="js/View.js?{{STATIC_FILES_REVISION}}" type="module"></script>
-<script src="js/Controller.js?{{STATIC_FILES_REVISION}}" type="module"></script>
+<script src="js/View.js?v={{TON_WALLET_VERSION}}" type="module"></script>
+<script src="js/Controller.js?v={{TON_WALLET_VERSION}}" type="module"></script>
 
 </body>
 </html>
