@@ -16,10 +16,6 @@ Please post your Issues and Proposals as Issues in this repository.
 
 https://chrome.google.com/webstore/detail/ton-wallet/nphplpgoakhhjchkkhmiggakijnkhfnd
 
-# Mozilla Firefox Add-on
-
-https://addons.mozilla.org/ru/firefox/addon/
-
 # Build
 
 Install development dependencies:

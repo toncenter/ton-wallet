@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "TON Wallet",
   "description": "Set up your own TON Wallet on The Open Network.",
-  "version": "1.1.33",
+  "version": "1.1.34",
   "action": {
     "default_icon": "assets/icon_32x32.png",
     "default_popup": "popup.html"
@@ -13,6 +13,9 @@
   ],
   "background": {
     "service_worker": "/js/extension/serviceWorker.js"
+  },
+  "content_security_policy": {
+    "extension_pages": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https://toncenter.com/api/v2/jsonRPC https://testnet.toncenter.com/api/v2/jsonRPC"
   },
   "content_scripts": [
     {
