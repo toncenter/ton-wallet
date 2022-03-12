@@ -1,21 +1,30 @@
 {
   "manifest_version": 3,
   "name": "TON Wallet",
-  "description": "Set up your own TON Wallet on The Open Network.",
+  "description": "Set up your own TON Wallet on The Open Network",
   "version": "1.1.33",
-  "action": {
-    "default_icon": "assets/icon.png",
-    "default_popup": "index.html"
+  "icons": {
+    "16": "/assets/extension/icon-16.png",
+    "19": "/assets/extension/icon-19.png",
+    "24": "/assets/extension/icon-24.png",
+    "32": "/assets/extension/icon-32.png",
+    "38": "/assets/extension/icon-38.png",
+    "48": "/assets/extension/icon-48.png",
+    "64": "/assets/extension/icon-64.png",
+    "96": "/assets/extension/icon-96.png",
+    "128": "/assets/extension/icon-128.png",
+    "256": "/assets/extension/icon-256.png",
+    "512": "/assets/extension/icon-512.png"
   },
   "permissions": [
     "storage",
     "webRequest"
   ],
+  "action": {
+    "default_title": "TON Wallet"
+  },
   "background": {
     "service_worker": "/js/extension/background.js"
-  },
-  "content_security_policy": {
-    "extension_pages": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https://toncenter.com/api/v2/jsonRPC https://testnet.toncenter.com/api/v2/jsonRPC"
   },
   "content_scripts": [
     {
@@ -42,5 +51,8 @@
         "https://*/*"
       ]
     }
-  ]
+  ],
+  "content_security_policy": {
+    "extension_pages": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https://toncenter.com/api/v2/jsonRPC https://testnet.toncenter.com/api/v2/jsonRPC"
+  }
 }

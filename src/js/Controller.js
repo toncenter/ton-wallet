@@ -1,21 +1,25 @@
 import storage from './util/storage.js';
 
+let extensionWindowId = -1;
 let contentScriptPort = null;
 let popupPort = null;
 const queueToPopup = [];
 
-const showExtensionPopup = () => {
-    const cb = (currentPopup) => {
-        // this._popupId = currentPopup.id
-    };
-    const creation = chrome.windows.create({
+const showExtensionWindow = () => {
+    if (extensionWindowId > -1) {
+        chrome.windows.update(extensionWindowId, { focused: true });
+        return;
+    }
+
+    chrome.windows.create({
         url: 'index.html',
         type: 'popup',
-        width: 400,
-        height: 600,
-        top: 0,
-        left: 0,
-    }, cb);
+        focused: true,
+        height: 800,
+        width: 480
+    }, window => {
+        extensionWindowId = window.id;
+    });
 };
 
 const BN = TonWeb.utils.BN;
@@ -990,7 +994,7 @@ class Controller {
     requestPublicKey(needQueue) {
         return new Promise((resolve, reject) => {
             if (!popupPort) {
-                showExtensionPopup();
+                showExtensionWindow();
             }
 
             this.afterEnterPassword = async words => {
@@ -1031,7 +1035,7 @@ class Controller {
             case 'ton_sendTransaction':
                 const param = params[0];
                 if (!popupPort) {
-                    showExtensionPopup();
+                    showExtensionWindow();
                 }
                 if (param.data) {
                     if (param.dataType === 'hex') {
@@ -1050,7 +1054,7 @@ class Controller {
             case 'ton_rawSign':
                 const signParam = params[0];
                 if (!popupPort) {
-                    showExtensionPopup();
+                    showExtensionWindow();
                 }
                 return this.showSignConfirm(signParam.data, needQueue);
             case 'flushMemoryCache':
@@ -1116,5 +1120,15 @@ if (IS_EXTENSION) {
                 runQueueToPopup();
             });
         }
+    });
+
+    let actionApiName = 'action';
+    if (chrome.runtime.getManifest().manifest_version === 2) actionApiName = 'browserAction';
+
+    chrome[actionApiName].onClicked.addListener(showExtensionWindow);
+
+    chrome.windows.onRemoved.addListener(removedWindowId => {
+        if (removedWindowId !== extensionWindowId) return;
+        extensionWindowId = -1;
     });
 }
