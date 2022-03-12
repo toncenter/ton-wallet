@@ -17,9 +17,7 @@
     "512": "/assets/extension/icon-512.png"
   },
   "permissions": [
-    "webRequest",
-    "https://toncenter.com/api/v2/jsonRPC",
-    "https://testnet.toncenter.com/api/v2/jsonRPC"
+    "webRequest"
   ],
   "browser_action": {
     "default_title": "TON Wallet"
