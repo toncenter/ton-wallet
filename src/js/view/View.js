@@ -9,8 +9,6 @@ import {
     CONFIRM_WORDS_COUNT,
     onInput, setAddr,
     toggle,
-    parseTransferUrl,
-    formatTransferUrl,
     toggleFaded,
     triggerClass
 } from "./Utils.js";
@@ -106,20 +104,22 @@ class View {
 
         $('#toWalletInput').addEventListener('paste', e => {
             const urlString = getClipboardData(e);
-            const transfer = parseTransferUrl(urlString);
-
-            if (!transfer) {
+            let parsedTransferUrl;
+            try {
+                parsedTransferUrl = TonWeb.utils.parseTransferUrl(urlString);
+            } catch (e) {
+                console.log(e);
                 return;
             }
 
-            $('#toWalletInput').value = transfer.address;
+            $('#toWalletInput').value = parsedTransferUrl.address;
 
-            if (transfer.amount) {
-                $('#amountInput').value = TonWeb.utils.fromNano(new BN(transfer.amount));
+            if (parsedTransferUrl.amount) {
+                $('#amountInput').value = TonWeb.utils.fromNano(new BN(parsedTransferUrl.amount));
             }
 
-            if (transfer.text) {
-                $('#commentInput').value = transfer.text;
+            if (parsedTransferUrl.text) {
+                $('#commentInput').value = parsedTransferUrl.text;
             }
 
             e.preventDefault();
@@ -874,7 +874,7 @@ class View {
         setAddr($('#receive .addr'), address);
         clearElement($('#qr'));
         const options = {
-            text: formatTransferUrl({address}),
+            text: TonWeb.utils.formatTransferUrl(address),
             width: 185 * window.devicePixelRatio,
             height: 185 * window.devicePixelRatio,
             logo: "assets/gem@large.png",
@@ -886,7 +886,7 @@ class View {
     }
 
     onShareAddressClick(onyAddress) {
-        const data = onyAddress ? this.myAddress : formatTransferUrl({address: this.myAddress});
+        const data = onyAddress ? this.myAddress : TonWeb.utils.formatTransferUrl(this.myAddress);
         const text = onyAddress ? 'Wallet address copied to clipboard' : 'Transfer link copied to clipboard';
         $('#notify').innerText = copyToClipboard(data) ? text : 'Can\'t copy link';
         triggerClass($('#notify'), 'faded-show', 2000);
@@ -909,21 +909,7 @@ class View {
     };
 
     getInvoiceLink() {
-        const transfer = {
-            address: this.myAddress,
-        };
-
-        const amount = $('#invoice_amountInput').value;
-        if (amount) {
-            transfer.amount = toNano(Number(amount));
-        }
-
-        const comment = $('#invoice_commentInput').value;
-        if (comment) {
-            transfer.text = comment;
-        }
-
-        return formatTransferUrl(transfer);
+        return TonWeb.utils.formatTransferUrl(this.myAddress, $('#invoice_amountInput').value, $('#invoice_commentInput').value);
     }
 
     onShareInvoiceClick() {
