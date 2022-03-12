@@ -1,14 +1,8 @@
-const { dest, parallel, series, src, task, watch } = require('gulp');
-const concatCss = require('gulp-concat-css');
-const cssmin = require('gulp-cssmin');
-const del = require('del');
-const deleteLines = require('gulp-delete-lines');
-const path = require('path');
-const replace = require('gulp-replace');
-const rename = require("gulp-rename");
-const webpack = require('webpack');
-
-const REVISION = 55;
+const REQUIRED_ENVIRONMENT_VARIABLES = [
+    'STATIC_FILES_REVISION',
+    'TONCENTER_API_KEY_WEB',
+    'TONCENTER_API_KEY_EXTENSION'
+];
 
 const TYPES = {
     DOCS: 0,
@@ -21,6 +15,18 @@ const DESTINATIONS = {
     [TYPES.CHROMIUM]: 'dist/chromium',
     [TYPES.FIREFOX]: 'dist/firefox'
 };
+
+require('./dotenv')(REQUIRED_ENVIRONMENT_VARIABLES);
+
+const { dest, parallel, series, src, task, watch } = require('gulp');
+const concatCss = require('gulp-concat-css');
+const cssmin = require('gulp-cssmin');
+const del = require('del');
+const deleteLines = require('gulp-delete-lines');
+const path = require('path');
+const replace = require('gulp-replace');
+const rename = require("gulp-rename");
+const webpack = require('webpack');
 
 const clean = type => {
     return del([DESTINATIONS[type]]);
@@ -73,6 +79,10 @@ const js = (type, done) => {
             Controller: './src/js/Controller.js',
             View: './src/js/view/View.js'
         },
+        plugins: [new webpack.DefinePlugin({
+            TONCENTER_API_KEY_WEB: `'${process.env.TONCENTER_API_KEY_WEB}'`,
+            TONCENTER_API_KEY_EXTENSION: `'${process.env.TONCENTER_API_KEY_EXTENSION}'`
+        })],
         optimization: {
             concatenateModules: true,
             minimize: true
@@ -91,7 +101,7 @@ const js = (type, done) => {
 
 const html = type => {
     let stream = src('src/index.html')
-        .pipe(replace('{{REVISION}}', REVISION));
+        .pipe(replace('{{STATIC_FILES_REVISION}}', process.env.STATIC_FILES_REVISION));
 
     if (type !== TYPES.DOCS) {
         stream = stream

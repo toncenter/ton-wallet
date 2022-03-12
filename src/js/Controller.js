@@ -180,8 +180,8 @@ class Controller {
 
             const mainnetRpc = 'https://toncenter.com/api/v2/jsonRPC';
             const testnetRpc = 'https://testnet.toncenter.com/api/v2/jsonRPC';
-            const apiKey = '4f96a149e04e0821d20f9e99ee716e20ff52db7238f38663226b1c0f303003e0';
-            const extensionApiKey = '503af517296765c3f1729fcb301b063a00650a50a881eeaddb6307d5d45e21aa';
+            const apiKey = TONCENTER_API_KEY_WEB;
+            const extensionApiKey = TONCENTER_API_KEY_EXTENSION;
 
             if (IS_EXTENSION && !(await storage.getItem('address'))) {
                 await this._restoreDeprecatedStorage();
