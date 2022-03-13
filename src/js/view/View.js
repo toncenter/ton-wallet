@@ -356,6 +356,28 @@ class View {
         $('#processing_closeBtn').addEventListener('click', () => this.closePopup());
         $('#done_closeBtn').addEventListener('click', () => this.closePopup());
         $('#about_closeBtn').addEventListener('click', () => this.closePopup());
+        $('#about_version').addEventListener('click', (e) => {
+            if (e.shiftKey) {
+                this.showAlert({
+                    title: 'Are you sure you want to switch between mainnet/testnet?',
+                    message: 'You can switch back the network by clicking on the version with the Shift key pressed',
+                    buttons: [
+                        {
+                            label: 'I\'M SURE',
+                            callback: () => {
+                                this.sendMessage('toggleTestnet');
+                            }
+                        },
+                        {
+                            label: 'BACK',
+                            callback: () => {
+                                this.closePopup();
+                            }
+                        },
+                    ]
+                });
+            }
+        });
 
         $('#changePassword_cancelBtn').addEventListener('click', () => this.closePopup());
         $('#changePassword_okBtn').addEventListener('click', async (e) => {

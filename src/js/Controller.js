@@ -27,14 +27,6 @@ const nacl = TonWeb.utils.nacl;
 const Address = TonWeb.utils.Address;
 const formatNanograms = TonWeb.utils.fromNano;
 
-/**
- * @return  String
- */
-async function hash(s) {
-    const bytes = new TextEncoder().encode(s);
-    return TonWeb.utils.bytesToBase64(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)));
-}
-
 // ENCRYPTION
 
 /**
@@ -91,7 +83,6 @@ async function decrypt(ciphertext, password) {
 
 // CONTROLLER
 
-const IS_TESTNET = self.location.href.indexOf('testnet') > -1;
 const IS_EXTENSION = !!(self.chrome && chrome.runtime && chrome.runtime.onConnect);
 
 const ACCOUNT_NUMBER = 0;
@@ -101,6 +92,7 @@ const DEFAULT_LEDGER_WALLET_VERSION = 'v3R1';
 
 class Controller {
     constructor() {
+        this.isTestnet = false;
         /** @type {string} */
         this.myAddress = null;
         /** @type {string} */
@@ -127,8 +119,6 @@ class Controller {
 
         this.pendingMessageResolvers = new Map();
         this._lastMsgId = 1;
-
-        this.sendToView('setIsTestnet', IS_TESTNET);
 
         this.whenReady = this._init();
     }
@@ -178,16 +168,19 @@ class Controller {
         return new Promise(async (resolve) => {
             await storage.removeItem('pwdHash');
 
+            this.isTestnet = IS_EXTENSION ? (await storage.getItem('isTestnet')) : (self.location.href.indexOf('testnet') > -1);
+
             const mainnetRpc = 'https://toncenter.com/api/v2/jsonRPC';
             const testnetRpc = 'https://testnet.toncenter.com/api/v2/jsonRPC';
-            const apiKey = TONCENTER_API_KEY_WEB;
-            const extensionApiKey = TONCENTER_API_KEY_EXTENSION;
+
+            const apiKey = this.isTestnet ? API_KEY_WEB_TEST : API_KEY_WEB_MAIN;
+            const extensionApiKey = this.isTestnet ? API_KEY_EXT_TEST : API_KEY_EXT_MAIN;
 
             if (IS_EXTENSION && !(await storage.getItem('address'))) {
                 await this._restoreDeprecatedStorage();
             }
 
-            this.ton = new TonWeb(new TonWeb.HttpProvider(IS_TESTNET ? testnetRpc : mainnetRpc, {apiKey: IS_EXTENSION ? extensionApiKey : apiKey}));
+            this.ton = new TonWeb(new TonWeb.HttpProvider(this.isTestnet ? testnetRpc : mainnetRpc, {apiKey: IS_EXTENSION ? extensionApiKey : apiKey}));
             this.myAddress = await storage.getItem('address');
             this.publicKeyHex = await storage.getItem('publicKey');
 
@@ -223,6 +216,18 @@ class Controller {
             storage.setItem('magic', magic),
             storage.setItem('proxy', proxy),
         ]);
+    }
+
+    async toggleTestnet() {
+        this.isTestnet = !this.isTestnet;
+        if (this.isTestnet) {
+            await storage.setItem('isTestnet', 'true');
+        } else {
+            await storage.removeItem('isTestnet');
+        }
+        this.clearVars();
+        await this._init();
+        await this.sendToView('setIsTestnet', this.isTestnet);
     }
 
     async getTransactions(limit = 20) {
@@ -558,6 +563,7 @@ class Controller {
         }
         this.sendToView('setIsMagic', (await storage.getItem('magic')) === 'true');
         this.sendToView('setIsProxy', (await storage.getItem('proxy')) === 'true');
+        this.sendToView('setIsTestnet', this.isTestnet);
     }
 
     update(force) {
@@ -841,7 +847,7 @@ class Controller {
 
     // DISCONNECT WALLET
 
-    async onDisconnectClick() {
+    clearVars() {
         this.myAddress = null;
         this.publicKeyHex = null;
         this.balance = null;
@@ -854,6 +860,10 @@ class Controller {
         this.isLedger = false;
         this.ledgerApp = null;
         clearInterval(this.updateIntervalId);
+    }
+
+    async onDisconnectClick() {
+        this.clearVars();
         await storage.clear();
         this.sendToView('showScreen', {name: 'start'});
         this.sendToDapp('ton_accounts', []);
@@ -976,6 +986,9 @@ class Controller {
             case 'onProxyClick':
                 await storage.setItem('proxy', params ? 'true' : 'false');
                 this.doProxy(params);
+                break;
+            case 'toggleTestnet':
+                await this.toggleTestnet();
                 break;
         }
     }

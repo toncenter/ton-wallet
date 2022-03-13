@@ -2,7 +2,7 @@
 
 TON Web Wallet is a free, client-side interface helping you interact with the TON blockchain.
 
-Available on https://wallet.ton.org (earlier https://tonwallet.me).
+Available on https://wallet.ton.org
 
 ## Security
 
@@ -45,19 +45,31 @@ Possible targets and bundle file destinations folder:
 
 - Open web browser
 
-- Go to chrome://extensions/
+- Go to `chrome://extensions/`
 
 - Enable "Developer Mode" in top right corner
 
-- Click "Load unpacked extension" and specify `ton-wallet/dist/firefox` folder
+- Click "Load unpacked extension" and specify `ton-wallet/dist/chromium` folder
 
 # Mozilla Firefox Add-on Developer Mode
 
+- Set your `extensionApiKey` in `Controller.js` and build
+
 - Open Mozilla Firefox
 
-- Go to about:debugging#/runtime/this-firefox
+- Go to `about:debugging#/runtime/this-firefox`
 
-- Click "Load Temporary Add-on" and select `ton-wallet/build-firefox/manifest.json` file
+- Click "Load Temporary Add-on" and select `ton-wallet/dist/firefox/manifest.json` file
+
+# Switch between mainnet/testnet in Extension
+
+- Required version 1.1.35+
+
+- Click menu in right-top corner -> About
+
+- Click on "Version:" with shift key pressed
+
+The switch is hidden because ordinary users click all the switches without knowing what they are doing, we would like to protect them from accidentally switching the network.
 
 # Code
 

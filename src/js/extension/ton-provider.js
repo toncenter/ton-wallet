@@ -259,6 +259,7 @@ class TonProvider {
     }
 }
 
+window.tonProtocolVersion = 1;
 window.ton = new TonProvider();
 window.dispatchEvent(new Event('tonready'));
 
