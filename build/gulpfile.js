@@ -25,7 +25,7 @@ const del = require('del');
 const deleteLines = require('gulp-delete-lines');
 const path = require('path');
 const replace = require('gulp-replace');
-const rename = require("gulp-rename");
+const rename = require('gulp-rename');
 const webpack = require('webpack');
 
 const clean = type => {
