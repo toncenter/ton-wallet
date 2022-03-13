@@ -260,6 +260,7 @@ class TonProvider {
     }
 }
 
+window.tonProtocolVersion = 1;
 window.ton = new TonProvider();
 
 function toggleMagicBadge(isTurnedOn) {
