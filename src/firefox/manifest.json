@@ -3,7 +3,7 @@
 
   "name": "TON Wallet",
   "description": "Set up your own TON Wallet on The Open Network.",
-  "version": "1.1.34",
+  "version": "1.1.35",
 
   "content_security_policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https://toncenter.com/api/v2/jsonRPC https://testnet.toncenter.com/api/v2/jsonRPC",
 

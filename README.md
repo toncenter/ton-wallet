@@ -34,6 +34,16 @@ https://chrome.google.com/webstore/detail/ton-wallet/nphplpgoakhhjchkkhmiggakijn
 
 - Click "Load Temporary Add-on" and select ton-wallet/build-firefox/manifest.json file
 
+# Switch between mainnet/testnet in Extension
+
+- Required version 1.1.35+
+
+- Click menu in right-top corner -> About
+
+- Click on "Version:" with shift key pressed
+
+The switch is hidden because ordinary users click all the switches without knowing what they are doing, we would like to protect them from accidentally switching the network.
+
 # Build
 
 `npm install`
