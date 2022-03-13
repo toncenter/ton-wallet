@@ -18,6 +18,8 @@ https://chrome.google.com/webstore/detail/ton-wallet/nphplpgoakhhjchkkhmiggakijn
 
 # Build
 
+Set required for build environment variables in shell or `.env` file in project root directory. See `.env.example` with required variables names and their description.
+
 Install development dependencies:
 
 ```
@@ -52,8 +54,6 @@ Possible targets and bundle file destinations folder:
 - Click "Load unpacked extension" and specify `ton-wallet/dist/chromium` folder
 
 # Mozilla Firefox Add-on Developer Mode
-
-- Set your `extensionApiKey` in `Controller.js` and build
 
 - Open Mozilla Firefox
 
