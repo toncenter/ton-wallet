@@ -43,7 +43,7 @@ module.exports = requiredEnvironmentVariables => {
     let haveUnspecifiedEnvVars = false;
 
     requiredEnvironmentVariables.forEach(requiredEnvironmentVariable => {
-        if (process.env[requiredEnvironmentVariable]) return;
+        if (process.env[requiredEnvironmentVariable] !== undefined) return;
 
         haveUnspecifiedEnvVars = true;
         console.error(`Specify ${requiredEnvironmentVariable} environment variable`);
