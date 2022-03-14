@@ -48,7 +48,7 @@ const BUILD_TARGETS = {
 const PACK_TARGETS = {
     //'docs': TARGETS.DOCS,
     'chromium': TARGETS.CHROMIUM,
-    //'firefox': TARGETS.FIREFOX,
+    'firefox': TARGETS.FIREFOX,
     //'safari': TARGETS.SAFARI
 };
 
@@ -73,13 +73,16 @@ const BUILD_TARGETS_TYPES = {
 
 require('./dotenv')(REQUIRED_ENVIRONMENT_VARIABLES);
 
-const { existsSync, readFileSync, rmSync, rmdirSync, writeFileSync } = require('fs');
+const {
+    existsSync, readFileSync, renameSync, rmSync, rmdirSync, writeFileSync, unlinkSync
+} = require('fs');
 const { dest, parallel, series, src, task, watch } = require('gulp');
 const ChromeExtension = require('crx');
 const cssmin = require('gulp-cssmin');
 const { resolve } = require('path');
 const replace = require('gulp-replace');
 const rename = require('gulp-rename');
+const webExt = require('web-ext');
 const webpack = require('webpack');
 
 const clean = (buildType, done) => {
@@ -202,7 +205,35 @@ const pack = (target, done) => {
         crx.load(resolve(process.cwd(), BUILD_TYPES_DESTINATIONS[BUILD_TARGETS_TYPES[target]]))
             .then(crx => crx.pack())
             .then(crxBuffer => {
-                writeFileSync('dist/chromium.crx', crxBuffer);
+                writeFileSync(`dist/ton-wallet-${process.env.TON_WALLET_VERSION}.crx`, crxBuffer);
+                done();
+            })
+            .catch(err => {
+                console.log(err);
+                done(err);
+            });
+    }
+
+    if (target === TARGETS.FIREFOX) {
+        if (!process.env.MOZILLA_ADDONS_API_KEY || !process.env.MOZILLA_ADDONS_API_SECRET) {
+            console.warn('Mozilla addons credentials not exists in environment variables');
+            process.exit(1);
+        }
+
+        webExt.cmd.sign({
+            apiKey: process.env.MOZILLA_ADDONS_API_KEY,
+            apiSecret: process.env.MOZILLA_ADDONS_API_SECRET,
+            artifactsDir: 'dist',
+            id: process.env.MOZILLA_EXTENSION_ID || null,
+            sourceDir: BUILD_TYPES_DESTINATIONS[BUILD_TARGETS_TYPES[target]]
+        })
+            .then((signResult) => {
+                unlinkSync('dist/v2/.web-extension-id');
+                renameSync(
+                    signResult.downloadedFiles.find(path => path.endsWith('.xpi')),
+                    `dist/ton-wallet-${process.env.TON_WALLET_VERSION}.xpi`
+                );
+
                 done();
             })
             .catch(err => {
@@ -221,7 +252,7 @@ if (!taskName || !TASKS.includes(taskName)) {
 const targets = Object.keys(taskName === 'pack' ? PACK_TARGETS : BUILD_TARGETS);
 const target = process.argv[GULP_RUN_ARGS_COUNT];
 if (!target || !targets.includes(target)) {
-    console.error(`Pass one of possible target values: ${Object.keys(targets).join(', ')}`);
+    console.error(`Pass one of possible target values: ${targets.join(', ')}`);
     process.exit(1);
 }
 
