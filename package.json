@@ -4,7 +4,7 @@
   "description": "TON Wallet",
   "main": "index.js",
   "devDependencies": {
-    "del": "^3.0.0",
+    "crx": "^5.0.1",
     "gulp": "^4.0.2",
     "gulp-cssmin": "^0.2.0",
     "gulp-rename": "^2.0.0",

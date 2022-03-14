@@ -44,6 +44,20 @@ Possible targets and bundle files destinations folder:
 - `firefox` - ton-wallet/dist/v2
 - `safari` - ton-wallet/dist/v2
 
+# Packing
+
+Make preparations:
+- for Chromium packing put extension secret key to ton-wallet/build/chromium.pem path
+
+Pack required target:
+
+```
+npm run pack {target}
+```
+
+Possible targets and bundle file destinations:
+- `chromium` - ton-wallet/dist/chromium.crx
+
 # Chromium-based browsers Extension Developer Mode
 
 - Open web browser
