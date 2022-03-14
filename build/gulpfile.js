@@ -54,10 +54,8 @@ const PACK_TARGETS = {
 require('./dotenv')(REQUIRED_ENVIRONMENT_VARIABLES);
 
 const { dest, parallel, series, src, task, watch } = require('gulp');
-const concatCss = require('gulp-concat-css');
 const cssmin = require('gulp-cssmin');
 const del = require('del');
-const deleteLines = require('gulp-delete-lines');
 const path = require('path');
 const replace = require('gulp-replace');
 const rename = require('gulp-rename');
@@ -106,7 +104,6 @@ const copy = (type, done) => {
 
 const css = type => {
     return src('src/css/**/*.css')
-        .pipe(concatCss('main.css'))
         .pipe(cssmin())
         .pipe(dest(`${BUILD_DESTINATIONS[type]}/css`))
 };
@@ -147,7 +144,7 @@ const html = type => {
     if (type !== BUILD_TYPES.WEB) {
         stream = stream
             .pipe(replace('<body>', '<body class="plugin">'))
-            .pipe(deleteLines({ filters: [/Controller.js/i] }));
+            .pipe(replace(/^.*<script.*src=".*Controller.js.*".*$(\r\n|\r|\n)/gm, ''));
     }
 
     return stream.pipe(dest(BUILD_DESTINATIONS[type]));
@@ -172,7 +169,7 @@ if (!taskName || !TASKS.includes(taskName)) {
 const TARGETS = taskName === 'pack' ? PACK_TARGETS : BUILD_TARGETS;
 
 const target = process.argv[GULP_RUN_ARGS_COUNT];
-if (!target || !TARGETS[target]) {
+if (!target || TARGETS[target] === undefined) {
     console.error(`Pass one of possible target values: ${Object.keys(TARGETS).join(', ')}`);
     process.exit(1);
 }
