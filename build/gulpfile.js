@@ -32,21 +32,21 @@ const CHROMIUM_SECRET_KEY_PATH = 'build/chromium.pem';
 const TASKS = ['build', 'watch', 'pack'];
 
 const TARGETS = {
-    DOCS: 0,
+    WEB: 0,
     CHROMIUM: 1,
     FIREFOX: 2,
     SAFARI: 3
 };
 
 const BUILD_TARGETS = {
-    'docs': TARGETS.DOCS,
+    'web': TARGETS.WEB,
     'chromium': TARGETS.CHROMIUM,
     'firefox': TARGETS.FIREFOX,
     'safari': TARGETS.SAFARI
 };
 
 const PACK_TARGETS = {
-    //'docs': TARGETS.DOCS,
+    'web': TARGETS.WEB,
     'chromium': TARGETS.CHROMIUM,
     'firefox': TARGETS.FIREFOX,
     //'safari': TARGETS.SAFARI
@@ -65,7 +65,7 @@ const BUILD_TYPES_DESTINATIONS = {
 };
 
 const BUILD_TARGETS_TYPES = {
-    [BUILD_TARGETS['docs']]: BUILD_TYPES.WEB,
+    [BUILD_TARGETS['web']]: BUILD_TYPES.WEB,
     [BUILD_TARGETS['chromium']]: BUILD_TYPES.V3,
     [BUILD_TARGETS['firefox']]: BUILD_TYPES.V2,
     [BUILD_TARGETS['safari']]: BUILD_TYPES.V2

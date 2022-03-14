@@ -39,7 +39,7 @@ npm run watch {target}
 ```
 
 Possible targets and bundle files destinations folder:
-- `docs` - ton-wallet/docs
+- `web` - ton-wallet/dist/web
 - `chromium` - ton-wallet/dist/v3
 - `firefox` - ton-wallet/dist/v2
 - `safari` - ton-wallet/dist/v2
