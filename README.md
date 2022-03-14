@@ -48,6 +48,7 @@ Possible targets and bundle files destinations folder:
 
 Make preparations:
 - for Chromium packing put extension secret key to ton-wallet/build/chromium.pem path
+- for Firefox packing set Mozilla Addons credentials to environment variables (see `.env.example`)
 
 Pack required target:
 
@@ -56,7 +57,10 @@ npm run pack {target}
 ```
 
 Possible targets and bundle file destinations:
-- `chromium` - ton-wallet/dist/chromium.crx
+- `chromium` - ton-wallet/dist/ton-wallet-{TON_WALLET_VERSION}.crx
+- `firefox` - ton-wallet/dist/ton-wallet-{TON_WALLET_VERSION}.xpi
+
+TON_WALLET_VERSION - value from environment variable with same name
 
 # Chromium-based browsers Extension Developer Mode
 
