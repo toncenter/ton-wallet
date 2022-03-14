@@ -38,10 +38,11 @@ For development needs, you can use watch script:
 npm run watch {target}
 ```
 
-Possible targets and bundle file destinations folder:
+Possible targets and bundle files destinations folder:
 - `docs` - ton-wallet/docs
-- `chromium` - ton-wallet/dist/chromium
-- `firefox` - ton-wallet/dist/firefox
+- `chromium` - ton-wallet/dist/v3
+- `firefox` - ton-wallet/dist/v2
+- `safari` - ton-wallet/dist/v2
 
 # Chromium-based browsers Extension Developer Mode
 
@@ -51,7 +52,7 @@ Possible targets and bundle file destinations folder:
 
 - Enable "Developer Mode" in top right corner
 
-- Click "Load unpacked extension" and specify `ton-wallet/dist/chromium` folder
+- Click "Load unpacked extension" and specify `ton-wallet/dist/v3` folder
 
 # Mozilla Firefox Add-on Developer Mode
 
@@ -59,7 +60,7 @@ Possible targets and bundle file destinations folder:
 
 - Go to `about:debugging#/runtime/this-firefox`
 
-- Click "Load Temporary Add-on" and select `ton-wallet/dist/firefox/manifest.json` file
+- Click "Load Temporary Add-on" and select `ton-wallet/dist/v2/manifest.json` file
 
 # Switch between mainnet/testnet in Extension
 

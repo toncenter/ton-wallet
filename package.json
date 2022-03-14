@@ -14,8 +14,9 @@
     "webpack": "^4.41.6"
   },
   "scripts": {
-    "build": "gulp --gulpfile build/gulpfile.js --cwd .",
-    "watch": "gulp --gulpfile build/gulpfile.js --cwd . watch"
+    "build": "gulp build --gulpfile build/gulpfile.js --cwd . --target",
+    "watch": "gulp watch --gulpfile build/gulpfile.js --cwd . --target",
+    "pack": "gulp pack --gulpfile build/gulpfile.js --cwd . --target"
   },
   "repository": {
     "type": "git",
