@@ -205,6 +205,48 @@ const pack = (target, done) => {
         crx.load(resolve(process.cwd(), BUILD_TYPES_DESTINATIONS[BUILD_TARGETS_TYPES[target]]))
             .then(crx => crx.pack())
             .then(crxBuffer => {
+                writeFileSync(
+                    `dist/chromium-ton-wallet-${process.env.TON_WALLET_VERSION}.crx`, crxBuffer
+                );
+                done();
+            })
+            .catch(err => {
+                console.log(err);
+                done(err);
+            });
+    }
+
+    if (target === TARGETS.FIREFOX) {
+        webExt.cmd.build({
+            artifactsDir: 'dist',
+            overwriteDest: true,
+            filename: 'firefox-ton-wallet-{version}.zip',
+            sourceDir: BUILD_TYPES_DESTINATIONS[BUILD_TARGETS_TYPES[target]]
+        })
+            .then(() => {
+                done();
+            })
+            .catch(err => {
+                console.log(err);
+                done(err);
+            });
+    }
+};
+
+const publish = (target, done) => {
+    if (target === TARGETS.CHROMIUM) {
+        if (!existsSync(CHROMIUM_SECRET_KEY_PATH)) {
+            console.warn(`Chromium secret key not exists by path ${CHROMIUM_SECRET_KEY_PATH}`);
+            process.exit(1);
+        }
+
+        const crx = new ChromeExtension({
+            privateKey: readFileSync(CHROMIUM_SECRET_KEY_PATH, 'utf8')
+        });
+
+        crx.load(resolve(process.cwd(), BUILD_TYPES_DESTINATIONS[BUILD_TARGETS_TYPES[target]]))
+            .then(crx => crx.pack())
+            .then(crxBuffer => {
                 writeFileSync(`dist/ton-wallet-${process.env.TON_WALLET_VERSION}.crx`, crxBuffer);
                 done();
             })
@@ -215,8 +257,13 @@ const pack = (target, done) => {
     }
 
     if (target === TARGETS.FIREFOX) {
-        if (!process.env.MOZILLA_ADDONS_API_KEY || !process.env.MOZILLA_ADDONS_API_SECRET) {
-            console.warn('Mozilla addons credentials not exists in environment variables');
+        if (!process.env.MOZILLA_ADDONS_API_KEY ||
+            !process.env.MOZILLA_ADDONS_API_SECRET ||
+            !process.env.MOZILLA_EXTENSION_ID
+        ) {
+            console.warn(
+                'Mozilla addons credentials and identifier not exists in environment variables'
+            );
             process.exit(1);
         }
 
@@ -224,6 +271,7 @@ const pack = (target, done) => {
             apiKey: process.env.MOZILLA_ADDONS_API_KEY,
             apiSecret: process.env.MOZILLA_ADDONS_API_SECRET,
             artifactsDir: 'dist',
+            channel: 'listed',
             id: process.env.MOZILLA_EXTENSION_ID || null,
             sourceDir: BUILD_TYPES_DESTINATIONS[BUILD_TARGETS_TYPES[target]]
         })
