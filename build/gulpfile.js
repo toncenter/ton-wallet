@@ -202,6 +202,11 @@ const createBuildSeries = (buildType, isMinify) => {
 const pack = target => {
     if (target === TARGETS.SAFARI) {
         return new Promise((resolve, reject) => {
+            if (process.platform !== 'darwin') {
+                console.log("Pack target 'safari' available only on MacOS");
+                return resolve();
+            }
+
             const child = spawn(
                 'xcodebuild', ['-project', 'build/safari/TON Wallet.xcodeproj'],
                 { stdio: 'inherit' }

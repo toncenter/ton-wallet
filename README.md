@@ -45,10 +45,11 @@ npm run watch {target}
 ```
 
 Possible targets and bundle files destinations folder:
-- `web` - ton-wallet/dist/web
+- `web` - ton-wallet/docs
 - `chromium` - ton-wallet/dist/v3
 - `firefox` - ton-wallet/dist/v2
 - `safari` - ton-wallet/dist/v2
+- `all` - run all targets
 
 # Packing
 
@@ -65,6 +66,8 @@ npm run pack {target}
 Possible targets and bundle file destinations:
 - `chromium` - ton-wallet/dist/ton-wallet-{TON_WALLET_VERSION}.crx
 - `firefox` - ton-wallet/dist/ton-wallet-{TON_WALLET_VERSION}.xpi
+- `safari` - build xcode project to ton-wallet/build/safari/build
+- `all` - run all targets
 
 TON_WALLET_VERSION - value from environment variable with same name
 
