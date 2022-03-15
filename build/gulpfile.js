@@ -49,7 +49,7 @@ const PACK_TARGETS = {
     //'web': TARGETS.WEB,
     'chromium': TARGETS.CHROMIUM,
     'firefox': TARGETS.FIREFOX,
-    //'safari': TARGETS.SAFARI
+    'safari': TARGETS.SAFARI
 };
 
 const BUILD_TYPES = {
@@ -79,6 +79,7 @@ const cssmin = require('gulp-cssmin');
 const { resolve } = require('path');
 const replace = require('gulp-replace');
 const rename = require('gulp-rename');
+const { spawn } = require('child_process');
 const webpack = require('webpack');
 const zip = require('gulp-zip');
 
@@ -199,13 +200,27 @@ const createBuildSeries = (buildType, isMinify) => {
 };
 
 const pack = target => {
-    let targetName;
-    if (target === TARGETS.CHROMIUM) targetName = 'chromium';
-    if (target === TARGETS.FIREFOX) targetName = 'firefox';
+    if (target === TARGETS.SAFARI) {
+        return new Promise((resolve, reject) => {
+            const child = spawn(
+                'xcodebuild', ['-project', 'build/safari/TON Wallet.xcodeproj'],
+                { stdio: 'inherit' }
+            );
 
-    return src(`${BUILD_TYPES_DESTINATIONS[BUILD_TARGETS_TYPES[target]]}/**/*`)
-		.pipe(zip(`${targetName}-ton-wallet-${process.env.TON_WALLET_VERSION}.zip`))
-		.pipe(dest('dist'))
+            child.on('close', code => {
+                if (code === 0) resolve();
+                else reject(new Error(`Child process fail with code ${code}`));
+            });
+        });
+    } else {
+        let targetName;
+        if (target === TARGETS.CHROMIUM) targetName = 'chromium';
+        if (target === TARGETS.FIREFOX) targetName = 'firefox';
+
+        return src(`${BUILD_TYPES_DESTINATIONS[BUILD_TARGETS_TYPES[target]]}/**/*`)
+            .pipe(zip(`${targetName}-ton-wallet-${process.env.TON_WALLET_VERSION}.zip`))
+            .pipe(dest('dist'));
+    }
 };
 
 /*
