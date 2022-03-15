@@ -46,7 +46,7 @@ const BUILD_TARGETS = {
 };
 
 const PACK_TARGETS = {
-    'web': TARGETS.WEB,
+    //'web': TARGETS.WEB,
     'chromium': TARGETS.CHROMIUM,
     'firefox': TARGETS.FIREFOX,
     //'safari': TARGETS.SAFARI
@@ -93,7 +93,7 @@ const clean = (buildType, done) => {
     done();
 };
 
-const copy = (buildType, target, done) => {
+const copy = (buildType, done) => {
     const streams = [src([
         'src/assets/lottie/**/*',
         'src/assets/ui/**/*',
@@ -115,6 +115,16 @@ const copy = (buildType, target, done) => {
                 .pipe(replace('{{TON_WALLET_VERSION}}', process.env.TON_WALLET_VERSION))
                 .pipe(rename('manifest.json'))
         );
+
+        // Favicons need only for Chromium of all tested browsers, if other browser full migrate to
+        // manifest v3, need create separate destination for Chromium with favicons, now v3 used
+        // only for Chromium and its ok to add favicons to v3 destination
+        streams.push(src([
+            'src/assets/favicon/favicon.ico',
+            'src/assets/favicon/favicon-32x32.png',
+            'src/assets/favicon/favicon-16x16.png',
+            'src/assets/favicon/192x192.png'
+        ], { base: 'src' }));
     }
 
     if (buildType === BUILD_TYPES.V2) {
@@ -123,15 +133,6 @@ const copy = (buildType, target, done) => {
                 .pipe(replace('{{TON_WALLET_VERSION}}', process.env.TON_WALLET_VERSION))
                 .pipe(rename('manifest.json'))
         );
-    }
-
-    if (target === TARGETS.CHROMIUM) {
-        streams.push(src([
-            'src/assets/favicon/favicon.ico',
-            'src/assets/favicon/favicon-32x32.png',
-            'src/assets/favicon/favicon-16x16.png',
-            'src/assets/favicon/192x192.png'
-        ], { base: 'src' }));
     }
 
     return parallel(...streams.map(stream => function copy() {
@@ -187,12 +188,10 @@ const html = buildType => {
     return stream.pipe(dest(BUILD_TYPES_DESTINATIONS[buildType]));
 };
 
-const createBuildSeries = target => {
-    const buildType = BUILD_TARGETS_TYPES[target];
-
+const createBuildSeries = buildType => {
     return series(
         clean.bind(null, buildType),
-        copy.bind(null, buildType, target),
+        copy.bind(null, buildType),
         css.bind(null, buildType),
         js.bind(null, buildType),
         html.bind(null, buildType)
@@ -275,20 +274,31 @@ if (!taskName || !TASKS.includes(taskName)) {
     process.exit(1);
 }
 
-const targets = Object.keys(taskName === 'pack' ? PACK_TARGETS : BUILD_TARGETS);
+const targets = ['all', ...Object.keys(taskName === 'pack' ? PACK_TARGETS : BUILD_TARGETS)];
 const target = process.argv[GULP_RUN_ARGS_COUNT];
 if (!target || !targets.includes(target)) {
     console.error(`Pass one of possible target values: ${targets.join(', ')}`);
     process.exit(1);
 }
 
-task('build', createBuildSeries(BUILD_TARGETS[target]));
+let buildTask;
+let packTask;
+if (target === 'all') {
+    buildTask = series.apply(null, Object.values(BUILD_TYPES).reduce((tasks, buildType) => {
+        tasks.push(createBuildSeries(buildType));
+        return tasks;
+    }, []))
+    packTask = series.apply(null, Object.values(PACK_TARGETS).reduce((tasks, target) => {
+        tasks.push(pack.bind(null, target));
+        return tasks;
+    }, []))
+} else {
+    buildTask = createBuildSeries(BUILD_TARGETS_TYPES[BUILD_TARGETS[target]]);
+    packTask = pack.bind(null, PACK_TARGETS[target]);
+}
 
-task('watch', watch.bind(
-    null, ['build/**/*', 'src/**/*'], createBuildSeries(BUILD_TARGETS[target])
-));
+task('build', buildTask);
 
-task('pack', series(
-    createBuildSeries(BUILD_TARGETS[target]),
-    pack.bind(null, PACK_TARGETS[target])
-));
+task('watch', watch.bind(null, ['build/**/*', 'src/**/*'], buildTask));
+
+task('pack', series(buildTask, packTask));
