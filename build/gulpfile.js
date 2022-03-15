@@ -95,7 +95,7 @@ const clean = (buildType, done) => {
     done();
 };
 
-const copy = (buildType, done) => {
+const copy = (buildType, target, done) => {
     const streams = [src([
         'src/assets/lottie/**/*',
         'src/assets/ui/**/*',
@@ -125,6 +125,15 @@ const copy = (buildType, done) => {
                 .pipe(replace('{{TON_WALLET_VERSION}}', process.env.TON_WALLET_VERSION))
                 .pipe(rename('manifest.json'))
         );
+    }
+
+    if (target === TARGETS.CHROMIUM) {
+        streams.push(src([
+            'src/assets/favicon/favicon.ico',
+            'src/assets/favicon/favicon-32x32.png',
+            'src/assets/favicon/favicon-16x16.png',
+            'src/assets/favicon/192x192.png'
+        ], { base: 'src' }));
     }
 
     return parallel(...streams.map(stream => function copy() {
@@ -180,10 +189,12 @@ const html = buildType => {
     return stream.pipe(dest(BUILD_TYPES_DESTINATIONS[buildType]));
 };
 
-const createBuildSeries = buildType => {
+const createBuildSeries = target => {
+    const buildType = BUILD_TARGETS_TYPES[target];
+
     return series(
         clean.bind(null, buildType),
-        copy.bind(null, buildType),
+        copy.bind(null, buildType, target),
         css.bind(null, buildType),
         js.bind(null, buildType),
         html.bind(null, buildType)
@@ -273,13 +284,13 @@ if (!target || !targets.includes(target)) {
     process.exit(1);
 }
 
-task('build', createBuildSeries(BUILD_TARGETS_TYPES[BUILD_TARGETS[target]]));
+task('build', createBuildSeries(BUILD_TARGETS[target]));
 
 task('watch', watch.bind(
-    null, ['build/**/*', 'src/**/*'], createBuildSeries(BUILD_TARGETS_TYPES[BUILD_TARGETS[target]])
+    null, ['build/**/*', 'src/**/*'], createBuildSeries(BUILD_TARGETS[target])
 ));
 
 task('pack', series(
-    createBuildSeries(BUILD_TARGETS_TYPES[BUILD_TARGETS[target]]),
+    createBuildSeries(BUILD_TARGETS[target]),
     pack.bind(null, PACK_TARGETS[target])
 ));
