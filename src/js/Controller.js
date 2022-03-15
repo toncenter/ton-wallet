@@ -6,19 +6,22 @@ let popupPort = null;
 const queueToPopup = [];
 
 const showExtensionWindow = () => {
-    if (extensionWindowId > -1) {
-        chrome.windows.update(extensionWindowId, { focused: true });
-        return;
-    }
+    return new Promise(resolve => {
+        if (extensionWindowId > -1) {
+            chrome.windows.update(extensionWindowId, { focused: true });
+            return resolve();
+        }
 
-    chrome.windows.create({
-        url: 'index.html',
-        type: 'popup',
-        focused: true,
-        height: 800,
-        width: 480
-    }, window => {
-        extensionWindowId = window.id;
+        chrome.windows.create({
+            url: 'index.html',
+            type: 'popup',
+            focused: true,
+            height: 800,
+            width: 480
+        }, window => {
+            extensionWindowId = window.id;
+            resolve();
+        });
     });
 };
 
@@ -1009,8 +1012,8 @@ class Controller {
     }
 
     requestPublicKey(needQueue) {
-        return new Promise((resolve, reject) => {
-            showExtensionWindow();
+        return new Promise(async (resolve, reject) => {
+            await showExtensionWindow();
 
             this.afterEnterPassword = async words => {
                 const privateKey = await Controller.wordsToPrivateKey(words);
@@ -1049,7 +1052,7 @@ class Controller {
                 return (this.balance ? this.balance.toString() : '');
             case 'ton_sendTransaction':
                 const param = params[0];
-                showExtensionWindow();
+                await showExtensionWindow();
 
                 if (param.data) {
                     if (param.dataType === 'hex') {
@@ -1067,7 +1070,7 @@ class Controller {
                 return true;
             case 'ton_rawSign':
                 const signParam = params[0];
-                showExtensionWindow();
+                await showExtensionWindow();
 
                 return this.showSignConfirm(signParam.data, needQueue);
             case 'flushMemoryCache':
@@ -1081,6 +1084,8 @@ const controller = new Controller();
 
 if (IS_EXTENSION) {
     chrome.runtime.onConnect.addListener(port => {
+        console.log(port);
+
         if (port.name === 'gramWalletContentScript') {
             contentScriptPort = port;
             contentScriptPort.onMessage.addListener(async msg => {
@@ -1141,6 +1146,8 @@ if (IS_EXTENSION) {
     chrome[actionApiName].onClicked.addListener(showExtensionWindow);
 
     chrome.windows.onRemoved.addListener(removedWindowId => {
+        // TODO: why when close extension window port not closed or not call onDisconnect?
+        popupPort = null;
         if (removedWindowId !== extensionWindowId) return;
         extensionWindowId = -1;
     });
