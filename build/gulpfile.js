@@ -73,9 +73,7 @@ const BUILD_TARGETS_TYPES = {
 
 require('./dotenv')(REQUIRED_ENVIRONMENT_VARIABLES);
 
-const {
-    createWriteStream, existsSync, readFileSync, rmSync, rmdirSync, writeFileSync
-} = require('fs');
+const { existsSync, rmSync, rmdirSync } = require('fs');
 const { dest, parallel, series, src, task, watch } = require('gulp');
 const cssmin = require('gulp-cssmin');
 const { resolve } = require('path');
