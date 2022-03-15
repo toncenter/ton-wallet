@@ -29,7 +29,7 @@ const CHROMIUM_SECRET_KEY_PATH = 'build/chromium.pem';
 /**
  * Possible tasks names, used for validate user input
  */
-const TASKS = ['build', 'watch', 'pack'];
+const TASKS = ['dev', 'build', 'watch', 'pack'];
 
 const TARGETS = {
     WEB: 0,
@@ -140,13 +140,13 @@ const copy = (buildType, done) => {
     }))(done);
 };
 
-const css = buildType => {
-    return src('src/css/**/*.css')
-        .pipe(cssmin())
-        .pipe(dest(`${BUILD_TYPES_DESTINATIONS[buildType]}/css`))
+const css = (buildType, isMinify) => {
+    const stream = src('src/css/**/*.css');
+    if (isMinify) stream.pipe(cssmin());
+    return stream.pipe(dest(`${BUILD_TYPES_DESTINATIONS[buildType]}/css`));
 };
 
-const js = (buildType, done) => {
+const js = (buildType, isMinify, done) => {
     webpack({
         mode: 'none',
         entry: {
@@ -161,7 +161,7 @@ const js = (buildType, done) => {
         })],
         optimization: {
             concatenateModules: true,
-            minimize: true
+            minimize: isMinify
         },
         output: {
             filename: '[name].js',
@@ -188,12 +188,12 @@ const html = buildType => {
     return stream.pipe(dest(BUILD_TYPES_DESTINATIONS[buildType]));
 };
 
-const createBuildSeries = buildType => {
+const createBuildSeries = (buildType, isMinify) => {
     return series(
         clean.bind(null, buildType),
         copy.bind(null, buildType),
-        css.bind(null, buildType),
-        js.bind(null, buildType),
+        css.bind(null, buildType, isMinify),
+        js.bind(null, buildType, isMinify),
         html.bind(null, buildType)
     );
 };
@@ -281,11 +281,13 @@ if (!target || !targets.includes(target)) {
     process.exit(1);
 }
 
+const isMinify = (taskName !== 'dev' && taskName !== 'watch');
+
 let buildTask;
 let packTask;
 if (target === 'all') {
     buildTask = series.apply(null, Object.values(BUILD_TYPES).reduce((tasks, buildType) => {
-        tasks.push(createBuildSeries(buildType));
+        tasks.push(createBuildSeries(buildType, isMinify));
         return tasks;
     }, []))
     packTask = series.apply(null, Object.values(PACK_TARGETS).reduce((tasks, target) => {
@@ -293,9 +295,11 @@ if (target === 'all') {
         return tasks;
     }, []))
 } else {
-    buildTask = createBuildSeries(BUILD_TARGETS_TYPES[BUILD_TARGETS[target]]);
+    buildTask = createBuildSeries(BUILD_TARGETS_TYPES[BUILD_TARGETS[target]], isMinify);
     packTask = pack.bind(null, PACK_TARGETS[target]);
 }
+
+task('dev', buildTask);
 
 task('build', buildTask);
 

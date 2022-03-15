@@ -32,7 +32,13 @@ Build required target:
 npm run build {target}
 ```
 
-For development needs, you can use watch script:
+For development needs, you can use dev script to build unminified bundles:
+
+```
+npm run dev {target}
+```
+
+Or you can use watch script to autorebuild unminified bundles on sources change:
 
 ```
 npm run watch {target}
