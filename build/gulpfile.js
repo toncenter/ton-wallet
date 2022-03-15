@@ -74,16 +74,15 @@ const BUILD_TARGETS_TYPES = {
 require('./dotenv')(REQUIRED_ENVIRONMENT_VARIABLES);
 
 const {
-    existsSync, readFileSync, renameSync, rmSync, rmdirSync, writeFileSync, unlinkSync
+    createWriteStream, existsSync, readFileSync, rmSync, rmdirSync, writeFileSync
 } = require('fs');
 const { dest, parallel, series, src, task, watch } = require('gulp');
-const ChromeExtension = require('crx');
 const cssmin = require('gulp-cssmin');
 const { resolve } = require('path');
 const replace = require('gulp-replace');
 const rename = require('gulp-rename');
-const webExt = require('web-ext');
 const webpack = require('webpack');
+const zip = require('gulp-zip');
 
 const clean = (buildType, done) => {
     const path = BUILD_TYPES_DESTINATIONS[buildType];
@@ -191,48 +190,17 @@ const createBuildSeries = buildType => {
     );
 };
 
-const pack = (target, done) => {
-    if (target === TARGETS.CHROMIUM) {
-        if (!existsSync(CHROMIUM_SECRET_KEY_PATH)) {
-            console.warn(`Chromium secret key not exists by path ${CHROMIUM_SECRET_KEY_PATH}`);
-            process.exit(1);
-        }
+const pack = target => {
+    let targetName;
+    if (target === TARGETS.CHROMIUM) targetName = 'chromium';
+    if (target === TARGETS.FIREFOX) targetName = 'firefox';
 
-        const crx = new ChromeExtension({
-            privateKey: readFileSync(CHROMIUM_SECRET_KEY_PATH, 'utf8')
-        });
-
-        crx.load(resolve(process.cwd(), BUILD_TYPES_DESTINATIONS[BUILD_TARGETS_TYPES[target]]))
-            .then(crx => crx.pack())
-            .then(crxBuffer => {
-                writeFileSync(
-                    `dist/chromium-ton-wallet-${process.env.TON_WALLET_VERSION}.crx`, crxBuffer
-                );
-                done();
-            })
-            .catch(err => {
-                console.log(err);
-                done(err);
-            });
-    }
-
-    if (target === TARGETS.FIREFOX) {
-        webExt.cmd.build({
-            artifactsDir: 'dist',
-            overwriteDest: true,
-            filename: 'firefox-ton-wallet-{version}.zip',
-            sourceDir: BUILD_TYPES_DESTINATIONS[BUILD_TARGETS_TYPES[target]]
-        })
-            .then(() => {
-                done();
-            })
-            .catch(err => {
-                console.log(err);
-                done(err);
-            });
-    }
+    return src(`${BUILD_TYPES_DESTINATIONS[BUILD_TARGETS_TYPES[target]]}/**/*`)
+		.pipe(zip(`${targetName}-ton-wallet-${process.env.TON_WALLET_VERSION}.zip`))
+		.pipe(dest('dist'))
 };
 
+/*
 const publish = (target, done) => {
     if (target === TARGETS.CHROMIUM) {
         if (!existsSync(CHROMIUM_SECRET_KEY_PATH)) {
@@ -290,6 +258,7 @@ const publish = (target, done) => {
             });
     }
 };
+*/
 
 const taskName = process.argv[2];
 if (!taskName || !TASKS.includes(taskName)) {

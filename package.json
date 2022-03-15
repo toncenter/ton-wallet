@@ -4,12 +4,11 @@
   "description": "TON Wallet",
   "main": "index.js",
   "devDependencies": {
-    "crx": "^5.0.1",
     "gulp": "^4.0.2",
     "gulp-cssmin": "^0.2.0",
     "gulp-rename": "^2.0.0",
     "gulp-replace": "^1.0.0",
-    "web-ext": "^6.7.0",
+    "gulp-zip": "^5.1.0",
     "webpack": "^4.41.6"
   },
   "scripts": {
