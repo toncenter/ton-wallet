@@ -1010,9 +1010,7 @@ class Controller {
 
     requestPublicKey(needQueue) {
         return new Promise((resolve, reject) => {
-            if (!popupPort) {
-                showExtensionWindow();
-            }
+            showExtensionWindow();
 
             this.afterEnterPassword = async words => {
                 const privateKey = await Controller.wordsToPrivateKey(words);
@@ -1051,9 +1049,8 @@ class Controller {
                 return (this.balance ? this.balance.toString() : '');
             case 'ton_sendTransaction':
                 const param = params[0];
-                if (!popupPort) {
-                    showExtensionWindow();
-                }
+                showExtensionWindow();
+
                 if (param.data) {
                     if (param.dataType === 'hex') {
                         param.data = TonWeb.utils.hexToBytes(param.data);
@@ -1070,9 +1067,8 @@ class Controller {
                 return true;
             case 'ton_rawSign':
                 const signParam = params[0];
-                if (!popupPort) {
-                    showExtensionWindow();
-                }
+                showExtensionWindow();
+
                 return this.showSignConfirm(signParam.data, needQueue);
             case 'flushMemoryCache':
                 await chrome.webRequest.handlerBehaviorChanged();
