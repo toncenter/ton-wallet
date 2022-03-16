@@ -1,6 +1,9 @@
 import storage from './util/storage.js';
 
-let contentScriptPort = null;
+/**
+ * @type {Set<Port>}
+ */
+let contentScriptPort = new Set();
 let popupPort = null;
 const queueToPopup = [];
 
@@ -989,14 +992,16 @@ class Controller {
     }
 
     // TRANSPORT WITH DAPP
-
+    // TODO: подумать зачем это нужно
+    // contentScriptPort это "ссылки" на открытые вкладки бразуераз
+    // правда ли надо их всех уведомлять о чем-то?
     sendToDapp(method, params) {
-        if (contentScriptPort) {
-            contentScriptPort.postMessage(JSON.stringify({
+        contentScriptPort.forEach( port => {
+            port.postMessage(JSON.stringify({
                 type: 'gramWalletAPI',
                 message: {jsonrpc: '2.0', method: method, params: params}
             }));
-        }
+        } )
     }
 
     requestPublicKey(needQueue) {
@@ -1077,8 +1082,8 @@ const controller = new Controller();
 if (IS_EXTENSION) {
     chrome.runtime.onConnect.addListener(port => {
         if (port.name === 'gramWalletContentScript') {
-            contentScriptPort = port;
-            contentScriptPort.onMessage.addListener(async msg => {
+            contentScriptPort.add(port)
+            port.onMessage.addListener(async (msg, port) => {
                 if (msg.type === 'gramWalletAPI_ton_provider_connect') {
                     controller.whenReady.then(() => {
                         controller.initDapp();
@@ -1087,16 +1092,14 @@ if (IS_EXTENSION) {
 
                 if (!msg.message) return;
                 const result = await controller.onDappMessage(msg.message.method, msg.message.params);
-                if (contentScriptPort) {
-                    contentScriptPort.postMessage(JSON.stringify({
-                        type: 'gramWalletAPI',
-                        message: {jsonrpc: '2.0', id: msg.message.id, method: msg.message.method, result}
-                    }));
-                }
+                port.postMessage(JSON.stringify({
+                    type: 'gramWalletAPI',
+                    message: {jsonrpc: '2.0', id: msg.message.id, method: msg.message.method, result}
+                }));
             });
-            contentScriptPort.onDisconnect.addListener(() => {
-                contentScriptPort = null;
-            });
+            port.onDisconnect.addListener(port => {
+                contentScriptPort.delete(port)
+            })
         } else if (port.name === 'gramWalletPopup') {
             popupPort = port;
             popupPort.onMessage.addListener(function (msg) {
