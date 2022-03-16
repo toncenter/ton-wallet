@@ -6,20 +6,78 @@ import storage from './util/storage.js';
 let contentScriptPort = new Set();
 let popupPort = null;
 const queueToPopup = [];
+let currentPopupId = null;
 
-const showExtensionPopup = () => {
+
+/**
+ * Returns an Error if extension.runtime.lastError is present
+ * this is a workaround for the non-standard error object that's used
+ *
+ * @returns {Error|undefined}
+ */
+function checkForError() {
+    const lastError = chrome.runtime.lastError;
+    if (!lastError) {
+        return undefined;
+    }
+    // if it quacks like an Error, its an Error
+    if (lastError.stack && lastError.message) {
+        return lastError;
+    }
+    // repair incomplete error object (eg chromium v77)
+    return new Error(lastError.message);
+}
+
+const focusWindowActivePopup = () => {
+    if (currentPopupId) {
+        chrome.windows.update(currentPopupId, { focused: true }, () => {
+            const err = checkForError();
+            if (err) {
+                console.log('cant focus window', currentPopupId, err);
+            }
+        });
+    }
+}
+
+const showExtensionPopup = async () => {
+    /**
+     * @param {chrome.windows.Window} currentPopup
+     */
     const cb = (currentPopup) => {
         // this._popupId = currentPopup.id
+        currentPopupId = currentPopup.id;
     };
-    const creation = chrome.windows.create({
+    const window = await getLastFocusedWindow().catch(e => {
+        console.log(e)
+        return null;
+    });
+    const POPUP_WIDTH = 400;
+    const POPUP_HEIGHT = 600;
+    chrome.windows.create({
         url: 'popup.html',
         type: 'popup',
-        width: 400,
-        height: 600,
-        top: 0,
-        left: 0,
+        width: POPUP_WIDTH,
+        height: POPUP_HEIGHT,
+        top: window ? window.top : 0,
+        left: window ? window.left + (window.width - POPUP_WIDTH) : 0,
     }, cb);
 };
+
+/**
+ *
+ * @returns {Promise<{width:number,top:number,left:number}|null>}
+ */
+function getLastFocusedWindow() {
+    return new Promise((resolve, reject) => {
+        chrome.windows.getLastFocused((windowObject) => {
+            const error = checkForError();
+            if (error) {
+                return reject(error);
+            }
+            return resolve(windowObject);
+        });
+    });
+}
 
 const BN = TonWeb.utils.BN;
 const nacl = TonWeb.utils.nacl;
@@ -1049,6 +1107,8 @@ class Controller {
                 const param = params[0];
                 if (!popupPort) {
                     showExtensionPopup();
+                } else {
+                    focusWindowActivePopup();
                 }
                 if (param.data) {
                     if (param.dataType === 'hex') {
