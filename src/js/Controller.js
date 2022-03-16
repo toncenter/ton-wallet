@@ -2,11 +2,16 @@ import storage from './util/storage.js';
 
 let contentScriptPort = null;
 let popupPort = null;
+let popupId = null;
 const queueToPopup = [];
 
 const showExtensionPopup = () => {
+    if (popupId) {
+        chrome.windows.update(popupId, { focused: true });
+        return;
+    }
     const cb = (currentPopup) => {
-        // this._popupId = currentPopup.id
+        popupId = currentPopup.id;
     };
     const creation = chrome.windows.create({
         url: 'popup.html',
@@ -1001,9 +1006,7 @@ class Controller {
 
     requestPublicKey(needQueue) {
         return new Promise((resolve, reject) => {
-            if (!popupPort) {
-                showExtensionPopup();
-            }
+            showExtensionPopup();
 
             this.afterEnterPassword = async words => {
                 const privateKey = await Controller.wordsToPrivateKey(words);
@@ -1042,9 +1045,7 @@ class Controller {
                 return (this.balance ? this.balance.toString() : '');
             case 'ton_sendTransaction':
                 const param = params[0];
-                if (!popupPort) {
-                    showExtensionPopup();
-                }
+                showExtensionPopup();
                 if (param.data) {
                     if (param.dataType === 'hex') {
                         param.data = TonWeb.utils.hexToBytes(param.data);
@@ -1061,9 +1062,7 @@ class Controller {
                 return true;
             case 'ton_rawSign':
                 const signParam = params[0];
-                if (!popupPort) {
-                    showExtensionPopup();
-                }
+                showExtensionPopup();
                 return this.showSignConfirm(signParam.data, needQueue);
             case 'flushMemoryCache':
                 await chrome.webRequest.handlerBehaviorChanged();
@@ -1112,6 +1111,7 @@ if (IS_EXTENSION) {
             });
             popupPort.onDisconnect.addListener(() => {
                 popupPort = null;
+                popupId = null;
             });
 
             const runQueueToPopup = () => {
