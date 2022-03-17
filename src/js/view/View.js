@@ -20,6 +20,17 @@ const toNano = TonWeb.utils.toNano;
 const formatNanograms = TonWeb.utils.fromNano;
 const BN = TonWeb.utils.BN;
 
+function isTransactionFromApi() {
+    const params = new URLSearchParams(window.location.search);
+    return !!params.get('transactionFromApi');
+}
+
+function closeIfTxApi() {
+    if (isTransactionFromApi()) {
+        window.close();
+    }
+}
+
 function toggleLottie(lottie, visible, params) {
     params = params || {};
     clearTimeout(lottie.hideTimeout);
@@ -57,6 +68,8 @@ class View {
         this.isTestnet = false;
         /** @type   {string} */
         this.popup = ''; // current opened popup
+        /** @type {number} **/
+        this._viewMessageId = 0;
 
         this.createWordInputs({
             count: IMPORT_WORDS_COUNT,
@@ -276,9 +289,9 @@ class View {
             toggle($('#receive_showAddressOnDeviceBtn'), !!this.isLedger);
             this.showPopup('receive');
         });
-        $('#sendButton').addEventListener('click', () => this.onMessage('showPopup', {name: 'send'}));
+        $('#sendButton').addEventListener('click', () => this.onSelfMessage('showPopup', {name: 'send'}));
 
-        $('#modal').addEventListener('click', () => this.closePopup());
+        $('#modal').addEventListener('click', () => this.closePopupFromUi());
 
         if (IS_FIREFOX) {
             toggle($('#menu_magic'), false);
@@ -304,7 +317,7 @@ class View {
         $('#menu_extension_chrome').addEventListener('click', () => window.open('https://chrome.google.com/webstore/detail/ton-wallet/nphplpgoakhhjchkkhmiggakijnkhfnd', '_blank'));
         $('#menu_extension_firefox').addEventListener('click', () => window.open('https://addons.mozilla.org/ru/firefox/addon/', '_blank'));
         $('#menu_about').addEventListener('click', () => this.showPopup('about'));
-        $('#menu_changePassword').addEventListener('click', () => this.onMessage('showPopup', {name: 'changePassword'}));
+        $('#menu_changePassword').addEventListener('click', () => this.onSelfMessage('showPopup', {name: 'changePassword'}));
         $('#menu_backupWallet').addEventListener('click', () => this.sendMessage('onBackupWalletClick'));
         $('#menu_delete').addEventListener('click', () => this.showPopup('delete'));
 
@@ -312,7 +325,7 @@ class View {
         $('#receive_invoiceBtn').addEventListener('click', () => this.onCreateInvoiceClick());
         $('#receive_shareBtn').addEventListener('click', () => this.onShareAddressClick(false));
         $('#receive .addr').addEventListener('click', () => this.onShareAddressClick(true));
-        $('#receive_closeBtn').addEventListener('click', () => this.closePopup());
+        $('#receive_closeBtn').addEventListener('click', () => this.closePopupFromUi());
 
         $('#invoice_qrBtn').addEventListener('click', () => this.onCreateInvoiceQrClick());
         $('#invoice_shareBtn').addEventListener('click', () => this.onShareInvoiceClick());
@@ -322,9 +335,9 @@ class View {
         $('#invoiceQr_closeBtn').addEventListener('click', () => this.showPopup('invoice'));
 
         $('#transaction_sendBtn').addEventListener('click', () => this.onTransactionButtonClick());
-        $('#transaction_closeBtn').addEventListener('click', () => this.closePopup());
+        $('#transaction_closeBtn').addEventListener('click', () => this.closePopupFromUi());
 
-        $('#connectLedger_cancelBtn').addEventListener('click', () => this.closePopup());
+        $('#connectLedger_cancelBtn').addEventListener('click', () => this.closePopupFromUi());
 
         $('#send_btn').addEventListener('click', (e) => {
             const amount = Number($('#amountInput').value);
@@ -343,19 +356,19 @@ class View {
             this.toggleButtonLoader(e.currentTarget, true);
             this.sendMessage('onSend', {amount: amountNano.toString(), toAddress, comment});
         });
-        $('#send_closeBtn').addEventListener('click', () => this.closePopup());
+        $('#send_closeBtn').addEventListener('click', () => this.closePopupFromUi());
 
-        $('#sendConfirm_closeBtn').addEventListener('click', () => this.closePopup());
-        $('#sendConfirm_cancelBtn').addEventListener('click', () => this.closePopup());
-        $('#sendConfirm_okBtn').addEventListener('click', () => this.onMessage('showPopup', {name: 'enterPassword'}));
+        $('#sendConfirm_closeBtn').addEventListener('click', () => this.closePopupFromUi());
+        $('#sendConfirm_cancelBtn').addEventListener('click', () => this.closePopupFromUi());
+        $('#sendConfirm_okBtn').addEventListener('click', () => this.onSelfMessage('showPopup', {name: 'enterPassword'}));
 
-        $('#signConfirm_closeBtn').addEventListener('click', () => this.closePopup());
-        $('#signConfirm_cancelBtn').addEventListener('click', () => this.closePopup());
-        $('#signConfirm_okBtn').addEventListener('click', () => this.onMessage('showPopup', {name: 'enterPassword'}));
+        $('#signConfirm_closeBtn').addEventListener('click', () => this.closePopupFromUi());
+        $('#signConfirm_cancelBtn').addEventListener('click', () => this.closePopupFromUi());
+        $('#signConfirm_okBtn').addEventListener('click', () => this.onSelfMessage('showPopup', {name: 'enterPassword'}));
 
-        $('#processing_closeBtn').addEventListener('click', () => this.closePopup());
-        $('#done_closeBtn').addEventListener('click', () => this.closePopup());
-        $('#about_closeBtn').addEventListener('click', () => this.closePopup());
+        $('#processing_closeBtn').addEventListener('click', () => this.closePopupFromUi());
+        $('#done_closeBtn').addEventListener('click', () => this.closePopupFromUi());
+        $('#about_closeBtn').addEventListener('click', () => this.closePopupFromUi());
         $('#about_version').addEventListener('click', (e) => {
             if (e.shiftKey) {
                 this.showAlert({
@@ -379,7 +392,7 @@ class View {
             }
         });
 
-        $('#changePassword_cancelBtn').addEventListener('click', () => this.closePopup());
+        $('#changePassword_cancelBtn').addEventListener('click', () => this.closePopupFromUi());
         $('#changePassword_okBtn').addEventListener('click', async (e) => {
             const oldPassword = $('#changePassword_oldInput').value;
             const newPassword = $('#changePassword_newInput').value;
@@ -401,7 +414,7 @@ class View {
             this.sendMessage('onChangePassword', {oldPassword, newPassword});
         });
 
-        $('#enterPassword_cancelBtn').addEventListener('click', () => this.closePopup());
+        $('#enterPassword_cancelBtn').addEventListener('click', () => this.closePopupFromUi());
         $('#enterPassword_okBtn').addEventListener('click', async (e) => {
             const password = $('#enterPassword_input').value;
 
@@ -409,7 +422,7 @@ class View {
             this.sendMessage('onEnterPassword', {password});
         });
 
-        $('#delete_cancelBtn').addEventListener('click', () => this.closePopup());
+        $('#delete_cancelBtn').addEventListener('click', () => this.closePopupFromUi());
         $('#delete_okBtn').addEventListener('click', () => this.sendMessage('disconnect'));
     }
 
@@ -472,7 +485,7 @@ class View {
 
         toggleFaded($('#modal'), name !== '');
 
-        const popups = ['alert', 'receive', 'invoice', 'invoiceQr', 'send', 'sendConfirm', 'signConfirm', 'processing', 'done', 'menuDropdown', 'about', 'delete', 'changePassword', 'enterPassword', 'transaction', 'connectLedger'];
+        const popups = ['alert', 'receive', 'invoice', 'invoiceQr', 'send', 'sendConfirm', 'signConfirm', 'processing', 'done', 'menuDropdown', 'about', 'delete', 'changePassword', 'enterPassword', 'transaction', 'connectLedger', 'loader'];
 
         popups.forEach(popup => {
             toggleFaded($('#' + popup), name === popup);
@@ -488,6 +501,11 @@ class View {
     closePopup() {
         this.showPopup('');
         this.sendMessage('onClosePopup');
+    }
+
+    closePopupFromUi() {
+        this.closePopup()
+        closeIfTxApi();
     }
 
     // BACKUP SCREEN
@@ -879,7 +897,7 @@ class View {
     }
 
     onTransactionButtonClick() {
-        this.onMessage('showPopup', {name: 'send', toAddr: this.currentTransactionAddr});
+        this.onSelfMessage('showPopup', {name: 'send', toAddr: this.currentTransactionAddr});
     }
 
     // SEND POPUP
@@ -923,7 +941,7 @@ class View {
     // RECEIVE INVOICE POPUP
 
     onCreateInvoiceClick() {
-        this.onMessage('showPopup', {name: 'invoice'});
+        this.onSelfMessage('showPopup', {name: 'invoice'});
     }
 
     updateInvoiceLink() {
@@ -944,7 +962,7 @@ class View {
     // RECEIVE INVOICE QR POPUP
 
     onCreateInvoiceQrClick() {
-        this.onMessage('showPopup', {name: 'invoiceQr'});
+        this.onSelfMessage('showPopup', {name: 'invoiceQr'});
     }
 
     drawInvoiceQr(link) {
@@ -965,6 +983,12 @@ class View {
 
     // send message to Controller.js
     sendMessage(method, params) {
+        if (typeof params === "undefined" || params === null) {
+            params = {}
+        }
+        if (typeof params === "object") {
+            params._viewMessageId = this._viewMessageId;
+        }
         if (this.controller) {
             this.controller.onViewMessage(method, params);
         } else {
@@ -972,8 +996,22 @@ class View {
         }
     }
 
+    /**
+     * @param {string} method
+     * @param {object} params
+     */
+    onSelfMessage(method, params) {
+        params._viewMessageId = this._viewMessageId;
+        this.onMessage(method, params);
+    }
+
     // receive message from Controller.js
     onMessage(method, params) {
+        let messageId = 0
+        if (params && params._viewMessageId) {
+            messageId = params._viewMessageId;
+            this._viewMessageId = Math.max(params._viewMessageId, this._viewMessageId);
+        }
         switch (method) {
             case 'disableCreated':
                 $('#createdContinueButton').disabled = params;
@@ -1095,6 +1133,10 @@ class View {
                 break;
 
             case 'showPopup':
+                if (this.currentPopUpId && messageId < this.currentPopUpId) {
+                    break;
+                }
+                this.currentPopUpId = messageId;
                 this.showPopup(params.name);
 
                 switch (params.name) {
@@ -1137,6 +1179,13 @@ class View {
                     case 'signConfirm':
                         const hex = params.data.length > 48 ? params.data.substring(0, 47) + '…' : params.data;
                         setAddr($('#signConfirmData'), hex);
+                        break;
+                    case 'notify':
+                        $('#notify').innerText = params.message;
+                        setTimeout(() => {
+                            triggerClass($('#notify'), 'faded-show', 2000);
+                            toggleFaded($('#modal'), false);
+                        }, 16)
                         break;
                 }
                 break;
