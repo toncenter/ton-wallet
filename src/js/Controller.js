@@ -1,22 +1,122 @@
 import storage from './util/storage.js';
+import {MethodError, serialiseError} from "./util/MethodError";
+import {JSON_RPC_VERSION} from "./util/const";
+import {PortMessage} from "./util/PortMessage";
+import {SendingTransactionContext} from "./util/SendingTransactionContext";
 
-let contentScriptPort = null;
+/**
+ * @type {Set<Port>}
+ */
+let contentScriptPort = new Set();
 let popupPort = null;
 const queueToPopup = [];
+let currentPopupId = null;
+let onPopupClosedOnesListeners = [];
 
-const showExtensionPopup = () => {
+function onPopupClosedOnes(listener) {
+    onPopupClosedOnesListeners.push(listener);
+}
+
+
+async function repeatCall( fn ) {
+    let lastError = null;
+    for(let i = 0; i < 5; i++) {
+        try {
+            return await fn();
+        } catch (e) {
+            lastError = e;
+            // repeat only known errors, not all
+            if (e && typeof e === 'string' && e.indexOf('unexpected lite server response')) {
+                console.warn('failed request', e)
+            } else {
+                throw e;
+            }
+        }
+    }
+    throw lastError;
+}
+
+/**
+ * Returns an Error if extension.runtime.lastError is present
+ * this is a workaround for the non-standard error object that's used
+ *
+ * @returns {Error|undefined}
+ */
+function checkForError() {
+    const lastError = chrome.runtime.lastError;
+    if (!lastError) {
+        return undefined;
+    }
+    // if it quacks like an Error, its an Error
+    if (lastError.stack && lastError.message) {
+        return lastError;
+    }
+    // repair incomplete error object (eg chromium v77)
+    return new Error(lastError.message);
+}
+
+const focusWindowActivePopup = () => {
+    if (currentPopupId) {
+        chrome.windows.update(currentPopupId, { focused: true }, () => {
+            const err = checkForError();
+            if (err) {
+                console.log('cant focus window', currentPopupId, err);
+            }
+        });
+    }
+}
+
+const showExtensionPopup = async () => {
+    /**
+     * @param {chrome.windows.Window} currentPopup
+     */
     const cb = (currentPopup) => {
         // this._popupId = currentPopup.id
+        currentPopupId = currentPopup.id;
+        chrome.windows.onRemoved.addListener(function(windowId){
+            if (windowId === currentPopup.id){
+                onPopupClosedOnesListeners.forEach(fn => {
+                    try {
+                        fn()
+                    } catch (e) {
+                        console.log();
+                    }
+                });
+                onPopupClosedOnesListeners = []
+            }
+        });
     };
-    const creation = chrome.windows.create({
-        url: 'popup.html',
+    const window = await getLastFocusedWindow().catch(e => {
+        console.log(e)
+        return null;
+    });
+    const POPUP_WIDTH = 400;
+    const POPUP_HEIGHT = 600;
+    chrome.windows.create({
+        url: 'popup.html?transactionFromApi=1',
         type: 'popup',
-        width: 400,
-        height: 600,
-        top: 0,
-        left: 0,
+        width: POPUP_WIDTH,
+        height: POPUP_HEIGHT,
+        top: window ? window.top : 0,
+        left: window ? window.left + (window.width - POPUP_WIDTH) : 0,
     }, cb);
 };
+
+/**
+ *
+ * @returns {Promise<{width:number,top:number,left:number}|null>}
+ */
+function getLastFocusedWindow() {
+    return new Promise((resolve, reject) => {
+        chrome.windows.getLastFocused((windowObject) => {
+            const error = checkForError();
+            if (error) {
+                return reject(error);
+            }
+            return resolve(windowObject);
+        });
+    });
+}
 
 const BN = TonWeb.utils.BN;
 const nacl = TonWeb.utils.nacl;
@@ -116,7 +216,9 @@ class Controller {
         this.pendingMessageResolvers = new Map();
         this._lastMsgId = 1;
 
+        this.nextViewMessageId = 0;
         this.whenReady = this._init();
+        this.onClosePopupOnesListeners = [];
     }
 
     /**
@@ -597,6 +699,9 @@ class Controller {
                                 const myAmount = '-' + this.sendingData.amount.toString();
 
                                 if (txAddr === myAddr && txAmount === myAmount) {
+                                    if (this.sendingData.ctx instanceof SendingTransactionContext) {
+                                        this.sendingData.ctx.success();
+                                    }
                                     this.sendToView('showPopup', {
                                         name: 'done',
                                         message: formatNanograms(this.sendingData.amount) + ' TON have been sent'
@@ -640,7 +745,7 @@ class Controller {
         }
 
         const query = await this.sign(toAddress, amount, comment, null, stateInit);
-        const all_fees = await query.estimateFee();
+        const all_fees = await repeatCall(() => query.estimateFee())
         const fees = all_fees.source_fees;
         const in_fwd_fee = new BN(fees.in_fwd_fee);
         const storage_fee = new BN(fees.storage_fee);
@@ -661,14 +766,38 @@ class Controller {
      * @param comment?  {string | Uint8Array}
      * @param needQueue? {boolean}
      * @param stateInit? {Cell}
+     * @param ctx {SendingTransactionContext|undefined}
      */
-    async showSendConfirm(amount, toAddress, comment, needQueue, stateInit) {
-        if (!amount.gt(new BN(0)) || this.balance.lt(amount)) {
+    async showSendConfirm(amount, toAddress, comment, needQueue, stateInit, ctx) {
+        this.sendToView('showPopup', {
+            name: 'loader',
+        }, needQueue);
+
+        const notify = (message) => {
+            setTimeout(() => {
+                this.sendToView('showPopup', {
+                    name: 'notify',
+                    message: message,
+                }, needQueue);
+            }, 1000)
+        }
+
+        await this.whenReady;
+
+        if (!amount.gt(new BN(0)) || !this.balance || this.balance.lt(amount)) {
             this.sendToView('sendCheckFailed');
+            if (!amount.gt(new BN(0))) {
+                ctx && ctx.fail(new MethodError("BAD_AMOUNT", MethodError.ERR_BAD_AMOUNT));
+            } else {
+                ctx && ctx.fail(new MethodError("NOT_ENOUGH_TONS", MethodError.ERR_NOT_ENOUGH_TONS));
+            }
+            ctx && notify('Invalid amount')
             return;
         }
         if (!Address.isValid(toAddress)) {
             this.sendToView('sendCheckFailed');
+            ctx && ctx.fail(new MethodError("BAD_ADDRESS", MethodError.ERR_BAD_ADDRESS));
+            ctx && notify('Invalid address')
             return;
         }
 
@@ -678,12 +807,16 @@ class Controller {
             fee = await this.getFees(amount, toAddress, comment, stateInit);
         } catch (e) {
             console.error(e);
+            ctx && ctx.fail(new MethodError("API_FAILED", MethodError.ERR_API_FAILED));
             this.sendToView('sendCheckFailed');
+            ctx && notify('can\'t calculate fees');
             return;
         }
 
         if (this.balance.sub(fee).lt(amount)) {
+            ctx && ctx.fail(new MethodError("NOT_ENOUGH_TONS", MethodError.ERR_NOT_ENOUGH_TONS));
             this.sendToView('sendCheckCantPayFee', {fee});
+            ctx && notify('can\'t pay fees');
             return;
         }
 
@@ -695,6 +828,9 @@ class Controller {
                 toAddress: toAddress,
                 fee: fee.toString()
             }, needQueue);
+            this.onClosePopupOnes(() => {
+                ctx && ctx.decline();
+            });
 
             this.send(toAddress, amount, comment, null, stateInit);
 
@@ -704,7 +840,7 @@ class Controller {
                 this.processingVisible = true;
                 this.sendToView('showPopup', {name: 'processing'});
                 const privateKey = await Controller.wordsToPrivateKey(words);
-                this.send(toAddress, amount, comment, privateKey, stateInit);
+                this.send(toAddress, amount, comment, privateKey, stateInit, ctx);
             };
 
             this.sendToView('showPopup', {
@@ -713,6 +849,9 @@ class Controller {
                 toAddress: toAddress,
                 fee: fee.toString()
             }, needQueue);
+            this.onClosePopupOnes(() => {
+                ctx && ctx.decline();
+            });
         }
 
         this.sendToView('sendCheckSucceeded');
@@ -752,8 +891,9 @@ class Controller {
      * @param comment   {string}
      * @param privateKey    {string}
      * @param stateInit? {Cell}
+     * @param ctx {SendingTransactionContext|undefined}
      */
-    async send(toAddress, amount, comment, privateKey, stateInit) {
+    async send(toAddress, amount, comment, privateKey, stateInit, ctx) {
         try {
             let addressFormat = 0;
             if (this.isLedger) {
@@ -792,25 +932,32 @@ class Controller {
                 if (!seqno) seqno = 0;
 
                 const query = await this.ledgerApp.transfer(ACCOUNT_NUMBER, this.walletContract, toAddress, amount, seqno, addressFormat);
-                this.sendingData = {toAddress: toAddress, amount: amount, comment: comment, query: query};
+                this.sendingData = {toAddress: toAddress, amount: amount, comment: comment, query: query, ctx:ctx};
 
                 this.sendToView('showPopup', {name: 'processing'});
                 this.processingVisible = true;
 
-                await this.sendQuery(query);
+                const res = repeatCall(() => this.sendQuery(query));
+                ctx && ctx.requestSent()
+                await res;
 
             } else {
 
                 const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
                 const query = await this.sign(toAddress, amount, comment, keyPair, stateInit);
-                this.sendingData = {toAddress: toAddress, amount: amount, comment: comment, query: query};
-                await this.sendQuery(query);
+                this.sendingData = {toAddress: toAddress, amount: amount, comment: comment, query: query, ctx:ctx};
+
+                const res = repeatCall(() => this.sendQuery(query));
+                ctx && ctx.requestSent()
+                await res;
 
             }
         } catch (e) {
-            console.error(e);
+            ctx && ctx.fail(new MethodError('API_FAILED', MethodError.ERR_API_FAILED) );
+            console.error('Fail sending', {toAddress, amount, comment, stateInit}, e);
             this.sendToView('closePopup');
-            alert('Error sending');
+            alert(`Error sending: ${e ? e.message : e}`);
+            throw e;
         }
     }
 
@@ -837,6 +984,7 @@ class Controller {
         } else {
             this.sendToView('closePopup');
             alert('Send error');
+            throw new Error("Api failed")
         }
     }
 
@@ -883,6 +1031,13 @@ class Controller {
     // TRANSPORT WITH VIEW
 
     sendToView(method, params, needQueue, needResult) {
+        if (params === undefined || params === null) {
+            params = {}
+        }
+        if (typeof params === 'object') {
+            this.nextViewMessageId++
+            params._viewMessageId = this.nextViewMessageId;
+        }
         if (self.view) {
             const result = self.view.onMessage(method, params);
             if (needResult) {
@@ -973,6 +1128,19 @@ class Controller {
                 break;
             case 'onClosePopup':
                 this.processingVisible = false;
+                if (this.onClosePopupOnesListeners.length) {
+                    const messageId = (params && params._viewMessageId) ? params._viewMessageId : 0
+                    this.onClosePopupOnesListeners.forEach(([minMessageId, fn]) => {
+                        if (minMessageId <= messageId) {
+                            try {
+                                fn();
+                            } catch (e) {
+                                console.error(e);
+                            }
+                        }
+                    })
+                    this.onClosePopupOnesListeners = [];
+                }
                 break;
             case 'onMagicClick':
                 await storage.setItem('magic', params ? 'true' : 'false');
@@ -989,14 +1157,16 @@ class Controller {
     }
 
     // TRANSPORT WITH DAPP
-
+    // TODO: подумать зачем это нужно
+    // contentScriptPort это "ссылки" на открытые вкладки бразуераз
+    // правда ли надо их всех уведомлять о чем-то?
     sendToDapp(method, params) {
-        if (contentScriptPort) {
-            contentScriptPort.postMessage(JSON.stringify({
+        contentScriptPort.forEach( port => {
+            port.postMessage(JSON.stringify({
                 type: 'gramWalletAPI',
-                message: {jsonrpc: '2.0', method: method, params: params}
+                message: {jsonrpc: JSON_RPC_VERSION, method: method, params: params}
             }));
-        }
+        } )
     }
 
     requestPublicKey(needQueue) {
@@ -1041,9 +1211,17 @@ class Controller {
             case 'ton_getBalance':
                 return (this.balance ? this.balance.toString() : '');
             case 'ton_sendTransaction':
+                await this.whenReady;
                 const param = params[0];
+                const ctx = new SendingTransactionContext();
+                onPopupClosedOnes(() => {
+                    ctx.decline();
+                });
                 if (!popupPort) {
-                    showExtensionPopup();
+                    await showExtensionPopup();
+                    await this.waitViewConnect();
+                } else {
+                    focusWindowActivePopup();
                 }
                 if (param.data) {
                     if (param.dataType === 'hex') {
@@ -1057,7 +1235,14 @@ class Controller {
                 if (param.stateInit) {
                     param.stateInit = TonWeb.boc.Cell.oneFromBoc(TonWeb.utils.base64ToBytes(param.stateInit));
                 }
-                this.showSendConfirm(new BN(param.value), param.to, param.data, needQueue, param.stateInit);
+                if (this.activeSendindTransaction) {
+                    this.activeSendindTransaction.decline()
+                }
+                this.activeSendindTransaction = ctx;
+                const waiter = ctx.wait();
+                await this.showSendConfirm(new BN(param.value), param.to, param.data, needQueue, param.stateInit, ctx);
+                await waiter;
+                this.activeSendindTransaction = null;
                 return true;
             case 'ton_rawSign':
                 const signParam = params[0];
@@ -1070,6 +1255,20 @@ class Controller {
                 return true;
         }
     }
+
+    onClosePopupOnes(listener) {
+        console.log('register onClosePopupOnes', this.nextViewMessageId)
+        this.onClosePopupOnesListeners.push([this.nextViewMessageId, listener]);
+    }
+
+    waitViewConnect() {
+        if (!this.waitViewConnectPromise) {
+            this.waitViewConnectPromise = new Promise((resolve) => {
+                this.onViewConnectedResolver = resolve;
+            })
+        }
+        return this.waitViewConnectPromise;
+    }
 }
 
 const controller = new Controller();
@@ -1077,26 +1276,30 @@ const controller = new Controller();
 if (IS_EXTENSION) {
     chrome.runtime.onConnect.addListener(port => {
         if (port.name === 'gramWalletContentScript') {
-            contentScriptPort = port;
-            contentScriptPort.onMessage.addListener(async msg => {
+            contentScriptPort.add(port)
+            port.onMessage.addListener(async (msg, port) => {
                 if (msg.type === 'gramWalletAPI_ton_provider_connect') {
                     controller.whenReady.then(() => {
                         controller.initDapp();
                     });
                 }
 
-                if (!msg.message) return;
-                const result = await controller.onDappMessage(msg.message.method, msg.message.params);
-                if (contentScriptPort) {
-                    contentScriptPort.postMessage(JSON.stringify({
-                        type: 'gramWalletAPI',
-                        message: {jsonrpc: '2.0', id: msg.message.id, method: msg.message.method, result}
-                    }));
+                if (!msg.message) {
+                    console.warn('Receive bad message', msg);
+                    return;
+                }
+                const response = new PortMessage(msg.message.id, msg.message.method);
+                try {
+                    const result = await controller.onDappMessage(msg.message.method, msg.message.params);
+                    port.postMessage(JSON.stringify(response.result(result)));
+                } catch (e) {
+                    console.error(`Call method failed: ${msg.message.method}`, msg.message.params, e);
+                    port.postMessage(JSON.stringify(response.error(serialiseError(e))));
                 }
             });
-            contentScriptPort.onDisconnect.addListener(() => {
-                contentScriptPort = null;
-            });
+            port.onDisconnect.addListener(port => {
+                contentScriptPort.delete(port)
+            })
         } else if (port.name === 'gramWalletPopup') {
             popupPort = port;
             popupPort.onMessage.addListener(function (msg) {
@@ -1126,6 +1329,10 @@ if (IS_EXTENSION) {
             controller.whenReady.then(async () => {
                 await controller.initView();
                 runQueueToPopup();
+                if (controller.onViewConnectedResolver) {
+                    controller.onViewConnectedResolver();
+                    controller.onViewConnectedResolver = null;
+                }
             });
         }
     });

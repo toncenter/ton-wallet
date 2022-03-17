@@ -51,9 +51,12 @@ function initLottie(div) {
 
 async function initLotties() {
     const divs = $$('tgs-player');
+    const promises = [];
     for (let i = 0; i < divs.length; i++) {
-        await initLottie(divs[i]);
+        const p = initLottie(divs[i]);
+        promises.push(p);
     }
+    await Promise.all(promises);
 }
 
 export {initLotties, lotties};
