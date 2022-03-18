@@ -1,7 +1,7 @@
 .idea/
+artifacts/
 build/safari/build
 build/chromium.pem
-dist/
 node_modules/
 .DS_Store
 .env

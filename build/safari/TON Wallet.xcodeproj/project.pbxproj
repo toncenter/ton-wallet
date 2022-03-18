@@ -64,12 +64,12 @@
 		850824EF27E0F885005B1F54 /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
 		8508250227E0F885005B1F54 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8508250327E0F885005B1F54 /* TON_Wallet_Extension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TON_Wallet_Extension.entitlements; sourceTree = "<group>"; };
-		858E09BA27E103B300500609 /* libs */ = {isa = PBXFileReference; lastKnownFileType = folder; name = libs; path = ../../../dist/v2/libs; sourceTree = "<group>"; };
-		858E09BB27E103B300500609 /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; name = assets; path = ../../../dist/v2/assets; sourceTree = "<group>"; };
-		858E09BC27E103B300500609 /* js */ = {isa = PBXFileReference; lastKnownFileType = folder; name = js; path = ../../../dist/v2/js; sourceTree = "<group>"; };
-		858E09BD27E103B300500609 /* manifest.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; name = manifest.json; path = ../../../dist/v2/manifest.json; sourceTree = "<group>"; };
-		858E09BE27E103B300500609 /* css */ = {isa = PBXFileReference; lastKnownFileType = folder; name = css; path = ../../../dist/v2/css; sourceTree = "<group>"; };
-		858E09BF27E103B400500609 /* index.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = index.html; path = ../../../dist/v2/index.html; sourceTree = "<group>"; };
+		858E09BA27E103B300500609 /* libs */ = {isa = PBXFileReference; lastKnownFileType = folder; name = libs; path = ../../../artifacts/v2/libs; sourceTree = "<group>"; };
+		858E09BB27E103B300500609 /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; name = assets; path = ../../../artifacts/v2/assets; sourceTree = "<group>"; };
+		858E09BC27E103B300500609 /* js */ = {isa = PBXFileReference; lastKnownFileType = folder; name = js; path = ../../../artifacts/v2/js; sourceTree = "<group>"; };
+		858E09BD27E103B300500609 /* manifest.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; name = manifest.json; path = ../../../artifacts/v2/manifest.json; sourceTree = "<group>"; };
+		858E09BE27E103B300500609 /* css */ = {isa = PBXFileReference; lastKnownFileType = folder; name = css; path = ../../../artifacts/v2/css; sourceTree = "<group>"; };
+		858E09BF27E103B400500609 /* index.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = index.html; path = ../../../artifacts/v2/index.html; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */

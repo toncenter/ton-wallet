@@ -60,8 +60,8 @@ const BUILD_TYPES = {
 
 const BUILD_TYPES_DESTINATIONS = {
     [BUILD_TYPES.WEB]: 'docs',
-    [BUILD_TYPES.V3]: 'dist/v3',
-    [BUILD_TYPES.V2]: 'dist/v2'
+    [BUILD_TYPES.V3]: 'artifacts/v3',
+    [BUILD_TYPES.V2]: 'artifacts/v2'
 };
 
 const BUILD_TARGETS_TYPES = {
@@ -224,7 +224,7 @@ const pack = target => {
 
         return src(`${BUILD_TYPES_DESTINATIONS[BUILD_TARGETS_TYPES[target]]}/**/*`)
             .pipe(zip(`${targetName}-ton-wallet-${process.env.TON_WALLET_VERSION}.zip`))
-            .pipe(dest('dist'));
+            .pipe(dest('artifacts'));
     }
 };
 
@@ -243,7 +243,7 @@ const publish = (target, done) => {
         crx.load(resolve(process.cwd(), BUILD_TYPES_DESTINATIONS[BUILD_TARGETS_TYPES[target]]))
             .then(crx => crx.pack())
             .then(crxBuffer => {
-                writeFileSync(`dist/ton-wallet-${process.env.TON_WALLET_VERSION}.crx`, crxBuffer);
+                writeFileSync(`artifacts/ton-wallet-${process.env.TON_WALLET_VERSION}.crx`, crxBuffer);
                 done();
             })
             .catch(err => {
@@ -266,16 +266,16 @@ const publish = (target, done) => {
         webExt.cmd.sign({
             apiKey: process.env.MOZILLA_ADDONS_API_KEY,
             apiSecret: process.env.MOZILLA_ADDONS_API_SECRET,
-            artifactsDir: 'dist',
+            artifactsDir: 'artifacts',
             channel: 'listed',
             id: process.env.MOZILLA_EXTENSION_ID || null,
             sourceDir: BUILD_TYPES_DESTINATIONS[BUILD_TARGETS_TYPES[target]]
         })
             .then((signResult) => {
-                unlinkSync('dist/v2/.web-extension-id');
+                unlinkSync('artifacts/v2/.web-extension-id');
                 renameSync(
                     signResult.downloadedFiles.find(path => path.endsWith('.xpi')),
-                    `dist/ton-wallet-${process.env.TON_WALLET_VERSION}.xpi`
+                    `artifacts/ton-wallet-${process.env.TON_WALLET_VERSION}.xpi`
                 );
 
                 done();

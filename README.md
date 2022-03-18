@@ -46,9 +46,9 @@ npm run watch {target}
 
 Possible targets and bundle files destinations folder:
 - `web` - ton-wallet/docs
-- `chromium` - ton-wallet/dist/v3
-- `firefox` - ton-wallet/dist/v2
-- `safari` - ton-wallet/dist/v2
+- `chromium` - ton-wallet/artifacts/v3
+- `firefox` - ton-wallet/artifacts/v2
+- `safari` - ton-wallet/artifacts/v2
 - `all` - run all targets
 
 # Packing
@@ -64,8 +64,8 @@ npm run pack {target}
 ```
 
 Possible targets and bundle file destinations:
-- `chromium` - ton-wallet/dist/ton-wallet-{TON_WALLET_VERSION}.crx
-- `firefox` - ton-wallet/dist/ton-wallet-{TON_WALLET_VERSION}.xpi
+- `chromium` - ton-wallet/artifacts/ton-wallet-{TON_WALLET_VERSION}.zip
+- `firefox` - ton-wallet/artifacts/ton-wallet-{TON_WALLET_VERSION}.zip
 - `safari` - build xcode project to ton-wallet/build/safari/build
 - `all` - run all targets
 
@@ -79,7 +79,7 @@ TON_WALLET_VERSION - value from environment variable with same name
 
 - Enable "Developer Mode" in top right corner
 
-- Click "Load unpacked extension" and specify `ton-wallet/dist/v3` folder
+- Click "Load unpacked extension" and specify `ton-wallet/artifacts/v3` folder
 
 # Mozilla Firefox Add-on Developer Mode
 
@@ -87,7 +87,7 @@ TON_WALLET_VERSION - value from environment variable with same name
 
 - Go to `about:debugging#/runtime/this-firefox`
 
-- Click "Load Temporary Add-on" and select `ton-wallet/dist/v2/manifest.json` file
+- Click "Load Temporary Add-on" and select `ton-wallet/artifacts/v2/manifest.json` file
 
 # Switch between mainnet/testnet in Extension
 
