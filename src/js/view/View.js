@@ -22,6 +22,28 @@ const BN = TonWeb.utils.BN;
 
 const IS_FIREFOX = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
 
+const drawQRCode = (text, containerSelector) => {
+    const $container = $(containerSelector);
+
+    clearElement($container);
+
+    new QRCode($container, {
+        text: text,
+        width: 185 * window.devicePixelRatio,
+        height: 185 * window.devicePixelRatio,
+        colorDark: '#303757',
+        logo: "assets/ui/qr-logo.png",
+        logoBackgroundTransparent: true,
+        logoWidth: 44 * window.devicePixelRatio,
+        logoHeight: 44 * window.devicePixelRatio,
+        correctLevel: QRCode.CorrectLevel.L
+    });
+
+    const canvas = $container.querySelector('canvas');
+    canvas.style.width = '185px';
+    canvas.style.height = '185px';
+};
+
 class View {
     constructor(mnemonicWords) {
         /** @type   {[string]} */
@@ -865,17 +887,8 @@ class View {
 
     setMyAddress(address) {
         setAddr($('#receive .addr'), address);
-        clearElement($('#qr'));
-        const options = {
-            text: TonWeb.utils.formatTransferUrl(address),
-            width: 185 * window.devicePixelRatio,
-            height: 185 * window.devicePixelRatio,
-            logo: "assets/ui/gem.png",
-            logoWidth: 44 * window.devicePixelRatio,
-            logoHeight: 44 * window.devicePixelRatio,
-            correctLevel: QRCode.CorrectLevel.L
-        };
-        new QRCode($('#qr'), options);
+
+        drawQRCode(TonWeb.utils.formatTransferUrl(address), '#qr');
     }
 
     onShareAddressClick(onyAddress) {
@@ -919,17 +932,7 @@ class View {
     }
 
     drawInvoiceQr(link) {
-        clearElement($('#invoiceQrImg'));
-        const options = {
-            text: link,
-            width: 185 * window.devicePixelRatio,
-            height: 185 * window.devicePixelRatio,
-            logo: "assets/ui/gem.png",
-            logoWidth: 44 * window.devicePixelRatio,
-            logoHeight: 44 * window.devicePixelRatio,
-            correctLevel: QRCode.CorrectLevel.L
-        };
-        new QRCode($('#invoiceQrImg'), options);
+        drawQRCode(link, '#invoiceQrImg');
     }
 
     // TRANSPORT
