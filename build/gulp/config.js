@@ -1,15 +1,4 @@
 /**
- * Gulp run arguments count after task name from npm script
- *
- * For example, for script "gulp build --gulpfile build/gulpfile.js --cwd . --target"
- * it was 5: "--gulpfile", "build/gulpfile.js", "--cwd", ".", "--target"\
- * (count only space separated), "build" - is task name
- *
- * Value is 3 (fixed arguments count for run Node.js as binary with task name) + N (arguments count)
- */
- const RUN_ARGS_COUNT = 3 + 5;
-
-/**
  * Path to ".env" file relative to project root directory
  */
 const DOTENV_PATH = '.env';
@@ -33,7 +22,7 @@ const DOTENV_PATH = '.env';
 /**
  * Possible build targets identifiers to names map
  */
- const TARGETS = {
+const TARGETS = {
     WEB: 'web',
     CHROMIUM: 'chromium',
     FIREFOX: 'firefox',
@@ -61,11 +50,19 @@ const TARGETS_BUILD_DESTS = {
     [TARGETS.SAFARI]: BUILD_DESTS.V2
 };
 
+/**
+ * Globs for watch task
+ */
+const WATCH_GLOBS = [
+    'build/**/*',
+    'src/**/*'
+];
+
 module.exports = {
-    RUN_ARGS_COUNT,
     DOTENV_PATH,
     REQUIRED_ENV_VARS,
     TARGETS,
     BUILD_DESTS,
-    TARGETS_BUILD_DESTS
+    TARGETS_BUILD_DESTS,
+    WATCH_GLOBS
 };

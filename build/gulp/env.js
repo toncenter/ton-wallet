@@ -18,6 +18,33 @@ const ROW_REGEXP =
     /^\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(('|"|`)(?:\\\3|(?!\3)[\s\S])*\3|[^#\n]+)?\s*(?:#.*)?$/gm;
 
 /**
+ * Read ".env" file in project root directory and set parsed rows to environment variables
+ */
+const loadEnvFile = () => {
+    if (!existsSync(DOTENV_PATH)) return;
+
+    const source = readFileSync(DOTENV_PATH, 'utf8').replace(/\r\n?/g, '\n');
+
+    [...source.matchAll(ROW_REGEXP)].forEach(match => {
+        let value = match[2];
+
+        const maybeQuote = value[0];
+        // If value was quoted, replace escaped quotes inside
+        if (maybeQuote === "'" || maybeQuote === '"' || maybeQuote === '`') {
+            value = value.replace(new RegExp('\\\\' + maybeQuote, 'g'), maybeQuote);
+        }
+
+        // Unquote value
+        value = value.replace(/^(['"`])([\s\S]*)\1$/g, '$2');
+
+        // Replace "\n" in value by newline symbol
+        value = value.replace(/\\n/g, '\n');
+
+        process.env[match[1]] = value;
+    });
+};
+
+/**
  * Check passed environment variables names exists in shell environment
  *
  * @param {string} taskName
@@ -56,34 +83,7 @@ const checkRequiredEnvVars = (taskName, targetName) => {
     }
 };
 
-/**
- * Read ".env" file in project root directory and set parsed rows to environment variables
- */
-const loadEnvFile = () => {
-    if (!existsSync(DOTENV_PATH)) return;
-
-    const source = readFileSync(DOTENV_PATH, 'utf8').replace(/\r\n?/g, '\n');
-
-    [...source.matchAll(ROW_REGEXP)].forEach(match => {
-        let value = match[2];
-
-        const maybeQuote = value[0];
-        // If value was quoted, replace escaped quotes inside
-        if (maybeQuote === "'" || maybeQuote === '"' || maybeQuote === '`') {
-            value = value.replace(new RegExp('\\\\' + maybeQuote, 'g'), maybeQuote);
-        }
-
-        // Unquote value
-        value = value.replace(/^(['"`])([\s\S]*)\1$/g, '$2');
-
-        // Replace "\n" in value by newline symbol
-        value = value.replace(/\\n/g, '\n');
-
-        process.env[match[1]] = value;
-    });
-};
-
 module.exports = {
-    checkRequiredEnvVars,
-    loadEnvFile
+    loadEnvFile,
+    checkRequiredEnvVars
 };

@@ -1,5 +1,5 @@
 const { series, task, watch } = require('gulp');
-const { RUN_ARGS_COUNT, TARGETS, BUILD_DESTS, TARGETS_BUILD_DESTS } = require('./gulp/config');
+const { TARGETS, BUILD_DESTS, TARGETS_BUILD_DESTS, WATCH_GLOBS } = require('./gulp/config');
 const { checkRequiredEnvVars, loadEnvFile } = require('./gulp/env');
 const copy = require('./gulp/copy');
 const css = require('./gulp/css');
@@ -8,10 +8,11 @@ const manifest = require('./gulp/manifest');
 const pack = require('./gulp/pack');
 const remove = require('./gulp/remove');
 const script = require('./gulp/script');
+const start = require('./gulp/start');
 
 const taskName = process.argv[2];
+const targetName = process.argv.pop();
 
-const targetName = process.argv[RUN_ARGS_COUNT];
 const targetNames = ['all', ...Object.values(TARGETS)]
 if (!targetName || !targetNames.includes(targetName)) {
     console.error(`Pass one of possible target names: "${targetNames.join('", "')}"`);
@@ -32,9 +33,10 @@ const createBuildDestSeries = (buildDest, needMinify) => {
     );
 };
 
-const needMinify = (taskName !== 'dev' && taskName !== 'watch');
+const needMinify = taskName === 'build' || taskName === 'pack';
 
 let buildTasks;
+let startTasks;
 let packTasks;
 
 if (targetName === 'all') {
@@ -42,16 +44,21 @@ if (targetName === 'all') {
         return createBuildDestSeries(buildDest, needMinify);
     }));
 
+    startTasks = series(...Object.values(TARGETS).map(targetName => start.bind(null, targetName)));
+
     packTasks = series(...Object.values(TARGETS).map(targetName => pack.bind(null, targetName)));
 } else {
     buildTasks = createBuildDestSeries(TARGETS_BUILD_DESTS[targetName], needMinify);
+    startTasks = start.bind(null, targetName);
     packTasks = pack.bind(null, targetName);
 }
 
 task('dev', buildTasks);
 
-task('build', buildTasks);
+task('watch', watch.bind(null, WATCH_GLOBS, { ignoreInitial: false }, buildTasks));
 
-task('watch', watch.bind(null, ['build/**/*', 'src/**/*'], buildTasks));
+task('start', series(buildTasks, startTasks, watch.bind(null, WATCH_GLOBS, buildTasks)));
+
+task('build', buildTasks);
 
 task('pack', series(buildTasks, packTasks));
