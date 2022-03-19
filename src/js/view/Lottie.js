@@ -12,37 +12,20 @@ function initLottie(div) {
         const xmlHttp = new XMLHttpRequest();
         xmlHttp.responseType = 'arraybuffer';
         xmlHttp.onreadystatechange = function () {
-            if (xmlHttp.readyState === 4) {
-                if (xmlHttp.status === 200) {
-                    const canvas = document.createElement('canvas');
-                    canvas.setAttribute('width', w * window.devicePixelRatio);
-                    canvas.setAttribute('height', h * window.devicePixelRatio);
-                    canvas.style.width = w + 'px';
-                    canvas.style.height = h + 'px';
-                    div.appendChild(canvas);
-                    const ctx = canvas.getContext('2d');
+            if (xmlHttp.readyState !== 4) return;
+            if (xmlHttp.status !== 200) return reject();
 
-                    const animationData = JSON.parse(new TextDecoder('utf-8').decode(pako.inflate(xmlHttp.response)));
-                    lotties[name] = {
-                        ctx: ctx,
-                        player: lottie.loadAnimation({
-                            renderer: 'canvas',
-                            loop: name === 'processing' || name === 'start' || name === 'about',
-                            autoplay: false,
-                            animationData,
-                            rendererSettings: {
-                                context: ctx,
-                                scaleMode: 'noScale',
-                                clearCanvas: true
-                            },
-                        })
-                    };
-                    ctx.clearRect(0, 0, 1000, 1000);
-                    resolve();
-                } else {
-                    reject();
-                }
-            }
+            lotties[name] = lottie.loadAnimation({
+                container: div,
+                renderer: 'svg',
+                loop: name === 'processing' || name === 'start' || name === 'about',
+                autoplay: false,
+                animationData: JSON.parse(
+                    new TextDecoder('utf-8').decode(pako.inflate(xmlHttp.response))
+                )
+            });
+
+            resolve();
         };
         xmlHttp.open("GET", url, true);
         xmlHttp.send(null);
@@ -56,4 +39,11 @@ async function initLotties() {
     }
 }
 
-export {initLotties, lotties};
+function toggleLottie(lottie, visible) {
+    if (!lottie) return;
+
+    if (visible) lottie.play();
+    else lottie.stop();
+}
+
+export {initLotties, toggleLottie, lotties};

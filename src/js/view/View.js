@@ -13,30 +13,12 @@ import {
     triggerClass
 } from "./Utils.js";
 
-import {initLotties, lotties} from "./Lottie.js";
+import {initLotties, toggleLottie, lotties} from "./Lottie.js";
 import DropDown from "./DropDown.js";
 
 const toNano = TonWeb.utils.toNano;
 const formatNanograms = TonWeb.utils.fromNano;
 const BN = TonWeb.utils.BN;
-
-function toggleLottie(lottie, visible, params) {
-    params = params || {};
-    clearTimeout(lottie.hideTimeout);
-    if (visible) {
-        lottie.player.play();
-    } else {
-        lottie.player.stop();
-
-        if (params.hideDelay) {
-            lottie.hideTimeout = setTimeout(() => {
-                lottie.ctx.clearRect(0, 0, 1000, 1000);
-            }, params.hideDelay);
-        } else {
-            lottie.ctx.clearRect(0, 0, 1000, 1000);
-        }
-    }
-}
 
 const IS_FIREFOX = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
 
@@ -73,12 +55,7 @@ class View {
             multiColumns: false
         });
 
-        initLotties().then(() => {
-            const lottie = lotties[this.currentScreenName];
-            if (lottie) {
-                toggleLottie(lottie, true);
-            }
-        });
+        initLotties().then(() => toggleLottie(lotties[this.currentScreenName], true));
 
         function resetErrors(e) {
             const input = e.target;
@@ -425,10 +402,7 @@ class View {
                 isBack: this.isBack,
             });
 
-            const lottie = lotties[screen];
-            if (lottie) {
-                toggleLottie(lottie, name === screen, {hideDelay: 300}); //300ms, as for screen show/hide animation duration in CSS
-            }
+            toggleLottie(lotties[screen], name === screen);
         });
         this.currentScreenName = name;
 
@@ -476,10 +450,7 @@ class View {
 
         popups.forEach(popup => {
             toggleFaded($('#' + popup), name === popup);
-            const lottie = lotties[popup];
-            if (lottie) {
-                toggleLottie(lottie, name === popup);
-            }
+            toggleLottie(lotties[popup], name === popup);
         });
 
         this.popup = name;
