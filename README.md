@@ -64,12 +64,12 @@ npm run pack {target}
 ```
 
 Possible targets and bundle file destinations:
-- `chromium` - ton-wallet/artifacts/ton-wallet-{TON_WALLET_VERSION}.zip
-- `firefox` - ton-wallet/artifacts/ton-wallet-{TON_WALLET_VERSION}.zip
+- `chromium` - ton-wallet/artifacts/ton-wallet-{version}.zip
+- `firefox` - ton-wallet/artifacts/ton-wallet-{version}.zip
 - `safari` - build xcode project to ton-wallet/build/safari/build
 - `all` - run all targets
 
-TON_WALLET_VERSION - value from environment variable with same name
+Where {version} - value from package.json "version" field
 
 # Chromium-based browsers Extension Developer Mode
 
