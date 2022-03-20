@@ -17,12 +17,12 @@
 		850824E327E0F885005B1F54 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 850824E227E0F885005B1F54 /* Assets.xcassets */; };
 		850824EB27E0F885005B1F54 /* TON Wallet Extension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 850824EA27E0F885005B1F54 /* TON Wallet Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		850824F027E0F885005B1F54 /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 850824EF27E0F885005B1F54 /* SafariWebExtensionHandler.swift */; };
-		858E09C027E103B400500609 /* libs in Resources */ = {isa = PBXBuildFile; fileRef = 858E09BA27E103B300500609 /* libs */; };
-		858E09C127E103B400500609 /* assets in Resources */ = {isa = PBXBuildFile; fileRef = 858E09BB27E103B300500609 /* assets */; };
-		858E09C227E103B400500609 /* js in Resources */ = {isa = PBXBuildFile; fileRef = 858E09BC27E103B300500609 /* js */; };
-		858E09C327E103B400500609 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 858E09BD27E103B300500609 /* manifest.json */; };
-		858E09C427E103B400500609 /* css in Resources */ = {isa = PBXBuildFile; fileRef = 858E09BE27E103B300500609 /* css */; };
-		858E09C527E103B400500609 /* index.html in Resources */ = {isa = PBXBuildFile; fileRef = 858E09BF27E103B400500609 /* index.html */; };
+		858F762C27E794CB0020E363 /* js in Resources */ = {isa = PBXBuildFile; fileRef = 858F762627E794CB0020E363 /* js */; };
+		858F762D27E794CB0020E363 /* main.css in Resources */ = {isa = PBXBuildFile; fileRef = 858F762727E794CB0020E363 /* main.css */; };
+		858F762E27E794CB0020E363 /* index.html in Resources */ = {isa = PBXBuildFile; fileRef = 858F762827E794CB0020E363 /* index.html */; };
+		858F762F27E794CB0020E363 /* assets in Resources */ = {isa = PBXBuildFile; fileRef = 858F762927E794CB0020E363 /* assets */; };
+		858F763027E794CB0020E363 /* libs in Resources */ = {isa = PBXBuildFile; fileRef = 858F762A27E794CB0020E363 /* libs */; };
+		858F763127E794CB0020E363 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 858F762B27E794CB0020E363 /* manifest.json */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -64,12 +64,12 @@
 		850824EF27E0F885005B1F54 /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
 		8508250227E0F885005B1F54 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8508250327E0F885005B1F54 /* TON_Wallet_Extension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TON_Wallet_Extension.entitlements; sourceTree = "<group>"; };
-		858E09BA27E103B300500609 /* libs */ = {isa = PBXFileReference; lastKnownFileType = folder; name = libs; path = ../../../artifacts/v2/libs; sourceTree = "<group>"; };
-		858E09BB27E103B300500609 /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; name = assets; path = ../../../artifacts/v2/assets; sourceTree = "<group>"; };
-		858E09BC27E103B300500609 /* js */ = {isa = PBXFileReference; lastKnownFileType = folder; name = js; path = ../../../artifacts/v2/js; sourceTree = "<group>"; };
-		858E09BD27E103B300500609 /* manifest.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; name = manifest.json; path = ../../../artifacts/v2/manifest.json; sourceTree = "<group>"; };
-		858E09BE27E103B300500609 /* css */ = {isa = PBXFileReference; lastKnownFileType = folder; name = css; path = ../../../artifacts/v2/css; sourceTree = "<group>"; };
-		858E09BF27E103B400500609 /* index.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = index.html; path = ../../../artifacts/v2/index.html; sourceTree = "<group>"; };
+		858F762627E794CB0020E363 /* js */ = {isa = PBXFileReference; lastKnownFileType = folder; name = js; path = ../../../artifacts/v2/js; sourceTree = "<group>"; };
+		858F762727E794CB0020E363 /* main.css */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.css; name = main.css; path = ../../../artifacts/v2/main.css; sourceTree = "<group>"; };
+		858F762827E794CB0020E363 /* index.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = index.html; path = ../../../artifacts/v2/index.html; sourceTree = "<group>"; };
+		858F762927E794CB0020E363 /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; name = assets; path = ../../../artifacts/v2/assets; sourceTree = "<group>"; };
+		858F762A27E794CB0020E363 /* libs */ = {isa = PBXFileReference; lastKnownFileType = folder; name = libs; path = ../../../artifacts/v2/libs; sourceTree = "<group>"; };
+		858F762B27E794CB0020E363 /* manifest.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; name = manifest.json; path = ../../../artifacts/v2/manifest.json; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -146,12 +146,12 @@
 		858E09B927E1038E00500609 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				858E09BB27E103B300500609 /* assets */,
-				858E09BE27E103B300500609 /* css */,
-				858E09BF27E103B400500609 /* index.html */,
-				858E09BC27E103B300500609 /* js */,
-				858E09BA27E103B300500609 /* libs */,
-				858E09BD27E103B300500609 /* manifest.json */,
+				858F762927E794CB0020E363 /* assets */,
+				858F762827E794CB0020E363 /* index.html */,
+				858F762627E794CB0020E363 /* js */,
+				858F762A27E794CB0020E363 /* libs */,
+				858F762727E794CB0020E363 /* main.css */,
+				858F762B27E794CB0020E363 /* manifest.json */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -250,12 +250,12 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				858E09C427E103B400500609 /* css in Resources */,
-				858E09C327E103B400500609 /* manifest.json in Resources */,
-				858E09C027E103B400500609 /* libs in Resources */,
-				858E09C527E103B400500609 /* index.html in Resources */,
-				858E09C227E103B400500609 /* js in Resources */,
-				858E09C127E103B400500609 /* assets in Resources */,
+				858F763027E794CB0020E363 /* libs in Resources */,
+				858F762E27E794CB0020E363 /* index.html in Resources */,
+				858F762F27E794CB0020E363 /* assets in Resources */,
+				858F762D27E794CB0020E363 /* main.css in Resources */,
+				858F763127E794CB0020E363 /* manifest.json in Resources */,
+				858F762C27E794CB0020E363 /* js in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

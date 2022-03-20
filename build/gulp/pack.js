@@ -18,7 +18,13 @@ const pack = async targetName => {
 
         return new Promise((resolve, reject) => {
             const child = spawn(
-                'xcodebuild', ['-project', 'build/safari/TON Wallet.xcodeproj'],
+                'xcodebuild',
+                [
+                    '-project', 'build/safari/TON Wallet.xcodeproj',
+                    'BUILD_DIR=../../artifacts/safari',
+                    'CONFIGURATION_BUILD_DIR=../../artifacts/safari',
+                    'SYMROOT=../../artifacts/safari'
+                ],
                 { stdio: 'inherit' }
             );
 

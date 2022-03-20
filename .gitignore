@@ -1,8 +1,6 @@
 .idea
 .vscode
 artifacts
-build/safari/build
-build/chromium.pem
 node_modules
 .DS_Store
 .env

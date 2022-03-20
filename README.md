@@ -70,7 +70,7 @@ npm run pack {target}
 Possible targets and output files destinations:
 - `chromium` - ton-wallet/artifacts/chromium-ton-wallet-{version}.zip
 - `firefox` - ton-wallet/artifacts/firefox-ton-wallet-{version}.zip
-- `safari` - build xcode project to ton-wallet/build/safari/build
+- `safari` - build xcode project to ton-wallet/artifacts/safari
 - `all` - run all targets
 
 Where {version} - value from package.json "version" field
@@ -78,27 +78,29 @@ Where {version} - value from package.json "version" field
 # Chromium-based browsers Extension Developer Mode
 
 - Open web browser
-
 - Go to `chrome://extensions/`
-
 - Enable "Developer Mode" in top right corner
-
 - Click "Load unpacked extension" and specify `ton-wallet/artifacts/v3` folder
 
 # Mozilla Firefox Add-on Developer Mode
 
 - Open Mozilla Firefox
-
 - Go to `about:debugging#/runtime/this-firefox`
-
 - Click "Load Temporary Add-on" and select `ton-wallet/artifacts/v2/manifest.json` file
+
+# Safari Extension Developer Mode
+
+- Install Xcode Command Line Tools
+- Open Safari and choose Safari > Preferences
+- Select the Advanced tab, then select the "Show Develop menu in menu bar" checkbox
+- Choose Develop > Allow Unsigned Extensions (the Allow Unsigned Extensions setting is reset when a user quits Safari, you must set it again the next time Safari is launched)
+- Pack extension for Safari by command `npm run pack safari`
+- Extension will automatically added to Safari
 
 # Switch between mainnet/testnet in Extension
 
 - Required version 1.1.35+
-
 - Click menu in right-top corner -> About
-
 - Click on "Version:" with shift key pressed
 
 The switch is hidden because ordinary users click all the switches without knowing what they are doing, we would like to protect them from accidentally switching the network.
