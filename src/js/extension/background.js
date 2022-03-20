@@ -16,7 +16,7 @@ if(typeof importScripts !== 'function') {
 }
 
 importScripts(
-    '/libs/tonweb.js',
-    '/libs/tonweb-mnemonic.js',
+    '/libs/tonweb.min.js',
+    '/libs/tonweb-mnemonic.min.js',
     '/js/Controller.js',
 );

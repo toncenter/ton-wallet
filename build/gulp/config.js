@@ -35,7 +35,7 @@ const TARGETS = {
  * FIREFOX and SAFARI require V2 build destination
  */
 const BUILD_DESTS = {
-    WEB: 'artifacts/web',
+    WEB: 'docs',
     V3: 'artifacts/v3',
     V2: 'artifacts/v2'
 };
@@ -58,11 +58,17 @@ const WATCH_GLOBS = [
     'src/**/*'
 ];
 
+/**
+ * Port for web wallet start task HTTP server
+ */
+const START_WEB_PORT = 8080;
+
 module.exports = {
     DOTENV_PATH,
     REQUIRED_ENV_VARS,
     TARGETS,
     BUILD_DESTS,
     TARGETS_BUILD_DESTS,
-    WATCH_GLOBS
+    WATCH_GLOBS,
+    START_WEB_PORT
 };

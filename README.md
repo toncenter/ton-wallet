@@ -20,28 +20,36 @@ https://chrome.google.com/webstore/detail/ton-wallet/nphplpgoakhhjchkkhmiggakijn
 
 Set required for build environment variables in shell or `.env` file in project root directory. See `.env.example` with required variables names and their description.
 
+If need, update `version` field in `package.json` to increase version in output manifest.json files, source files and update anti-cache parameters values.
+
 Install development dependencies:
 
 ```
 npm install
 ```
 
-Build required target:
-
-```
-npm run build {target}
-```
-
-For development needs, you can use dev script to build unminified bundles:
+Use `dev` task to build unminified bundles:
 
 ```
 npm run dev {target}
 ```
 
-Or you can use watch script to autorebuild unminified bundles on sources change:
+Use `watch` task to autorebuild unminified bundles on sources change:
 
 ```
 npm run watch {target}
+```
+
+Use `start` task to open target in web-browser and autorebuild unminified bundles on sources change (now support only `web` target):
+
+```
+npm run start {target}
+```
+
+Use `build` task to build minified bundles:
+
+```
+npm run build {target}
 ```
 
 Possible targets and bundle files destinations folder:
@@ -53,19 +61,15 @@ Possible targets and bundle files destinations folder:
 
 # Packing
 
-Make preparations:
-- for Chromium packing put extension secret key to ton-wallet/build/chromium.pem path
-- for Firefox packing set Mozilla Addons credentials to environment variables (see `.env.example`)
-
-Pack required target:
+Use `pack` task to build minified bundles and prepare it to publuish-ready form:
 
 ```
 npm run pack {target}
 ```
 
-Possible targets and bundle file destinations:
-- `chromium` - ton-wallet/artifacts/ton-wallet-{version}.zip
-- `firefox` - ton-wallet/artifacts/ton-wallet-{version}.zip
+Possible targets and output files destinations:
+- `chromium` - ton-wallet/artifacts/chromium-ton-wallet-{version}.zip
+- `firefox` - ton-wallet/artifacts/firefox-ton-wallet-{version}.zip
 - `safari` - build xcode project to ton-wallet/build/safari/build
 - `all` - run all targets
 

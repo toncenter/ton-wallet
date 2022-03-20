@@ -5,7 +5,10 @@ const { TARGETS, TARGETS_BUILD_DESTS } = require('./config');
 const { version } = require('../../package.json');
 
 const pack = async targetName => {
-    if (targetName === TARGETS.WEB) return;
+    if (targetName === TARGETS.WEB) {
+        console.log('Pack target "web" not available now');
+        return;
+    }
 
     if (targetName === TARGETS.SAFARI) {
         if (process.platform !== 'darwin') {
