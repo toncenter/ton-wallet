@@ -9,15 +9,52 @@ try {
     console.error('ton-wallet provider injection failed.', e);
 }
 
-const port = chrome.runtime.connect({name: 'gramWalletContentScript'});
-port.onMessage.addListener(function (msg) {
-    // Receive msg from Controller.js and resend to dapp page
-    self.postMessage(msg, '*'); // todo: origin
-});
+const onPortMessage = data => {
+    self.postMessage(data, '*'); // todo: origin
+};
 
-self.addEventListener('message', function (event) {
-    if (event.data && (event.data.type === 'gramWalletAPI_ton_provider_write' || event.data.type === 'gramWalletAPI_ton_provider_connect')) {
-        // Receive msg from dapp page and resend to Controller.js
-        port.postMessage(event.data);
+const onPageMessage = e => {
+    if (!e.data) return;
+    if (e.data.type !== 'gramWalletAPI_ton_provider_write' &&
+        e.data.type !== 'gramWalletAPI_ton_provider_connect') return;
+
+    sendMessageToActivePort(e.data);
+};
+
+const PORT_NAME = 'gramWalletContentScript'
+let port = chrome.runtime.connect({ name: PORT_NAME });
+port.onMessage.addListener(onPortMessage);
+
+const sendMessageToActivePort = (payload, isRepeat = false) => {
+    try {
+        port.postMessage(payload);
+    } catch (err) {
+        const isInvalidated = err.message.toString().includes('Extension context invalidated');
+        if (isInvalidated) {
+            self.removeEventListener('message', onPageMessage);
+            return;
+        }
+
+        const isDisconnected = err.message.toString().includes('disconnected port');
+
+        if (!isRepeat && isDisconnected) {
+            port = chrome.runtime.connect({name: PORT_NAME});
+            port.onMessage.addListener(onPortMessage);
+            sendMessageToActivePort(payload, true);
+        } else {
+            console.log(`Fail send message to port`, err);
+
+            onPortMessage(JSON.stringify({
+                type: 'gramWalletAPI',
+                message: {
+                    id: payload?.message?.id,
+                    method: payload?.message?.method,
+                    error: { message: err.message },
+                    jsonrpc: true,
+                }
+            }));
+        }
     }
-});
+}
+
+self.addEventListener('message', onPageMessage);

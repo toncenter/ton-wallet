@@ -77,7 +77,7 @@ class View {
             multiColumns: false
         });
 
-        initLotties().then(() => toggleLottie(lotties[this.currentScreenName], true));
+        this._initLotties = initLotties().then(() => toggleLottie(lotties[this.currentScreenName], true));
 
         function resetErrors(e) {
             const input = e.target;
@@ -277,7 +277,10 @@ class View {
         });
         $('#sendButton').addEventListener('click', () => this.onMessage('showPopup', {name: 'send'}));
 
-        $('#modal').addEventListener('click', () => this.closePopup());
+        $('#modal').addEventListener('click', () => {
+            this.sendMessage('onCancelAction');
+            this.closePopup();
+        });
 
         if (IS_FIREFOX) {
             toggle($('#menu_magic'), false);
@@ -344,8 +347,14 @@ class View {
         });
         $('#send_closeBtn').addEventListener('click', () => this.closePopup());
 
-        $('#sendConfirm_closeBtn').addEventListener('click', () => this.closePopup());
-        $('#sendConfirm_cancelBtn').addEventListener('click', () => this.closePopup());
+        $('#sendConfirm_closeBtn').addEventListener('click', () => {
+            this.sendMessage('onCancelAction');
+            this.closePopup();
+        });
+        $('#sendConfirm_cancelBtn').addEventListener('click', () => {
+            this.sendMessage('onCancelAction');
+            this.closePopup();
+        });
         $('#sendConfirm_okBtn').addEventListener('click', () => this.onMessage('showPopup', {name: 'enterPassword'}));
 
         $('#signConfirm_closeBtn').addEventListener('click', () => this.closePopup());
@@ -400,7 +409,10 @@ class View {
             this.sendMessage('onChangePassword', {oldPassword, newPassword});
         });
 
-        $('#enterPassword_cancelBtn').addEventListener('click', () => this.closePopup());
+        $('#enterPassword_cancelBtn').addEventListener('click', () => {
+            this.sendMessage('onCancelAction');
+            this.closePopup();
+        });
         $('#enterPassword_okBtn').addEventListener('click', async (e) => {
             const password = $('#enterPassword_input').value;
 
@@ -458,7 +470,9 @@ class View {
         this.showPopup('alert');
     }
 
-    showPopup(name) {
+    async showPopup(name) {
+        await this._initLotties;
+
         $('#enterPassword_input').value = '';
 
         //popups switching without animations
@@ -468,7 +482,7 @@ class View {
 
         toggleFaded($('#modal'), name !== '');
 
-        const popups = ['alert', 'receive', 'invoice', 'invoiceQr', 'send', 'sendConfirm', 'signConfirm', 'processing', 'done', 'menuDropdown', 'about', 'delete', 'changePassword', 'enterPassword', 'transaction', 'connectLedger'];
+        const popups = ['alert', 'receive', 'invoice', 'invoiceQr', 'send', 'sendConfirm', 'signConfirm', 'processing', 'done', 'menuDropdown', 'about', 'delete', 'changePassword', 'enterPassword', 'transaction', 'connectLedger', 'loader'];
 
         popups.forEach(popup => {
             toggleFaded($('#' + popup), name === popup);
@@ -1007,6 +1021,18 @@ class View {
                 break;
 
             case 'sendCheckFailed':
+                if (this.popup) {
+                    this.closePopup();
+                }
+
+                if (params && params.message) {
+                    $('#notify').innerText = params.message;
+                    triggerClass($('#notify'), 'faded-show', 3000);
+                }
+
+                this.toggleButtonLoader($('#send_btn'), false);
+                break;
+
             case 'sendCheckSucceeded':
                 this.toggleButtonLoader($('#send_btn'), false);
                 break;
@@ -1136,14 +1162,26 @@ class View {
 window.view = new View(TonWeb.mnemonic.wordlists.EN);
 
 try {
-    const port = chrome.runtime.connect({name: 'gramWalletPopup'});
-    window.view.port = port;
-    port.onMessage.addListener(function (msg) {
-        const result = window.view.onMessage(msg.method, msg.params);
-        if (result && msg.id) {
-            port.postMessage({method: 'response', id: msg.id, result});
-        }
-    });
+    let port;
+
+    const connectToBackground = () => {
+        port = chrome.runtime.connect({ name: 'gramWalletPopup' });
+        window.view.port = port;
+
+        port.onMessage.addListener(data => {
+            const result = window.view.onMessage(data.method, data.params);
+            if (result && data.id) {
+                port.postMessage({ method: 'response', id: data.id, result });
+            }
+        });
+
+        port.onDisconnect.addListener(() => {
+            console.log('gramWalletPopup disconnect');
+            connectToBackground();
+        });
+    }
+
+    connectToBackground();
 } catch (e) {
 
 }

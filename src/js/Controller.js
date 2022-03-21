@@ -1,9 +1,32 @@
 import storage from './util/storage.js';
 
 let extensionWindowId = -1;
-let contentScriptPort = null;
+let contentScriptPorts = new Set();
 let popupPort = null;
 const queueToPopup = [];
+
+let dAppPromise = null;
+
+const createDappPromise = () => {
+    if (dAppPromise) dAppPromise.resolve(false);
+
+    let resolve;
+    let reject;
+
+    dAppPromise = new Promise((localResolve, localReject) => {
+        resolve = localResolve;
+        reject = localReject;
+    });
+
+    dAppPromise.resolve = (...args) => {
+        resolve(...args);
+        dAppPromise = null;
+    };
+    dAppPromise.reject = (...args) => {
+        reject(...args);
+        dAppPromise = null;
+    };;
+};
 
 const showExtensionWindow = () => {
     return new Promise(resolve => {
@@ -573,7 +596,7 @@ class Controller {
         this.sendToView('setIsTestnet', this.isTestnet);
     }
 
-    update(force) {
+    async update(force) {
         // if (!document.hasFocus()) {
         //     return;
         // }
@@ -581,52 +604,52 @@ class Controller {
 
         if (!needUpdate) return;
 
-        this.getWallet().then(response => {
-            const balance = this.getBalance(response);
-            const isBalanceChanged = (this.balance === null) || (this.balance.cmp(balance) !== 0);
-            this.balance = balance;
+        const response = await this.getWallet();
 
-            const isContractInitialized = this.checkContractInitialized(response) && response.seqno;
-            // console.log('isBalanceChanged', isBalanceChanged);
-            // console.log('isContractInitialized', isContractInitialized);
+        const balance = this.getBalance(response);
+        const isBalanceChanged = (this.balance === null) || (this.balance.cmp(balance) !== 0);
+        this.balance = balance;
 
-            if (!this.isContractInitialized && isContractInitialized) {
-                this.isContractInitialized = true;
-            }
+        const isContractInitialized = this.checkContractInitialized(response) && response.seqno;
+        // console.log('isBalanceChanged', isBalanceChanged);
+        // console.log('isContractInitialized', isContractInitialized);
 
-            if (isBalanceChanged) {
-                this.getTransactions().then(txs => {
-                    if (txs.length > 0) {
-                        this.transactions = txs;
-                        const newTxs = txs.filter(tx => Number(tx.date) > this.lastTransactionTime);
-                        this.lastTransactionTime = Number(txs[0].date);
+        if (!this.isContractInitialized && isContractInitialized) {
+            this.isContractInitialized = true;
+        }
 
-                        if (this.processingVisible && this.sendingData) {
-                            for (let tx of newTxs) {
-                                const txAddr = (new Address(tx.to_addr)).toString(true, true, true);
-                                const myAddr = (new Address(this.sendingData.toAddress)).toString(true, true, true);
-                                const txAmount = tx.amount;
-                                const myAmount = '-' + this.sendingData.amount.toString();
+        if (isBalanceChanged) {
+            this.getTransactions().then(txs => {
+                if (txs.length > 0) {
+                    this.transactions = txs;
+                    const newTxs = txs.filter(tx => Number(tx.date) > this.lastTransactionTime);
+                    this.lastTransactionTime = Number(txs[0].date);
 
-                                if (txAddr === myAddr && txAmount === myAmount) {
-                                    this.sendToView('showPopup', {
-                                        name: 'done',
-                                        message: formatNanograms(this.sendingData.amount) + ' TON have been sent'
-                                    });
-                                    this.processingVisible = false;
-                                    this.sendingData = null;
-                                    break;
-                                }
+                    if (this.processingVisible && this.sendingData) {
+                        for (let tx of newTxs) {
+                            const txAddr = (new Address(tx.to_addr)).toString(true, true, true);
+                            const myAddr = (new Address(this.sendingData.toAddress)).toString(true, true, true);
+                            const txAmount = tx.amount;
+                            const myAmount = '-' + this.sendingData.amount.toString();
+
+                            if (txAddr === myAddr && txAmount === myAmount) {
+                                this.sendToView('showPopup', {
+                                    name: 'done',
+                                    message: formatNanograms(this.sendingData.amount) + ' TON have been sent'
+                                });
+                                this.processingVisible = false;
+                                this.sendingData = null;
+                                break;
                             }
                         }
                     }
+                }
 
-                    this.sendToView('setBalance', {balance: balance.toString(), txs});
-                });
-            } else {
-                this.sendToView('setBalance', {balance: balance.toString(), txs: this.transactions});
-            }
-        });
+                this.sendToView('setBalance', {balance: balance.toString(), txs});
+            });
+        } else {
+            this.sendToView('setBalance', {balance: balance.toString(), txs: this.transactions});
+        }
     }
 
     async showAddressOnDevice() {
@@ -675,32 +698,49 @@ class Controller {
      * @param stateInit? {Cell}
      */
     async showSendConfirm(amount, toAddress, comment, needQueue, stateInit) {
-        if (!amount.gt(new BN(0)) || this.balance.lt(amount)) {
-            this.sendToView('sendCheckFailed');
-            return;
+        this.sendToView('showPopup', {
+            name: 'loader',
+        }, needQueue);
+
+        createDappPromise();
+
+        try {
+            await this.update(true);
+        } catch(err) {
+            console.error(err);
+            this.sendToView('sendCheckFailed', { message: 'API request error' });
+            return false;
+        }
+
+        if (!amount.gt(new BN(0))) {
+            this.sendToView('sendCheckFailed', { message: 'dApp send invalid amount' });
+            return false;
+        }
+        if (this.balance.lt(amount)) {
+            this.sendToView('sendCheckFailed', { message: 'Not enough balance to pay dApp transaction' });
+            return false;
         }
         if (!Address.isValid(toAddress)) {
-            this.sendToView('sendCheckFailed');
-            return;
+            this.sendToView('sendCheckFailed', { message: 'dApp send invalid address' });
+            return false;
         }
 
         let fee;
 
         try {
             fee = await this.getFees(amount, toAddress, comment, stateInit);
-        } catch (e) {
-            console.error(e);
-            this.sendToView('sendCheckFailed');
-            return;
+        } catch (err) {
+            console.error(err);
+            this.sendToView('sendCheckFailed', { message: 'API request error' });
+            return false;
         }
 
         if (this.balance.sub(fee).lt(amount)) {
             this.sendToView('sendCheckCantPayFee', {fee});
-            return;
+            return false;
         }
 
         if (this.isLedger) {
-
             this.sendToView('showPopup', {
                 name: 'sendConfirm',
                 amount: amount.toString(),
@@ -708,15 +748,27 @@ class Controller {
                 fee: fee.toString()
             }, needQueue);
 
+            // TODO: maybe it need call in confirm callback like in else branch
             this.send(toAddress, amount, comment, null, stateInit);
-
         } else {
-
             this.afterEnterPassword = async words => {
                 this.processingVisible = true;
                 this.sendToView('showPopup', {name: 'processing'});
                 const privateKey = await Controller.wordsToPrivateKey(words);
-                this.send(toAddress, amount, comment, privateKey, stateInit);
+
+                try {
+                    await this.send(toAddress, amount, comment, privateKey, stateInit);
+                } catch (err) {
+                    console.error(err);
+                    this.sendToView('sendCheckFailed', { message: 'API request error' });
+                    dAppPromise.resolve(false);
+                }
+
+                dAppPromise.resolve(true);
+            };
+
+            this.onCancelAction = () => {
+                dAppPromise.resolve(false);
             };
 
             this.sendToView('showPopup', {
@@ -728,6 +780,8 @@ class Controller {
         }
 
         this.sendToView('sendCheckSucceeded');
+
+        return dAppPromise;
     }
 
     /**
@@ -953,6 +1007,12 @@ class Controller {
             case 'showAddressOnDevice':
                 await this.showAddressOnDevice();
                 break;
+            case 'onCancelAction':
+                if (this.onCancelAction) {
+                    await this.onCancelAction();
+                    this.onCancelAction = null;
+                }
+                break;
             case 'onEnterPassword':
                 await this.onEnterPassword(params.password);
                 break;
@@ -1003,12 +1063,12 @@ class Controller {
     // TRANSPORT WITH DAPP
 
     sendToDapp(method, params) {
-        if (contentScriptPort) {
-            contentScriptPort.postMessage(JSON.stringify({
+        contentScriptPorts.forEach(port => {
+            port.postMessage(JSON.stringify({
                 type: 'gramWalletAPI',
                 message: {jsonrpc: '2.0', method: method, params: params}
             }));
-        }
+        });
     }
 
     requestPublicKey(needQueue) {
@@ -1030,6 +1090,8 @@ class Controller {
     async onDappMessage(method, params) {
         // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md
         // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1102.md
+        await this.whenReady;
+
         const needQueue = !popupPort;
 
         switch (method) {
@@ -1049,6 +1111,7 @@ class Controller {
                     walletVersion: walletVersion
                 }];
             case 'ton_getBalance':
+                await this.update(true);
                 return (this.balance ? this.balance.toString() : '');
             case 'ton_sendTransaction':
                 const param = params[0];
@@ -1066,8 +1129,7 @@ class Controller {
                 if (param.stateInit) {
                     param.stateInit = TonWeb.boc.Cell.oneFromBoc(TonWeb.utils.base64ToBytes(param.stateInit));
                 }
-                this.showSendConfirm(new BN(param.value), param.to, param.data, needQueue, param.stateInit);
-                return true;
+                return await this.showSendConfirm(new BN(param.value), param.to, param.data, needQueue, param.stateInit);
             case 'ton_rawSign':
                 const signParam = params[0];
                 await showExtensionWindow();
@@ -1084,11 +1146,9 @@ const controller = new Controller();
 
 if (IS_EXTENSION) {
     chrome.runtime.onConnect.addListener(port => {
-        console.log(port);
-
         if (port.name === 'gramWalletContentScript') {
-            contentScriptPort = port;
-            contentScriptPort.onMessage.addListener(async msg => {
+            contentScriptPorts.add(port)
+            port.onMessage.addListener(async (msg, port) => {
                 if (msg.type === 'gramWalletAPI_ton_provider_connect') {
                     controller.whenReady.then(() => {
                         controller.initDapp();
@@ -1096,17 +1156,18 @@ if (IS_EXTENSION) {
                 }
 
                 if (!msg.message) return;
+
                 const result = await controller.onDappMessage(msg.message.method, msg.message.params);
-                if (contentScriptPort) {
-                    contentScriptPort.postMessage(JSON.stringify({
+                if (port) {
+                    port.postMessage(JSON.stringify({
                         type: 'gramWalletAPI',
                         message: {jsonrpc: '2.0', id: msg.message.id, method: msg.message.method, result}
                     }));
                 }
             });
-            contentScriptPort.onDisconnect.addListener(() => {
-                contentScriptPort = null;
-            });
+            port.onDisconnect.addListener(port => {
+                contentScriptPorts.delete(port)
+            })
         } else if (port.name === 'gramWalletPopup') {
             popupPort = port;
             popupPort.onMessage.addListener(function (msg) {
@@ -1146,8 +1207,8 @@ if (IS_EXTENSION) {
     chrome[actionApiName].onClicked.addListener(showExtensionWindow);
 
     chrome.windows.onRemoved.addListener(removedWindowId => {
-        // TODO: why when close extension window port not closed or not call onDisconnect?
-        popupPort = null;
+        if (dAppPromise) dAppPromise.resolve(false);
+
         if (removedWindowId !== extensionWindowId) return;
         extensionWindowId = -1;
     });

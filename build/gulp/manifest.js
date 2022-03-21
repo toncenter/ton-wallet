@@ -47,12 +47,14 @@ const base = {
 const manifest = async buildDest => {
     if (buildDest === BUILD_DESTS.WEB) return;
 
-    const content = Object.assign({}, base);
+    const content = JSON.parse(JSON.stringify(base));
 
     if (buildDest === BUILD_DESTS.V3) {
         content.manifest_version = 3;
 
-        content.permissions.push('storage');
+        content.permissions.push('tabs', 'storage', 'scripting');
+
+        content.host_permissions = matchesAll;
 
         content.action = content.browser_action;
         delete(content.browser_action);
