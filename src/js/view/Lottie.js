@@ -6,8 +6,6 @@ function initLottie(div) {
     return new Promise((resolve, reject) => {
         const url = div.getAttribute('src');
         const name = div.getAttribute('data-name');
-        const w = Number(div.getAttribute('width'));
-        const h = Number(div.getAttribute('height'));
 
         const xmlHttp = new XMLHttpRequest();
         xmlHttp.responseType = 'arraybuffer';
@@ -18,7 +16,10 @@ function initLottie(div) {
             lotties[name] = lottie.loadAnimation({
                 container: div,
                 renderer: 'svg',
-                loop: name === 'processing' || name === 'start' || name === 'about',
+                loop: name === 'processing' ||
+                      name === 'start' ||
+                      name === 'about' ||
+                      name === 'loader',
                 autoplay: false,
                 animationData: JSON.parse(
                     new TextDecoder('utf-8').decode(pako.inflate(xmlHttp.response))
