@@ -471,6 +471,8 @@ class View {
     }
 
     async showPopup(name) {
+        this.popup = name;
+
         await this._initLotties;
 
         $('#enterPassword_input').value = '';
@@ -488,8 +490,6 @@ class View {
             toggleFaded($('#' + popup), name === popup);
             toggleLottie(lotties[popup], name === popup);
         });
-
-        this.popup = name;
     }
 
     closePopup() {
@@ -1021,6 +1021,7 @@ class View {
                 break;
 
             case 'sendCheckFailed':
+                console.log('sendCheckFailed', this.popup);
                 if (this.popup) {
                     this.closePopup();
                 }

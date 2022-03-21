@@ -698,25 +698,29 @@ class Controller {
      * @param stateInit? {Cell}
      */
     async showSendConfirm(amount, toAddress, comment, needQueue, stateInit) {
+        createDappPromise();
+
         this.sendToView('showPopup', {
             name: 'loader',
-        }, needQueue);
-
-        createDappPromise();
+        });
 
         try {
             await this.update(true);
         } catch {
             this.sendToView('sendCheckFailed', { message: 'API request error' });
+            this.sendToView('closePopup');
             return false;
         }
+        this.sendToView('closePopup');
 
         if (!amount.gt(new BN(0))) {
             this.sendToView('sendCheckFailed', { message: 'dApp send invalid amount' });
             return false;
         }
         if (this.balance.lt(amount)) {
-            this.sendToView('sendCheckFailed', { message: 'Not enough balance to pay dApp transaction' });
+            this.sendToView('sendCheckFailed', {
+                message: 'Not enough balance to pay dApp transaction'
+            });
             return false;
         }
         if (!Address.isValid(toAddress)) {
