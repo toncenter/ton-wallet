@@ -781,7 +781,7 @@ class Controller {
 
         this.sendToView('sendCheckSucceeded');
 
-        return dAppPromise;
+        return dAppPromise || false;
     }
 
     /**
