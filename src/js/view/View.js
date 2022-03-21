@@ -1176,7 +1176,6 @@ try {
         });
 
         port.onDisconnect.addListener(() => {
-            console.log('gramWalletPopup disconnect');
             connectToBackground();
         });
     }

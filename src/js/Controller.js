@@ -706,8 +706,7 @@ class Controller {
 
         try {
             await this.update(true);
-        } catch(err) {
-            console.error(err);
+        } catch {
             this.sendToView('sendCheckFailed', { message: 'API request error' });
             return false;
         }
@@ -729,8 +728,7 @@ class Controller {
 
         try {
             fee = await this.getFees(amount, toAddress, comment, stateInit);
-        } catch (err) {
-            console.error(err);
+        } catch {
             this.sendToView('sendCheckFailed', { message: 'API request error' });
             return false;
         }

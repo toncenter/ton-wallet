@@ -42,8 +42,6 @@ const sendMessageToActivePort = (payload, isRepeat = false) => {
             port.onMessage.addListener(onPortMessage);
             sendMessageToActivePort(payload, true);
         } else {
-            console.log(`Fail send message to port`, err);
-
             onPortMessage(JSON.stringify({
                 type: 'gramWalletAPI',
                 message: {
