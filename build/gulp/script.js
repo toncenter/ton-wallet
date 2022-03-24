@@ -1,7 +1,7 @@
 const { resolve } = require('path');
 const webpack = require('webpack');
 
-const script = (buildDest, needMinify, done) => {
+const script = (buildDest, done) => {
     webpack({
         mode: 'none',
         entry: {
@@ -16,7 +16,7 @@ const script = (buildDest, needMinify, done) => {
         })],
         optimization: {
             concatenateModules: true,
-            minimize: needMinify
+            minimize: false
         },
         output: {
             filename: '[name].js',

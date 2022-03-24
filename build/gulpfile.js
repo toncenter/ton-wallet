@@ -13,7 +13,7 @@ const start = require('./gulp/start');
 const taskName = process.argv[2];
 const targetName = process.argv.pop();
 
-const targetNames = ['all', ...Object.values(TARGETS)]
+const targetNames = ['all', ...Object.values(TARGETS)];
 if (!targetName || !targetNames.includes(targetName)) {
     console.error(`Pass one of possible target names: "${targetNames.join('", "')}"`);
     process.exit(1);
@@ -22,18 +22,16 @@ if (!targetName || !targetNames.includes(targetName)) {
 loadEnvFile();
 checkRequiredEnvVars(taskName, targetName);
 
-const createBuildDestSeries = (buildDest, needMinify) => {
+const createBuildDestSeries = buildDest => {
     return series(
         remove.bind(null, buildDest),
         copy.bind(null, buildDest),
-        css.bind(null, buildDest, needMinify),
-        script.bind(null, buildDest, needMinify),
+        css.bind(null, buildDest),
+        script.bind(null, buildDest),
         html.bind(null, buildDest),
         manifest.bind(null, buildDest)
     );
 };
-
-const needMinify = taskName === 'build' || taskName === 'pack';
 
 let buildTasks;
 let startTasks;
@@ -41,14 +39,14 @@ let packTasks;
 
 if (targetName === 'all') {
     buildTasks = series(...Object.values(BUILD_DESTS).map(buildDest => {
-        return createBuildDestSeries(buildDest, needMinify);
+        return createBuildDestSeries(buildDest);
     }));
 
     startTasks = series(...Object.values(TARGETS).map(targetName => start.bind(null, targetName)));
 
     packTasks = series(...Object.values(TARGETS).map(targetName => pack.bind(null, targetName)));
 } else {
-    buildTasks = createBuildDestSeries(TARGETS_BUILD_DESTS[targetName], needMinify);
+    buildTasks = createBuildDestSeries(TARGETS_BUILD_DESTS[targetName]);
     startTasks = start.bind(null, targetName);
     packTasks = pack.bind(null, targetName);
 }
