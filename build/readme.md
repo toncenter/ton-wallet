@@ -2,7 +2,7 @@
 
 We deliberately use plain js and do not use frameworks, due to the direct access to the user's private keys. We also try to use the minimum number of third party libraries and consciously include them as static files rather than NPM packages to prevent accidental upgrade to a potentially malicious versions.
 
-# Build
+# Preparation
 
 Set required for build environment variables in shell or `.env` file in project root directory. See `.env.example` with required variables names and their description.
 
@@ -14,42 +14,30 @@ Install development dependencies:
 npm install
 ```
 
-Use `build` task to build bundles:
+# Tasks
+
+To run build task use next template:
 
 ```
-npm run build {target}
+npm run {task} {target}
 ```
 
-Use `watch` task to autorebuild bundles on sources change:
-
-```
-npm run watch {target}
-```
-
-Use `start` task to open target in web-browser and autorebuild bundles on sources change (now support only `web` target):
-
-```
-npm run start {target}
-```
+Possible tasks:
+- `build` - create bundles in targets destination directories
+- `watch` - autorebuild bundles on sources change
+- `start` - open target in web-browser and autorebuild bundles on sources change
+- `pack` - create bundles and prepare it to publuish-ready form
 
 Possible targets and bundle files destinations folder:
-- `web` - ton-wallet/docs
-- `chromium` - ton-wallet/artifacts/v3
-- `firefox` - ton-wallet/artifacts/v2
-- `safari` - ton-wallet/artifacts/v2
+- `web` - docs
+- `chromium` - artifacts/v3
+- `firefox` - artifacts/v2
+- `safari` - artifacts/v2
 - `all` - run all targets
 
-# Packing
-
-Use `pack` task to build bundles and prepare it to publuish-ready form:
-
-```
-npm run pack {target}
-```
-
-Possible targets and output files destinations:
-- `chromium` - ton-wallet/artifacts/chromium-ton-wallet-{version}.zip
-- `firefox` - ton-wallet/artifacts/firefox-ton-wallet-{version}.zip
+Possible targets for pack task and output files destinations:
+- `chromium` - artifacts/chromium-ton-wallet-{version}.zip
+- `firefox` - artifacts/firefox-ton-wallet-{version}.zip
 - `safari` - build xcode project to ton-wallet/artifacts/safari
 - `all` - run all targets
 
@@ -60,13 +48,13 @@ Where {version} - value from package.json "version" field
 - Open web browser
 - Go to `chrome://extensions/`
 - Enable "Developer Mode" in top right corner
-- Click "Load unpacked extension" and specify `ton-wallet/artifacts/v3` folder
+- Click "Load unpacked extension" and specify `artifacts/v3` folder
 
 # Mozilla Firefox Add-on Developer Mode
 
 - Open Mozilla Firefox
 - Go to `about:debugging#/runtime/this-firefox`
-- Click "Load Temporary Add-on" and select `ton-wallet/artifacts/v2/manifest.json` file
+- Click "Load Temporary Add-on" and select `artifacts/v2/manifest.json` file
 
 # Safari Extension Developer Mode
 
