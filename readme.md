@@ -14,12 +14,12 @@ Private keys do not leave your device, the keys are stored in the browser memory
 
 Please, post your issues and proposals as Issues in this repository.
 
-## Development
-
-See [build](build) directory.
-
 ## Switch between mainnet and testnet
 
 - Support from 1.1.35 version
 - Open menu in right-top corner and select `About` item
 - Click on `Version:` label with Shift key pressed
+
+## Development
+
+See [build](build) project directory.
