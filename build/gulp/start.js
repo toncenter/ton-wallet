@@ -4,8 +4,13 @@ const startServer = require('./server');
 
 const start = async targetName => {
     if (targetName === TARGETS.WEB) {
-        await startServer(START_WEB_PORT, 'docs');
-        await open(`http://localhost:${START_WEB_PORT}`);
+        const port = +process.env.START_WEB_PORT || START_WEB_PORT;
+
+        await startServer(port, 'docs');
+
+        const address = `http://localhost:${port}`;
+        console.log(`App available on ${address}`);
+        await open(address);
     } else {
         console.log(`Start target "${targetName}" not available now`);
         return;
