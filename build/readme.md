@@ -76,3 +76,9 @@ Where {version} - value from package.json "version" field
 - Choose Develop > Allow Unsigned Extensions (the Allow Unsigned Extensions setting is reset when a user quits Safari, you must set it again the next time Safari is launched)
 - Pack extension for Safari by command `npm run pack safari`
 - Extension will automatically added to Safari
+
+## Switch between clear console and debug mode
+
+- Support from 1.1.36 version
+- Open menu in right-top corner and select `About` item
+- Click on `Version:` label with Alt key pressed

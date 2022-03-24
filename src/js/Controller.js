@@ -119,6 +119,7 @@ const DEFAULT_LEDGER_WALLET_VERSION = 'v3R1';
 class Controller {
     constructor() {
         this.isTestnet = false;
+        this.isDebug = false;
         /** @type {string} */
         this.myAddress = null;
         /** @type {string} */
@@ -147,6 +148,11 @@ class Controller {
         this._lastMsgId = 1;
 
         this.whenReady = this._init();
+    }
+
+    debug(...args) {
+        if (!this.isDebug) return;
+        console.log(...args);
     }
 
     /**
@@ -195,6 +201,7 @@ class Controller {
             await storage.removeItem('pwdHash');
 
             this.isTestnet = IS_EXTENSION ? (await storage.getItem('isTestnet')) : (self.location.href.indexOf('testnet') > -1);
+            this.isDebug = IS_EXTENSION ? (await storage.getItem('isDebug')) : (self.location.href.indexOf('debug') > -1);
 
             const mainnetRpc = 'https://toncenter.com/api/v2/jsonRPC';
             const testnetRpc = 'https://testnet.toncenter.com/api/v2/jsonRPC';
@@ -258,6 +265,15 @@ class Controller {
         this.clearVars();
         await this._init();
         await this.sendToView('setIsTestnet', this.isTestnet);
+    }
+
+    async toggleDebug() {
+        this.isDebug = !this.isDebug;
+        if (this.isDebug) {
+            await storage.setItem('isDebug', 'true');
+        } else {
+            await storage.removeItem('isDebug');
+        }
     }
 
     async getTransactions(limit = 20) {
@@ -419,7 +435,7 @@ class Controller {
         this.isLedger = true;
         this.ledgerApp = new TonWeb.ledger.AppTon(transport, this.ton);
         const ledgerVersion = (await this.ledgerApp.getAppConfiguration()).version;
-        console.log('ledgerAppConfig=', ledgerVersion);
+        this.debug('ledgerAppConfig=', ledgerVersion);
         if (!ledgerVersion.startsWith('2')) {
             alert('Please update your Ledger TON-app to v2.0.1 or upper or use old wallet version https://tonwallet.me/prev/');
             throw new Error('outdated ledger ton-app version');
@@ -476,7 +492,7 @@ class Controller {
                     if (walletBalance.gt(new BN(0))) {
                         hasBalance.push({balance: walletBalance, clazz: WalletClass});
                     }
-                    console.log(wallet.getName(), walletAddress, walletInfo, walletBalance.toString());
+                    this.debug(wallet.getName(), walletAddress, walletInfo, walletBalance.toString());
                 }
 
                 let walletClass = this.ton.wallet.all[DEFAULT_WALLET_VERSION];
@@ -611,8 +627,8 @@ class Controller {
         this.balance = balance;
 
         const isContractInitialized = this.checkContractInitialized(response) && response.seqno;
-        // console.log('isBalanceChanged', isBalanceChanged);
-        // console.log('isContractInitialized', isContractInitialized);
+        this.debug('isBalanceChanged', isBalanceChanged);
+        this.debug('isContractInitialized', isContractInitialized);
 
         if (!this.isContractInitialized && isContractInitialized) {
             this.isContractInitialized = true;
@@ -657,7 +673,7 @@ class Controller {
             await this.createLedger((await storage.getItem('ledgerTransportType')) || 'hid');
         }
         const {address} = await this.ledgerApp.getAddress(ACCOUNT_NUMBER, true, this.ledgerApp.ADDRESS_FORMAT_USER_FRIENDLY + this.ledgerApp.ADDRESS_FORMAT_URL_SAFE + this.ledgerApp.ADDRESS_FORMAT_BOUNCEABLE);
-        console.log(address.toString(true, true, true));
+        this.debug(address.toString(true, true, true));
     }
 
     // SEND GRAMS
@@ -898,7 +914,6 @@ class Controller {
      * @return {Promise<void>}
      */
     async sendQuery(query) {
-        console.log('Send');
         const sendResponse = await query.send();
         if (sendResponse["@type"] === "ok") {
             // wait for transaction, then show Done popup
@@ -1058,6 +1073,9 @@ class Controller {
                 break;
             case 'toggleTestnet':
                 await this.toggleTestnet();
+                break;
+            case 'toggleDebug':
+                await this.toggleDebug();
                 break;
         }
     }

@@ -107,7 +107,8 @@ class View {
             try {
                 parsedTransferUrl = TonWeb.utils.parseTransferUrl(urlString);
             } catch (e) {
-                console.log(e);
+                $('#notify').innerText = 'Parse transfer URL error';
+                triggerClass($('#notify'), 'faded-show', 2000);
                 return;
             }
 
@@ -369,6 +370,27 @@ class View {
                 this.showAlert({
                     title: 'Are you sure you want to switch between mainnet/testnet?',
                     message: 'You can switch back the network by clicking on the version with the Shift key pressed',
+                    buttons: [
+                        {
+                            label: 'I\'M SURE',
+                            callback: () => {
+                                this.sendMessage('toggleTestnet');
+                            }
+                        },
+                        {
+                            label: 'BACK',
+                            callback: () => {
+                                this.closePopup();
+                            }
+                        },
+                    ]
+                });
+            }
+
+            if (e.altKey) {
+                this.showAlert({
+                    title: 'Are you sure you want to switch between clear console/debug mode?',
+                    message: 'You can switch back the clear console by clicking on the version with the Alt key pressed',
                     buttons: [
                         {
                             label: 'I\'M SURE',
@@ -1021,7 +1043,6 @@ class View {
                 break;
 
             case 'sendCheckFailed':
-                console.log('sendCheckFailed', this.popup);
                 if (this.popup) {
                     this.closePopup();
                 }

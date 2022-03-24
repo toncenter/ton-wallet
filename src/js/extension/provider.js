@@ -171,8 +171,6 @@
                                 }
                             }
 
-                            console.log('[TON Wallet] Start loading magic...');
-
                             addBadge('Loading <strong>TON magic</strong>...');
 
                             const responses = await Promise.all(filesToInject.map(async (fileName) => {
