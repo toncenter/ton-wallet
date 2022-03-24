@@ -508,7 +508,7 @@ class Controller {
 
                 this.sendToView('importCompleted', {state: 'success'});
             } catch (e) {
-                console.error(e);
+                this.debug(e);
                 this.sendToView('importCompleted', {state: 'failure'});
             }
         } else {
@@ -777,7 +777,7 @@ class Controller {
                 try {
                     await this.send(toAddress, amount, comment, privateKey, stateInit);
                 } catch (err) {
-                    console.error(err);
+                    this.debug(err);
                     this.sendToView('sendCheckFailed', { message: 'API request error' });
                     dAppPromise.resolve(false);
                 }
@@ -892,7 +892,7 @@ class Controller {
 
             }
         } catch (e) {
-            console.error(e);
+            this.debug(e);
             this.sendToView('closePopup');
             alert('Error sending');
         }

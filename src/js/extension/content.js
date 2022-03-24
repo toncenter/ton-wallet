@@ -1,13 +1,9 @@
-try {
-    const container = document.head || document.documentElement;
-    const scriptTag = document.createElement('script');
-    scriptTag.async = false;
-    scriptTag.src = chrome.runtime.getURL('/js/extension/provider.js');
-    container.insertBefore(scriptTag, container.children[0]);
-    container.removeChild(scriptTag);
-} catch (e) {
-    console.error('ton-wallet provider injection failed.', e);
-}
+const container = document.head || document.documentElement;
+const scriptTag = document.createElement('script');
+scriptTag.async = false;
+scriptTag.src = chrome.runtime.getURL('/js/extension/provider.js');
+container.insertBefore(scriptTag, container.children[0]);
+container.removeChild(scriptTag);
 
 const onPortMessage = data => {
     self.postMessage(data, '*'); // todo: origin

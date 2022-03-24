@@ -385,9 +385,7 @@ class View {
                         },
                     ]
                 });
-            }
-
-            if (e.altKey) {
+            } else if (e.altKey) {
                 this.showAlert({
                     title: 'Are you sure you want to switch between clear console/debug mode?',
                     message: 'You can switch back the clear console by clicking on the version with the Alt key pressed',
