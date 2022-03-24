@@ -53,10 +53,7 @@ const TARGETS_BUILD_DESTS = {
 /**
  * Globs for watch task
  */
-const WATCH_GLOBS = [
-    'build/**/*',
-    'src/**/*'
-];
+const WATCH_GLOBS = ['src/**/*'];
 
 /**
  * Port for web wallet start task HTTP server
