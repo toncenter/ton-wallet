@@ -1,6 +1,11 @@
 const { dest, src } = require('gulp');
 const { BUILD_DESTS } = require('./config');
 
+/**
+ * Build destinations and required files conformity
+ * keys  - build destination or "*" for all
+ * value - list of required files globs
+ */
 const BUILD_DESTS_GLOBS = {
     '*': [
         'src/assets/lottie/**/*',

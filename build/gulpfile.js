@@ -38,12 +38,10 @@ let startTasks;
 let packTasks;
 
 if (targetName === 'all') {
-    buildTasks = series(...Object.values(BUILD_DESTS).map(buildDest => {
-        return createBuildDestSeries(buildDest);
-    }));
-
+    buildTasks = series(
+        ...Object.values(BUILD_DESTS).map(buildDest => createBuildDestSeries(buildDest))
+    );
     startTasks = series(...Object.values(TARGETS).map(targetName => start.bind(null, targetName)));
-
     packTasks = series(...Object.values(TARGETS).map(targetName => pack.bind(null, targetName)));
 } else {
     buildTasks = createBuildDestSeries(TARGETS_BUILD_DESTS[targetName]);

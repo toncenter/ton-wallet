@@ -2,12 +2,15 @@ const { writeFileSync } = require('fs');
 const { BUILD_DESTS } = require('./config');
 const { version } = require('../../package.json');
 
-const matchesAll = [
+const matches = [
     'file://*/*',
     'http://*/*',
     'https://*/*'
 ];
 
+/**
+ * Manifest V2 content
+ */
 const base = {
     manifest_version: 2,
     version,
@@ -35,7 +38,7 @@ const base = {
         persistent: true
     },
     content_scripts: [{
-        matches: matchesAll,
+        matches,
         js: ['js/extension/content.js'],
         run_at: 'document_start',
         all_frames: true
@@ -49,25 +52,35 @@ const manifest = async buildDest => {
 
     const content = JSON.parse(JSON.stringify(base));
 
+    // Changes to manifest V3
     if (buildDest === BUILD_DESTS.V3) {
+        // Change manifest version
         content.manifest_version = 3;
 
-        content.permissions.push('tabs', 'storage', 'scripting');
+        // New storage API permissions
+        content.permissions.push('storage');
+        // Permissions for content script and provider update
+        content.permissions.push('tabs', 'scripting');
 
-        content.host_permissions = matchesAll;
+        // Matches for content script and provider update
+        content.host_permissions = matches;
 
+        // Browser action field name change
         content.action = content.browser_action;
         delete(content.browser_action);
 
+        // Background script field change
         const backgroundScript = content.background.scripts[0];
         content.background = { service_worker: backgroundScript };
 
+        // Web accessible resources field change
         const webAccessibleResources = content.web_accessible_resources;
         content.web_accessible_resources = [{
             resources: webAccessibleResources,
-            matches: matchesAll
+            matches: matches
         }];
 
+        // Extension page content security policy field change
         content.content_security_policy = { extension_pages: content.content_security_policy };
     }
 
