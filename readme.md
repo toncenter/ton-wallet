@@ -8,6 +8,19 @@ Application based on web technologies and available as:
 - Firefox Add-on (so far only manual build from source)
 - Safari extension (so far only manual build from source)
 
+Support browsers:
+- Chrome (and Chromium-based) 55+ for website version, 88+ for extension
+- Firefox 63+
+- Safari 11+ for website version, 14+ for extension
+- Safari iOS 11+
+- Opera 42+
+- Chrome for Android 55+
+- Android 5+ browser
+- Samsung Internet 6+
+- Opera Mobile 64+
+- UC Browser 12.12+
+- Firefox for Android 63+
+
 ## Security
 
 Private keys do not leave your device, the keys are stored in the browser memory, encrypted with a password that is entered during transaction generation.
