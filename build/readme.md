@@ -25,7 +25,7 @@ npm run {task} {target}
 Possible tasks:
 - `build` - create bundles in targets destination directories
 - `watch` - autorebuild bundles on sources change
-- `start` - open target in web-browser and autorebuild bundles on sources change
+- `start` - open target in web-browser and autorebuild bundles on sources change (available only for `web` target to test website wallet local)
 - `pack` - create bundles and prepare it to publuish-ready form
 
 Possible targets and bundle files destinations folder:
