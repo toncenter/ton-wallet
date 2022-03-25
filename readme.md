@@ -13,6 +13,7 @@ Support browsers:
 - Firefox 63+
 - Safari 11+ for website version, 14+ for extension
 - Safari iOS 11+
+- Edge 79+
 - Opera 42+
 - Chrome for Android 55+
 - Android 5+ browser
