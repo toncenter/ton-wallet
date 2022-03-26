@@ -8,6 +8,7 @@ const { BUILD_DESTS } = require('./config');
  */
 const BUILD_DESTS_GLOBS = {
     '*': [
+        'src/assets/fonts/**/*',
         'src/assets/lottie/**/*',
         'src/assets/ui/**/*',
         'src/libs/**/*'

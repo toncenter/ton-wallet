@@ -11,7 +11,7 @@ Application based on web technologies and available as:
 Support browsers:
 - Chrome (and Chromium-based) 55+ for website version, 88+ for extension
 - Firefox 63+
-- Safari 11+ for website version, 14+ for extension
+- Safari 11+ (MacOS 10.12+) for website version, 14+ for extension
 - Safari iOS 11+
 - Edge 79+
 - Opera 42+

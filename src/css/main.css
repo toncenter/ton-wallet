@@ -1,8 +1,33 @@
-/* COMMON */
+@font-face {
+    font-family: 'Mulish';
+    src: local('Mulish Regular'), local('Mulish-Regular'),
+         url('assets/fonts/mulish-regular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: block;
+}
+
+@font-face {
+    font-family: 'Mulish';
+    src: local('Mulish Bold'), local('Mulish-Bold'),
+         url('assets/fonts/mulish-bold.woff2') format('woff2');
+    font-weight: 700;
+    font-style: normal;
+    font-display: block;
+}
+
+html {
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+body, button, input, optgroup, select, textarea {
+    font-family: 'Mulish', sans-serif;
+}
 
 body {
     margin: 0;
-    font-family: Helvetica, Arial, sans-serif;
 }
 
 body.plugin {
@@ -82,7 +107,7 @@ input.error {
 }
 
 .input-label {
-    font-weight: bold;
+    font-weight: 700;
     color: #3CA4DB;
 }
 
@@ -98,7 +123,7 @@ button {
     border-radius: 2px;
     height: 39px;
     font-size: 15px;
-    font-weight: 500;
+    font-weight: 700;
 }
 
 .btn-lite {
@@ -106,7 +131,7 @@ button {
     color: #3CA4DB;
     height: 40px;
     font-size: 15px;
-    font-weight: bold;
+    font-weight: 700;
     background: none;
 }
 
@@ -301,7 +326,7 @@ button {
 
 .screen-title {
     font-size: 20px;
-    font-weight: bold;
+    font-weight: 700;
 }
 
 .screen-text {
@@ -350,7 +375,7 @@ button {
 /* IMPORT && BACKUP && CONFIRM */
 
 #import .btn-lite {
-    font-weight: normal;
+    font-weight: 400;
     font-size: 14px;
     margin-bottom: 10px;
 }
@@ -520,7 +545,7 @@ button {
     top: 70px;
     left: 50%;
     margin-left: -75px;
-    font-weight: bold;
+    font-weight: 700;
     font-size: 20px;
 }
 
@@ -609,7 +634,7 @@ button {
 }
 
 .date-separator {
-    font-weight: bold;
+    font-weight: 700;
     padding-top: 10px;
     padding-bottom: 10px;
     font-size: 14px;
@@ -632,7 +657,7 @@ button {
 }
 
 .tx-amount {
-    font-weight: bold;
+    font-weight: 700;
     font-size: 16px;
     color: #D74D4D;
 }
@@ -720,7 +745,7 @@ button {
 }
 
 .popup-title {
-    font-weight: bold;
+    font-weight: 700;
     margin-bottom: 20px;
     font-size: 17px;
 }
@@ -828,7 +853,7 @@ button {
 #receive .btn-lite {
     text-align: center;
     width: 100%;
-    font-weight: normal;
+    font-weight: 400;
 }
 
 #receive .btn-lite-first {
@@ -876,7 +901,7 @@ button {
 #invoice .btn-lite {
     text-align: center;
     width: 100%;
-    font-weight: normal;
+    font-weight: 400;
 }
 
 #invoice .btn-blue {
@@ -1010,11 +1035,11 @@ button {
 }
 
 .font-weight-normal {
-    font-weight: normal;
+    font-weight: 400;
 }
 
 .font-weight-bold {
-    font-weight: bold;
+    font-weight: 700;
 }
 
 .text-danger {
