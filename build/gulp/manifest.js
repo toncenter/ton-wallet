@@ -44,7 +44,7 @@ const base = {
         all_frames: true
     }],
     web_accessible_resources: ['js/extension/provider.js'],
-    content_security_policy: "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https://toncenter.com/api/v2/jsonRPC https://testnet.toncenter.com/api/v2/jsonRPC"
+    content_security_policy: "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src https://toncenter.com/api/v2/jsonRPC https://testnet.toncenter.com/api/v2/jsonRPC"
 };
 
 const manifest = async buildDest => {
