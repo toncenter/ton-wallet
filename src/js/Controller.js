@@ -29,19 +29,24 @@ const createDappPromise = () => {
 };
 
 const showExtensionWindow = () => {
-    return new Promise(resolve => {
+    return new Promise(async resolve => {
         if (extensionWindowId > -1) {
             chrome.windows.update(extensionWindowId, { focused: true });
             return resolve();
         }
 
-        chrome.windows.create({
+        const windowState = (await storage.getItem('windowState')) || {};
+
+        windowState.top = windowState.top || 0;
+        windowState.left = windowState.left || 0;
+        windowState.height = windowState.height || 800;
+        windowState.width = windowState.width || 480;
+
+        chrome.windows.create(Object.assign(windowState, {
             url: 'index.html',
             type: 'popup',
-            focused: true,
-            height: 800,
-            width: 480
-        }, window => {
+            focused: true
+        }), window => {
             extensionWindowId = window.id;
             resolve();
         });
@@ -1076,6 +1081,16 @@ class Controller {
                 break;
             case 'toggleDebug':
                 await this.toggleDebug();
+                break;
+            case 'onWindowUpdate':
+                await storage.setItem('windowState', {
+                    top: params.top,
+                    left: params.left,
+                    // -2 need for remove frames size
+                    // TODO: check in linux and macos
+                    height: params.height - 2,
+                    width: params.width - 2
+                });
                 break;
         }
     }

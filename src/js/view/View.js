@@ -16,6 +16,8 @@ import {
 import {initLotties, toggleLottie, lotties} from "./Lottie.js";
 import DropDown from "./DropDown.js";
 
+const IS_EXTENSION = !!(self.chrome && chrome.runtime && chrome.runtime.onConnect);
+
 const toNano = TonWeb.utils.toNano;
 const formatNanograms = TonWeb.utils.fromNano;
 const BN = TonWeb.utils.BN;
@@ -1181,7 +1183,7 @@ class View {
 
 window.view = new View(TonWeb.mnemonic.wordlists.EN);
 
-try {
+if (IS_EXTENSION) {
     let port;
 
     const connectToBackground = () => {
@@ -1201,8 +1203,30 @@ try {
     }
 
     connectToBackground();
-} catch (e) {
 
+    (async () => {
+        let prevWindow = await chrome.windows.getCurrent();
+
+        setInterval(async () => {
+            const currentWindow = await chrome.windows.getCurrent();
+
+            if (
+                currentWindow.top === prevWindow.top &&
+                currentWindow.left === prevWindow.left &&
+                currentWindow.height === prevWindow.height &&
+                currentWindow.width === prevWindow.width
+            ) return;
+
+            window.view.sendMessage('onWindowUpdate', {
+                top: currentWindow.top,
+                left: currentWindow.left,
+                height: currentWindow.height,
+                width: currentWindow.width
+            });
+
+            prevWindow = currentWindow;
+        }, 500);
+    })();
 }
 
 if (window.top == window && window.console) {
