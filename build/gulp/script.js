@@ -24,7 +24,7 @@ const script = (buildDest, done) => {
         },
     }, (err, stats) => {
         if (err) return done(err);
-        if (stats.hasErrors()) return done(new Error(stats.toJson().errors));
+        if (stats.hasErrors()) return done(new Error(stats));
 
         done();
     });
