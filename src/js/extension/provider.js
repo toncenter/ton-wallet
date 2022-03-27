@@ -141,6 +141,8 @@
                         this._emitNotification(message.params);
                     } else if (method === 'ton_accounts') { // todo
                         this._emitAccountsChanged(message.params);
+                    } else if (method === 'ton_doProtocol') {
+                        this._uriHandlerEnable = message.params;
                     } else if (method === 'ton_doMagic') {
                         const isTurnedOn = message.params;
 
@@ -269,7 +271,44 @@
 
     window.tonProtocolVersion = 1;
     window.ton = new TonProvider();
-    if (!havePrevInstance) window.dispatchEvent(new Event('tonready'));
+    if (!havePrevInstance) {
+        window.dispatchEvent(new Event('tonready'));
+
+        /**
+         * URI handler
+         */
+
+        const uriHandlerEnable = () => {
+            return window.ton && window.ton._uriHandlerEnable;
+        };
+
+        window.addEventListener('click', e => {
+            if (!uriHandlerEnable()) return;
+
+            for (let i = 0, l = e.path.length; i < l; i++) {
+                const element = e.path[i];
+                if (element.nodeName !== 'A') continue;
+
+                if (element.href.startsWith('ton://')) {
+                    e.preventDefault();
+                    window.ton.send('openTransferUrl', [element.href]);
+                }
+
+                break;
+            }
+        });
+
+        const originalOpen = window.open;
+
+        window.open = (...args) => {
+            if (!uriHandlerEnable() || typeof(args[0]) !== 'string' || !args[0].startsWith('ton://')) {
+                return originalOpen(...args);
+            }
+
+            window.ton.send('openTransferUrl', [args[0]]);
+            return null;
+        };
+    }
 
     function toggleMagicBadge(isTurnedOn) {
         if (isTurnedOn) {

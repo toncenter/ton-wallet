@@ -286,9 +286,16 @@ class View {
         });
 
         if (IS_FIREFOX) {
+            toggle($('#menu_protocol'), false);
             toggle($('#menu_magic'), false);
             toggle($('.about-magic'), false);
         }
+
+        $('#menu_protocol').addEventListener('click', () => {
+            $('#menu_protocol .dropdown-toggle').classList.toggle('toggle-on');
+            const isTurnedOn = $('#menu_protocol .dropdown-toggle').classList.contains('toggle-on');
+            this.sendMessage('onProtocolClick', isTurnedOn);
+        });
 
         $('#menu_magic').addEventListener('click', () => {
             $('#menu_magic .dropdown-toggle').classList.toggle('toggle-on');
@@ -1002,6 +1009,11 @@ class View {
                 this.isLedger = params;
                 break;
 
+            case 'setIsProtocol':
+                const isProtocolTurnedOn = params;
+                $('#menu_protocol .dropdown-toggle').classList.toggle('toggle-on', isProtocolTurnedOn && !IS_FIREFOX);
+                break;
+
             case 'setIsMagic':
                 const isTurnedOn = params;
                 $('#menu_magic .dropdown-toggle').classList.toggle('toggle-on', isTurnedOn && !IS_FIREFOX);
@@ -1111,6 +1123,7 @@ class View {
                         if (params.myAddress) {
                             this.myAddress = params.myAddress;
                             this.setMyAddress(params.myAddress);
+                            this.port.postMessage({ method: 'ready' });
                         }
                         break;
                 }
@@ -1144,6 +1157,16 @@ class View {
                         this.clearSend();
                         if (params.toAddr) {
                             $('#toWalletInput').value = params.toAddr;
+                        }
+                        if (params.url) {
+                            const parsed = TonWeb.utils.parseTransferUrl(params.url);
+                            $('#toWalletInput').value = parsed.address;
+                            if (parsed.amount) {
+                                $('#amountInput').value = TonWeb.utils.fromNano(new BN(parsed.amount));
+                            }
+                            if (parsed.text) {
+                                $('#commentInput').value = parsed.text;
+                            }
                         }
                         toggle($('#commentInput'), !this.isLedger);
                         $('#toWalletInput').focus();

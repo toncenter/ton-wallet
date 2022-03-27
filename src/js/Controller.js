@@ -25,32 +25,44 @@ const createDappPromise = () => {
     dAppPromise.reject = (...args) => {
         reject(...args);
         dAppPromise = null;
-    };;
+    };
 };
 
-const showExtensionWindow = () => {
-    return new Promise(async resolve => {
-        if (extensionWindowId > -1) {
-            chrome.windows.update(extensionWindowId, { focused: true });
-            return resolve();
-        }
+let popupReadyPromise;
 
-        const windowState = (await storage.getItem('windowState')) || {};
+const showExtensionWindow = async () => {
+    let resolve;
 
-        windowState.top = windowState.top || 0;
-        windowState.left = windowState.left || 0;
-        windowState.height = windowState.height || 800;
-        windowState.width = windowState.width || 480;
-
-        chrome.windows.create(Object.assign(windowState, {
-            url: 'index.html',
-            type: 'popup',
-            focused: true
-        }), window => {
-            extensionWindowId = window.id;
-            resolve();
-        });
+    popupReadyPromise = new Promise(localResolve => {
+        resolve = localResolve;
     });
+
+    popupReadyPromise.resolve = (...args) => {
+        resolve(...args);
+        dAppPromise = null;
+    };
+
+    if (extensionWindowId > -1) {
+        chrome.windows.update(extensionWindowId, { focused: true });
+        return;
+    }
+
+    const windowState = (await storage.getItem('windowState')) || {};
+
+    windowState.top = windowState.top || 0;
+    windowState.left = windowState.left || 0;
+    windowState.height = windowState.height || 800;
+    windowState.width = windowState.width || 480;
+
+    chrome.windows.create(Object.assign(windowState, {
+        url: 'index.html',
+        type: 'popup',
+        focused: true
+    }), window => {
+        extensionWindowId = window.id;
+    });
+
+    return popupReadyPromise;
 };
 
 const BN = TonWeb.utils.BN;
@@ -594,13 +606,19 @@ class Controller {
         }
         this.updateIntervalId = setInterval(() => this.update(), 5000);
         this.update(true);
+        // TODO: check is this need in every controller instance create,
+        //       because background go to inactive after ~5min idle
         this.sendToDapp('ton_accounts', [this.myAddress]);
     }
 
-    async initDapp() {
-        this.sendToDapp('ton_accounts', this.myAddress ? [this.myAddress] : []);
-        this.doMagic((await storage.getItem('magic')) === 'true');
-        this.doProxy((await storage.getItem('proxy')) === 'true');
+    async initDapp(port) {
+        this.sendToDappInstance(port, 'ton_accounts', this.myAddress ? [this.myAddress] : []);
+        this.sendToDappInstance(
+            port, 'ton_doProtocol', (await storage.getItem('protocol')) === 'true'
+        );
+        this.sendToDappInstance(
+            port, 'ton_doMagic', (await storage.getItem('magic')) === 'true'
+        );
     }
 
     async initView() {
@@ -612,6 +630,7 @@ class Controller {
                 this.sendToView('setBalance', {balance: this.balance.toString(), txs: this.transactions});
             }
         }
+        this.sendToView('setIsProtocol', (await storage.getItem('protocol')) === 'true');
         this.sendToView('setIsMagic', (await storage.getItem('magic')) === 'true');
         this.sendToView('setIsProxy', (await storage.getItem('proxy')) === 'true');
         this.sendToView('setIsTestnet', this.isTestnet);
@@ -735,17 +754,17 @@ class Controller {
         this.sendToView('closePopup');
 
         if (!amount.gt(new BN(0))) {
-            this.sendToView('sendCheckFailed', { message: 'dApp send invalid amount' });
+            this.sendToView('sendCheckFailed', { message: 'Invalid amount' });
             return false;
         }
         if (this.balance.lt(amount)) {
             this.sendToView('sendCheckFailed', {
-                message: 'Not enough balance to pay dApp transaction'
+                message: 'Not enough balance to pay transaction'
             });
             return false;
         }
         if (!Address.isValid(toAddress)) {
-            this.sendToView('sendCheckFailed', { message: 'dApp send invalid address' });
+            this.sendToView('sendCheckFailed', { message: 'Invalid address' });
             return false;
         }
 
@@ -952,6 +971,14 @@ class Controller {
         this.sendToDapp('ton_accounts', []);
     }
 
+    doProtocol(enabled) {
+        try {
+            this.sendToDapp('ton_doProtocol', enabled);
+        } catch (e) {
+
+        }
+    }
+
     // MAGIC
 
     doMagic(enabled) {
@@ -1001,6 +1028,9 @@ class Controller {
 
     async onViewMessage(method, params) {
         switch (method) {
+            case 'ready':
+                if (popupReadyPromise) popupReadyPromise.resolve();
+                break;
             case 'showScreen':
                 switch (params.name) {
                     case 'created':
@@ -1068,6 +1098,10 @@ class Controller {
             case 'onClosePopup':
                 this.processingVisible = false;
                 break;
+            case 'onProtocolClick':
+                await storage.setItem('protocol', params ? 'true' : 'false');
+                this.doProtocol(params);
+                break;
             case 'onMagicClick':
                 await storage.setItem('magic', params ? 'true' : 'false');
                 this.doMagic(params);
@@ -1104,6 +1138,13 @@ class Controller {
                 message: {jsonrpc: '2.0', method: method, params: params}
             }));
         });
+    }
+
+    sendToDappInstance(port, method, params) {
+        port.postMessage(JSON.stringify({
+            type: 'gramWalletAPI',
+            message: {jsonrpc: '2.0', method: method, params: params}
+        }));
     }
 
     requestPublicKey(needQueue) {
@@ -1173,6 +1214,11 @@ class Controller {
             case 'flushMemoryCache':
                 await chrome.webRequest.handlerBehaviorChanged();
                 return true;
+            case 'openTransferUrl':
+                this.debug('openTransferUrl', params[0]);
+                await showExtensionWindow();
+                this.sendToView('showPopup', {name: 'send', url: params[0]});
+                return true;
         }
     }
 }
@@ -1186,7 +1232,7 @@ if (IS_EXTENSION) {
             port.onMessage.addListener(async (msg, port) => {
                 if (msg.type === 'gramWalletAPI_ton_provider_connect') {
                     controller.whenReady.then(() => {
-                        controller.initDapp();
+                        controller.initDapp(port);
                     });
                 }
 
