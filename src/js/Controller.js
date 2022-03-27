@@ -614,7 +614,7 @@ class Controller {
     async initDapp(port) {
         this.sendToDappInstance(port, 'ton_accounts', this.myAddress ? [this.myAddress] : []);
         this.sendToDappInstance(
-            port, 'ton_doProtocol', (await storage.getItem('protocol')) === 'true'
+            port, 'ton_doProtocol', (await storage.getItem('protocol')) !== 'false'
         );
         this.sendToDappInstance(
             port, 'ton_doMagic', (await storage.getItem('magic')) === 'true'
@@ -630,7 +630,7 @@ class Controller {
                 this.sendToView('setBalance', {balance: this.balance.toString(), txs: this.transactions});
             }
         }
-        this.sendToView('setIsProtocol', (await storage.getItem('protocol')) === 'true');
+        this.sendToView('setIsProtocol', (await storage.getItem('protocol')) !== 'false');
         this.sendToView('setIsMagic', (await storage.getItem('magic')) === 'true');
         this.sendToView('setIsProxy', (await storage.getItem('proxy')) === 'true');
         this.sendToView('setIsTestnet', this.isTestnet);
