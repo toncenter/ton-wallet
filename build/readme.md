@@ -26,10 +26,11 @@ Possible tasks:
 - `build` - create bundles in targets destination directories
 - `watch` - autorebuild bundles on sources change
 - `start` - open target in web-browser and autorebuild bundles on sources change (only for `web` target to test website wallet local)
-- `pack` - create bundles and prepare it to publuish-ready form
+- `pack` - create bundles and prepare it to publish-ready form (`web` target not available because there is nothing to pack)
+- `publish` - create bundles, prepare and publish it (only `web` target available now)
 
 Possible targets and bundle files destinations folder:
-- `web` - docs
+- `web` - artifacts/web
 - `chromium` - artifacts/v3
 - `firefox` - artifacts/v2
 - `safari` - artifacts/v2
@@ -41,7 +42,10 @@ Possible targets for pack task and output files destinations:
 - `safari` - build xcode project to ton-wallet/artifacts/safari
 - `all` - run all targets
 
-Where {version} - value from package.json "version" field
+Where {version} - value from package.json "version" field.
+
+Publishing information
+- `web` - push bundle files destinations folder to `gh-pages` branch of current repository
 
 ## Chromium-based browsers Extension Developer Mode
 

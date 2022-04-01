@@ -6,6 +6,7 @@ const css = require('./gulp/css');
 const html = require('./gulp/html');
 const manifest = require('./gulp/manifest');
 const pack = require('./gulp/pack');
+const publish = require('./gulp/publish');
 const remove = require('./gulp/remove');
 const script = require('./gulp/script');
 const start = require('./gulp/start');
@@ -36,20 +37,23 @@ const createBuildDestSeries = buildDest => {
 let buildTasks;
 let startTasks;
 let packTasks;
+let publishTasks;
 
 if (targetName === 'all') {
     buildTasks = series(
         ...Object.values(BUILD_DESTS).map(buildDest => createBuildDestSeries(buildDest))
     );
-    startTasks = series(...Object.values(TARGETS).map(targetName => start.bind(null, targetName)));
-    packTasks = series(...Object.values(TARGETS).map(targetName => pack.bind(null, targetName)));
+
+    const targetsNames = Object.values(TARGETS);
+    startTasks = series(...targetsNames.map(targetName => start.bind(null, targetName)));
+    packTasks = series(...targetsNames.map(targetName => pack.bind(null, targetName)));
+    publishTasks = series(...targetsNames.map(targetName => publish.bind(null, targetName)));
 } else {
     buildTasks = createBuildDestSeries(TARGETS_BUILD_DESTS[targetName]);
     startTasks = start.bind(null, targetName);
     packTasks = pack.bind(null, targetName);
+    publishTasks = publish.bind(null, targetName);
 }
-
-task('dev', buildTasks);
 
 task('watch', watch.bind(null, WATCH_GLOBS, { ignoreInitial: false }, buildTasks));
 
@@ -58,3 +62,5 @@ task('start', series(buildTasks, startTasks, watch.bind(null, WATCH_GLOBS, build
 task('build', buildTasks);
 
 task('pack', series(buildTasks, packTasks));
+
+task('publish', series(buildTasks, packTasks, publishTasks));

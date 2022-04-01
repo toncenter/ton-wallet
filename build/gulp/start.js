@@ -63,7 +63,7 @@ const start = async targetName => {
 
     const port = +process.env.START_WEB_PORT || START_WEB_PORT;
 
-    await startServer(port, 'docs');
+    await startServer(port, 'artifacts/web');
 
     const address = `http://localhost:${port}`;
     console.log(`App available on ${address}`);

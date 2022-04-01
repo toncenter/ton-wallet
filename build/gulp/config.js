@@ -35,7 +35,7 @@ const TARGETS = {
  * FIREFOX and SAFARI require V2 build destination
  */
 const BUILD_DESTS = {
-    WEB: 'docs',
+    WEB: 'artifacts/web',
     V3: 'artifacts/v3',
     V2: 'artifacts/v2'
 };
