@@ -9,9 +9,9 @@
 
 @font-face {
     font-family: 'Mulish';
-    src: local('Mulish Bold'), local('Mulish-Bold'),
-         url('assets/fonts/mulish-bold.woff2') format('woff2');
-    font-weight: 700;
+    src: local('Mulish Medium'), local('Mulish-Medium'),
+        url('assets/fonts/mulish-medium.woff2') format('woff2');
+    font-weight: 500;
     font-style: normal;
     font-display: block;
 }
@@ -31,7 +31,7 @@ body {
 }
 
 body.plugin {
-    min-width: 400px;
+    min-width: 460px;
     min-height: 600px;
 }
 
@@ -107,7 +107,7 @@ input.error {
 }
 
 .input-label {
-    font-weight: 700;
+    font-weight: 500;
     color: #3CA4DB;
 }
 
@@ -123,7 +123,7 @@ button {
     border-radius: 2px;
     height: 39px;
     font-size: 15px;
-    font-weight: 700;
+    font-weight: 500;
 }
 
 .btn-lite {
@@ -131,7 +131,7 @@ button {
     color: #3CA4DB;
     height: 40px;
     font-size: 15px;
-    font-weight: 700;
+    font-weight: 500;
     background: none;
 }
 
@@ -326,7 +326,7 @@ button {
 
 .screen-title {
     font-size: 20px;
-    font-weight: 700;
+    font-weight: 500;
 }
 
 .screen-text {
@@ -545,7 +545,7 @@ button {
     top: 70px;
     left: 50%;
     margin-left: -75px;
-    font-weight: 700;
+    font-weight: 500;
     font-size: 20px;
 }
 
@@ -568,6 +568,18 @@ button {
     padding-bottom: 10px;
     border-radius: 4px;
     min-width: 180px;
+}
+
+#localesDropdown {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    background: white;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    border-radius: 4px;
+    min-width: 180px;
+    transform: translate(-50%, -50%);
 }
 
 .dropdown-item {
@@ -634,7 +646,7 @@ button {
 }
 
 .date-separator {
-    font-weight: 700;
+    font-weight: 500;
     padding-top: 10px;
     padding-bottom: 10px;
     font-size: 14px;
@@ -657,7 +669,7 @@ button {
 }
 
 .tx-amount {
-    font-weight: 700;
+    font-weight: 500;
     font-size: 16px;
     color: #D74D4D;
 }
@@ -730,6 +742,7 @@ button {
 
 .popup.faded-show,
 #menuDropdown.faded-show,
+#localesDropdown.faded-show,
 #modal.faded-show {
     opacity: 1;
     visibility: inherit !important;
@@ -738,6 +751,7 @@ button {
 
 .popup.faded-hide,
 #menuDropdown.faded-hide,
+#localesDropdown.faded-hide,
 #modal.faded-hide {
     opacity: 0;
     visibility: hidden;
@@ -745,7 +759,7 @@ button {
 }
 
 .popup-title {
-    font-weight: 700;
+    font-weight: 500;
     margin-bottom: 20px;
     font-size: 17px;
 }
@@ -801,6 +815,10 @@ button {
 .popup-footer {
     text-align: right;
     margin-top: 10px;
+}
+
+.popup-footer .btn-lite {
+    margin-left: 15px;
 }
 
 .popup .btn-blue {
@@ -870,7 +888,7 @@ button {
     margin-top: 20px;
 }
 
-#sendBalance {
+.sendBalance {
     position: absolute;
     right: 0;
     top: 0;
@@ -939,7 +957,7 @@ button {
     margin-bottom: 8px;
 }
 
-#transactionFee, #transactionStorageFee {
+.transactionFee, .transactionStorageFee {
     color: #999;
     text-align: center;
 }
@@ -1038,8 +1056,8 @@ button {
     font-weight: 400;
 }
 
-.font-weight-bold {
-    font-weight: 700;
+.font-weight-medium {
+    font-weight: 500;
 }
 
 .text-danger {
@@ -1066,6 +1084,10 @@ button {
     background-image: url('../assets/ui/refresh.svg')
 }
 
+.bg-locale {
+    background-image: url('../assets/ui/locale.svg')
+}
+
 .w-100 {
     width: 100%;
 }
@@ -1080,6 +1102,10 @@ button {
 
 .mb-20 {
     margin-bottom: 20px;
+}
+
+.mt-auto {
+    margin-top: auto;
 }
 
 .mt-10 {

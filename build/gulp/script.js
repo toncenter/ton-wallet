@@ -9,10 +9,10 @@ const script = (buildDest, done) => {
             View: './src/js/view/View.js'
         },
         plugins: [new webpack.DefinePlugin({
-            TONCENTER_API_KEY_WEB_MAIN: `'${process.env.TONCENTER_API_KEY_WEB_MAIN}'`,
-            TONCENTER_API_KEY_WEB_TEST: `'${process.env.TONCENTER_API_KEY_WEB_TEST}'`,
-            TONCENTER_API_KEY_EXT_MAIN: `'${process.env.TONCENTER_API_KEY_EXT_MAIN}'`,
-            TONCENTER_API_KEY_EXT_TEST: `'${process.env.TONCENTER_API_KEY_EXT_TEST}'`
+            __TONCENTER_API_KEY_WEB_MAIN__: `'${process.env.TONCENTER_API_KEY_WEB_MAIN}'`,
+            __TONCENTER_API_KEY_WEB_TEST__: `'${process.env.TONCENTER_API_KEY_WEB_TEST}'`,
+            __TONCENTER_API_KEY_EXT_MAIN__: `'${process.env.TONCENTER_API_KEY_EXT_MAIN}'`,
+            __TONCENTER_API_KEY_EXT_TEST__: `'${process.env.TONCENTER_API_KEY_EXT_TEST}'`
         })],
         optimization: {
             concatenateModules: true,

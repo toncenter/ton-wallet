@@ -1,8 +1,14 @@
-/**
- *  `localStorage` polyfill for Chrome Extension environment
- */
+const unclearedKeys = [
+    'windowState',
+    'locale',
+    'isTestnet',
+    'isDebug'
+];
 
-export default self.localStorage || {
+/**
+ * localStorage polyfill for chromium-based browsers extension environment
+ */
+const storage = self.localStorage || {
     setItem(key, value) {
         return chrome.storage.local.set({[key]: value});
     },
@@ -18,5 +24,18 @@ export default self.localStorage || {
 
     clear() {
         return chrome.storage.local.clear();
-    },
+    }
 };
+
+const clearStorage = async () => {
+    const saved = {};
+    for (let key of unclearedKeys) saved[key] = await storage.getItem(key);
+
+    await storage.clear();
+
+    for (const [key, value] of Object.entries(saved)) {
+        await storage.setItem(key, value);
+    }
+};
+
+export { storage, clearStorage }

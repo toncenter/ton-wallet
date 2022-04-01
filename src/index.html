@@ -50,35 +50,33 @@
 
     <div id="start" class="screen visibility-hidden">
         <div class="middle">
-            <div class="middle-content">
+            <div class="middle-content mt-auto">
                 <tgs-player data-name="start" src="assets/lottie/intro.tgs"
                             width="120" height="120"
                             class="screen-lottie">
                 </tgs-player>
 
-                <div class="screen-title">TON Wallet</div>
-                <div class="screen-text">
-                    TON wallet allows you to make fast and<br>
-                    secure blockchain-based payments<br>
-                    without intermediaries.
-                </div>
+                <div class="screen-title mb-20">TON Wallet</div>
+                <div class="screen-text" data-l="start.description"></div>
 
                 <div class="mt-95">
-                    <button id="start_createBtn" class="btn-blue screen-btn">Create My Wallet</button>
-                </div>
-                <div class="mt-20">
-                    <button id="start_importBtn" class="btn-lite font-weight-normal">Import existing wallet
-                    </button>
+                    <button id="start_createBtn" class="btn-blue screen-btn" data-l="start.create"></button>
                 </div>
                 <div class="mt-10">
-                    <button id="start_importLedgerHidBtn" class="btn-lite font-weight-normal">Connect Ledger
-                    </button>
+                    <button id="start_importBtn" class="btn-lite font-weight-normal" data-l="start.import"></button>
+                </div>
+                <div class="mt-10">
+                    <button id="start_importLedgerHidBtn" class="btn-lite font-weight-normal" data-l="start.ledger"></button>
                 </div>
 
         <!--            <div class="mt-10">-->
-        <!--                <button id="start_importLedgerBleBtn" class="btn-lite font-weight-normal">Connect Ledger via Bluetooth-->
-        <!--                </button>-->
+        <!--                <button id="start_importLedgerBleBtn" class="btn-lite font-weight-normal" data-l="start.ledger_bluetooth"></button>-->
         <!--            </div>-->
+            </div>
+            <div class="mt-auto mb-10">
+                <button id="start_localeButton" class="btn-lite font-weight-normal">
+                    Change language
+                </button>
             </div>
         </div>
     </div>
@@ -90,26 +88,17 @@
         <div class="middle">
             <div class="middle-content">
 
-                <div class="screen-title mt-80">24 Secret Words</div>
-                <div class="screen-text mb-10">
-                    Please restore access to your <b>non-hardware</b> wallet by<br>
-                    entering the 24 secret words you wrote<br>
-                    down when creating the wallet.
-                </div>
+                <div class="screen-title mt-80 mb-20" data-l="common.24_secret_words"></div>
+                <div class="screen-text mb-10" data-l="import.description"></div>
 
-                <button id="import_alertBtn" class="btn-lite">I don't have them</button>
+                <button id="import_alertBtn" class="btn-lite" data-l="import.alert"></button>
 
-                <div id="importWords">
+                <div id="importWords"></div>
 
-                </div>
-
-                <div id="wordsPopup" class="display-none">
-                </div>
+                <div id="wordsPopup" class="display-none"></div>
 
                 <div class="clear-both">
-                    <button id="import_continueBtn" class="btn-blue screen-btn mt-30 mb-20">
-                        Continue
-                    </button>
+                    <button id="import_continueBtn" class="btn-blue screen-btn mt-30 mb-20" data-l="common.continue"></button>
                 </div>
             </div>
         </div>
@@ -125,23 +114,14 @@
                             class="screen-lottie">
                 </tgs-player>
 
-                <div class="screen-title">Congratulations</div>
+                <div class="screen-title mb-20" data-l="create.title"></div>
 
-                <div class="screen-text">
-                    Your TON wallet has just been created.<br>
-                    Only you control it.
-                </div>
+                <div class="screen-text" data-l="create.description"></div>
 
-                <div class="screen-text">
-                    To be able to always have access to it,<br>
-                    please set up a secure password and write<br>
-                    down secret words.
-                </div>
+                <div class="screen-text" data-l="create.instruction"></div>
 
                 <div>
-                    <button id="createdContinueButton" class="btn-blue screen-btn mt-18 mb-20">
-                        Continue
-                    </button>
+                    <button id="createdContinueButton" class="btn-blue screen-btn mt-18 mb-20" data-l="common.continue"></button>
                 </div>
             </div>
         </div>
@@ -153,31 +133,19 @@
         <div class="middle">
             <div class="middle-content">
                 <tgs-player data-name="backup" src="assets/lottie/paper.tgs"
-                            width="120" height="120"
-                            class="screen-lottie mt-30">
+                            width="120" height="120" class="screen-lottie mt-30">
                 </tgs-player>
 
-                <div class="screen-title">24 secret words</div>
+                <div class="screen-title mb-20" data-l="common.24_secret_words"></div>
 
-                <div class="screen-text">
-                    Write down these 24 words in the correct<br>
-                    order and store them in secret place.
-                </div>
+                <div class="screen-text" data-l="save.description"></div>
 
-                <div class="screen-text">
-                    Use these secret words to restore access to<br>
-                    your wallet if you lose your password or<br>
-                    access to this device.
-                </div>
+                <div class="screen-text" data-l="save.instruction"></div>
 
-                <div id="createWords" class="mt-10">
-
-                </div>
+                <div id="createWords" class="mt-10"></div>
 
                 <div class="clear-both">
-                    <button id="backup_continueBtn" class="btn-blue screen-btn mt-26 mb-20">
-                        Continue
-                    </button>
+                    <button id="backup_continueBtn" class="btn-blue screen-btn mt-26 mb-20" data-l="common.continue"></button>
                 </div>
             </div>
         </div>
@@ -195,14 +163,12 @@
                             class="screen-lottie mt-30">
                 </tgs-player>
 
-                <div class="screen-title">Test Time!</div>
+                <div class="screen-title mb-20" data-l="confirm.title"></div>
 
-                <div class="screen-text">
-                    Now let's check that you wrote your secret<br/>words correctly.<br/>
-                </div>
+                <div class="screen-text" data-l="confirm.description"></div>
 
                 <div id="confirmWordsNums" class="screen-text">
-                    Please enter the words <span></span>, <span></span> and <span></span> below:
+                    <span data-l="confirm.instruction"></span> <span class="js-confirm-number"></span>, <span class="js-confirm-number"></span> <span data-l="confirm.and"></span> <span class="js-confirm-number"></span> <span data-l="confirm.below"></span>:
                 </div>
 
                 <div id="confirmWords">
@@ -212,9 +178,7 @@
                 </div>
 
                 <div class="clear-both">
-                    <button id="wordsConfirm_continueBtn" class="btn-blue screen-btn mt-26 mb-20">
-                        Continue
-                    </button>
+                    <button id="wordsConfirm_continueBtn" class="btn-blue screen-btn mt-26 mb-20" data-l="common.continue"></button>
                 </div>
             </div>
         </div>
@@ -230,24 +194,19 @@
                             class="screen-lottie">
                 </tgs-player>
 
-                <div class="screen-title">Secure Password</div>
+                <div class="screen-title mb-20" data-l="create_password.title"></div>
 
-                <div class="screen-text">
-                    Please choose a secure password<br>
-                    for confirming your payments
-                </div>
+                <div class="screen-text" data-l="create_password.description"></div>
 
                 <div class="mt-54">
-                    <input id="createPassword_input" placeholder="Enter your password" type="password">
+                    <input id="createPassword_input" data-l="create_password.enter" type="password">
                 </div>
                 <div>
-                    <input id="createPassword_repeatInput" placeholder="Repeat your password" type="password">
+                    <input id="createPassword_repeatInput" data-l="create_password.repeat" type="password">
                 </div>
 
                 <div>
-                    <button id="createPassword_continueBtn" class="btn-blue screen-btn mt-38 mb-20">
-                        Continue
-                    </button>
+                    <button id="createPassword_continueBtn" class="btn-blue screen-btn mt-38 mb-20" data-l="common.continue"></button>
                 </div>
             </div>
         </div>
@@ -263,18 +222,12 @@
                             class="screen-lottie">
                 </tgs-player>
 
-                <div class="screen-title">Ready to go!</div>
+                <div class="screen-title mb-20" data-l="ready.title"></div>
 
-                <div class="screen-text">
-                    You're all set. Now you have a wallet that<br>
-                    only you control - directly, without<br>
-                    middlemen or bankers.
-                </div>
+                <div class="screen-text" data-l="ready.description"></div>
 
                 <div>
-                    <button id="readyToGo_continueBtn" class="btn-blue screen-btn mt-170 mb-20">
-                        View My Wallet
-                    </button>
+                    <button id="readyToGo_continueBtn" class="btn-blue screen-btn mt-170 mb-20" data-l="ready.continue"></button>
                 </div>
             </div>
         </div>
@@ -293,21 +246,21 @@
             </div>
 
             <div id="balance">💎</div>
-            <div class="your-balance">Your balance</div>
+            <div class="your-balance"></div>
 
 <!--            <button id="main_buyBtn" class="btn-blue">-->
 <!--                <div class="btn-icon bg-down-left"></div>-->
-<!--                Buy-->
+<!--                <span data-l="main.buy"></span>-->
 <!--            </button>-->
 
             <button id="main_receiveBtn" class="btn-blue">
                 <div class="btn-icon bg-down-left"></div>
-                Receive
+                <span data-l="main.receive"></span>
             </button>
 
             <button id="sendButton" class="btn-blue display-none">
                 <div class="btn-icon bg-down-left rotate-180"></div>
-                Send
+                <span data-l="main.send"></span>
             </button>
         </div>
 
@@ -319,7 +272,7 @@
                             width="150" height="150"
                             src="assets/lottie/empty.tgs">
                 </tgs-player>
-                <div>Wallet Created</div>
+                <div data-l="main.crearted"></div>
             </div>
         </div>
 
@@ -334,19 +287,24 @@
     <div id="menuDropdown" class="visibility-hidden">
         <div id="menu_extension_chrome" class="dropdown-item">Chrome Extension</div>
         <div id="menu_extension_firefox" class="dropdown-item">Firefox Add-on</div>
-        <div id="menu_about" class="dropdown-item">About</div>
-        <div id="menu_protocol" class="dropdown-item">URI handling <div class="dropdown-toggle"></div></div>
+        <div id="menu_about" class="dropdown-item" data-l="main.about"></div>
+        <div id="menu_protocol" class="dropdown-item">TON URI <div class="dropdown-toggle"></div></div>
         <div id="menu_magic" class="dropdown-item">TON Magic <div class="dropdown-toggle"></div></div>
-        <div id="menu_telegram" class="dropdown-item">Open Telegram Web »</div>
+        <div id="menu_telegram" class="dropdown-item"><span data-l="main.open"></span> Telegram Web »</div>
         <div id="menu_proxy" class="dropdown-item">TON Proxy <div class="dropdown-toggle"></div></div>
-        <div id="menu_changePassword" class="dropdown-item">Change password</div>
-        <div id="menu_backupWallet" class="dropdown-item">Back up wallet</div>
-        <div id="menu_delete" class="dropdown-item">Log Out</div>
+        <div id="menu_changePassword" class="dropdown-item" data-l="main.change_password"></div>
+        <div id="menu_backupWallet" class="dropdown-item" data-l="main.backup_wallet"></div>
+        <div id="menu_changeLocale" class="dropdown-item" data-l="main.change_language"></div>
+        <div id="menu_delete" class="dropdown-item" data-l="common.logout"></div>
     </div>
+
+    <!-- Locales Dropdown -->
+
+    <div id="localesDropdown" class="visibility-hidden"></div>
 
     <!-- Alert Popup-->
 
-    <div id="alert" class="popup visibility-hidden">
+    <div id="alert" class="popup pb-10 visibility-hidden">
         <div class="popup-title"></div>
         <div class="popup-black-text"></div>
         <div class="popup-footer"></div>
@@ -355,9 +313,8 @@
     <!-- Receive Popup-->
 
     <div id="receive" class="popup visibility-hidden">
-        <div class="popup-title">Receive TON</div>
-        <div class="popup-text">Share this address to receive TON.
-        </div>
+        <div class="popup-title" data-l="receive.title"></div>
+        <div class="popup-text" data-l="receive.description"></div>
 
         <div class="qr-container">
             <div id="qr"></div>
@@ -365,11 +322,11 @@
 
         <div class="my-addr addr"></div>
 
-        <button id="receive_showAddressOnDeviceBtn" class="btn-lite btn-lite-first">Show Address on Device</button>
+        <button id="receive_showAddressOnDeviceBtn" class="btn-lite btn-lite-first" data-l="receive.show_on_device"></button>
 
-        <button id="receive_invoiceBtn" class="btn-lite">Create Invoice</button>
+        <button id="receive_invoiceBtn" class="btn-lite" data-l="receive.invoice"></button>
 
-        <button id="receive_shareBtn" class="btn-blue">Share Wallet Address</button>
+        <button id="receive_shareBtn" class="btn-blue" data-l="receive.share"></button>
 
         <button id="receive_closeBtn" class="popup-close-btn"></button>
     </div>
@@ -377,32 +334,25 @@
     <!-- Invoice Popup -->
 
     <div id="invoice" class="popup visibility-hidden">
-        <div class="popup-title">Create Invoice</div>
+        <div class="popup-title" data-l="invoice.title"></div>
 
         <div>
-            <div class="input-label">Amount</div>
+            <div class="input-label" data-l="common.amount"></div>
         </div>
 
-        <input id="invoice_amountInput" type="number" placeholder="Amount in TON you expect to receive">
-        <input id="invoice_commentInput" type="text" placeholder="Comment (optional)">
+        <input id="invoice_amountInput" type="number" data-l="invoice.amount_placeholder">
+        <input id="invoice_commentInput" type="text" data-l="common.comment_placeholder">
 
-        <div class="popup-grey-text">
-            You can specify the amount and purpose of<br>
-            the payment to save the sender some time.
-        </div>
+        <div class="popup-grey-text" data-l="invoice.description"></div>
 
-        <div class="input-label mt-24 mb-18">Invoice URL</div>
+        <div class="input-label mt-24 mb-18" data-l="invoice.uri"></div>
 
-        <div id="invoice_link" class="popup-black-text">
-            ton://transfer/
-        </div>
+        <div id="invoice_link" class="popup-black-text"></div>
 
-        <div class="popup-grey-text mt-24">
-            Share this address to receive TON.
-        </div>
+        <div class="popup-grey-text mt-24" data-l="invoice.instruction"></div>
 
-        <button id="invoice_qrBtn" class="btn-lite">Generate QR Code</button>
-        <button id="invoice_shareBtn" class="btn-blue">Share Invoice URL</button>
+        <button id="invoice_qrBtn" class="btn-lite" data-l="invoice.qr"></button>
+        <button id="invoice_shareBtn" class="btn-blue" data-l="invoice.share"></button>
 
         <button id="invoice_closeBtn" class="popup-close-btn"></button>
     </div>
@@ -410,19 +360,17 @@
     <!-- Invoice QR Popup-->
 
     <div id="invoiceQr" class="popup visibility-hidden">
-        <div class="popup-title">Invoice QR</div>
+        <div class="popup-title" data-l="invoice.qr_title"></div>
 
         <div class="qr-container">
             <div id="invoiceQrImg"></div>
         </div>
 
-        <div class="input-label">Expected Amount</div>
+        <div class="input-label" data-l="invoice.qr_amount"></div>
 
-        <div id="invoiceQrAmount" class="popup-black-text">
-            1
-        </div>
+        <div id="invoiceQrAmount" class="popup-black-text"></div>
 
-        <button id="invoiceQr_shareBtn" class="btn-blue">Share QR Code</button>
+        <button id="invoiceQr_shareBtn" class="btn-blue" data-l="invoice.qr_share"></button>
 
         <button id="invoiceQr_closeBtn" class="popup-close-btn"></button>
     </div>
@@ -430,31 +378,31 @@
     <!-- Transaction Popup -->
 
     <div id="transaction" class="popup visibility-hidden">
-        <div class="popup-title">Transaction</div>
+        <div class="popup-title" data-l="common.transaction"></div>
 
-        <div id="transactionAmount">+0.1 TON</div>
-        <div id="transactionFee">0.1 transaction fee</div>
-        <div id="transactionStorageFee">0.1 storage fee</div>
-
-        <div id="transactionSenderLabel" class="input-label mt-20">Sender</div>
-
-        <div id="transactionSender" class="addr">
-
+        <div id="transactionAmount"></div>
+        <div class="transactionFee">
+            <span data-l="main.transaction_fee"></span>:
+            <span id="transactionFee"></span>
+        </div>
+        <div class="transactionStorageFee">
+            <span data-l="main.storage_fee"></span>:
+            <span id="transactionStorageFee"></span>
         </div>
 
-        <div class="input-label">Date</div>
+        <div id="transactionSenderLabel" class="input-label mt-20"></div>
 
-        <div id="transactionDate" class="popup-black-text">
+        <div id="transactionSender" class="addr"></div>
 
-        </div>
+        <div class="input-label" data-l="common.date"></div>
 
-        <div id="transactionCommentLabel" class="input-label">Comment</div>
+        <div id="transactionDate" class="popup-black-text"></div>
 
-        <div id="transactionComment" class="popup-black-text">
+        <div id="transactionCommentLabel" class="input-label"></div>
 
-        </div>
+        <div id="transactionComment" class="popup-black-text"></div>
 
-        <button id="transaction_sendBtn" class="btn-blue mt-20">Send TON to this address</button>
+        <button id="transaction_sendBtn" class="btn-blue mt-20" data-l="common.send_ton_to"></button>
 
         <button id="transaction_closeBtn" class="popup-close-btn"></button>
     </div>
@@ -462,26 +410,22 @@
     <!-- Send Popup -->
 
     <div id="send" class="popup visibility-hidden">
-        <div class="popup-title">Send TON</div>
+        <div class="popup-title" data-l="send.title"></div>
 
-        <div class="input-label">Recipient wallet address</div>
-        <input id="toWalletInput" type="text" placeholder="Enter wallet address">
+        <div class="input-label" data-l="send.recipient_label"></div>
+        <input id="toWalletInput" type="text" data-l="send.recipient_placeholder">
 
-        <div class="popup-grey-text">
-            Copy the 48-letter wallet address of the
-            recipient here or ask them to send you a
-            ton:// link
-        </div>
+        <div class="popup-grey-text" data-l="send.description"></div>
 
         <div class="position-relative w-100">
-            <div class="input-label">Amount</div>
-            <div id="sendBalance">Balance:</div>
+            <div class="input-label" data-l="common.amount"></div>
+            <div class="sendBalance"><span data-l="common.balance"></span>: <span id="sendBalance"></span> 💎</div>
         </div>
 
         <input id="amountInput" type="number" placeholder="0.0">
-        <input id="commentInput" type="text" placeholder="Comment (optional)">
+        <input id="commentInput" type="text" data-l="common.comment_placeholder">
 
-        <button id="send_btn" class="btn-blue">Send TON</button>
+        <button id="send_btn" class="btn-blue" data-l="common.send_ton"></button>
 
         <button id="send_closeBtn" class="popup-close-btn"></button>
     </div>
@@ -489,38 +433,38 @@
     <!-- Send Confirm Popup -->
 
     <div id="sendConfirm" class="popup pb-10 visibility-hidden">
-        <div class="popup-title">Confirmation</div>
-        <div class="popup-black-text">Do you want to send <b id="sendConfirmAmount">x TON</b> to:</div>
+        <div class="popup-title" data-l="confirmation.title"></div>
+        <div class="popup-black-text"><span data-l="confirmation.send.info"></span> <b id="sendConfirmAmount"></b> <span data-l="confirmation.send.to"></span>:</div>
 
         <div id="sendConfirmAddr" class="addr"></div>
 
-        <div id="sendConfirmFee" class="popup-grey-text text-align-center">Fee: ~x TON</div>
+        <div id="sendConfirmFee" class="popup-grey-text text-align-center"></div>
 
-        <div class="popup-grey-text text-align-center">Note: Your comment will not be <b>encrypted</b></div>
+        <div class="popup-grey-text" data-l="confirmation.send.note"></div>
 
         <button id="sendConfirm_closeBtn" class="popup-close-btn"></button>
 
         <div class="popup-footer">
-            <button id="sendConfirm_cancelBtn" class="btn-lite">CANCEL</button>
-            <button id="sendConfirm_okBtn" class="btn-lite">SEND TON</button>
+            <button id="sendConfirm_cancelBtn" class="btn-lite" data-l="common.cancel"></button>
+            <button id="sendConfirm_okBtn" class="btn-lite" data-l="common.send_ton"></button>
         </div>
     </div>
 
     <!-- Sign Confirm Popup -->
 
     <div id="signConfirm" class="popup pb-10 visibility-hidden">
-        <div class="popup-title">Confirmation</div>
-        <div class="popup-black-text">Do you want to sign:</div>
+        <div class="popup-title" data-l="confirmation.title"></div>
+        <div class="popup-black-text"><span data-l="confirmation.sign.info"></span>:</div>
 
         <div id="signConfirmData" class="addr"></div>
 
-        <div class="popup-grey-text text-align-center font-weight-bold text-danger">Signing custom data is very dangerous. Use only if you know what you are doing.</div>
+        <div class="popup-grey-text text-align-center font-weight-medium text-danger" data-l="confirmation.sign.note"></div>
 
         <button id="signConfirm_closeBtn" class="popup-close-btn"></button>
 
         <div class="popup-footer">
-            <button id="signConfirm_cancelBtn" class="btn-lite">CANCEL</button>
-            <button id="signConfirm_okBtn" class="btn-lite">SIGN</button>
+            <button id="signConfirm_cancelBtn" class="btn-lite" data-l="common.cancel"></button>
+            <button id="signConfirm_okBtn" class="btn-lite" data-l="confirmation.sign.confirm"></button>
         </div>
     </div>
 
@@ -528,8 +472,8 @@
 
     <div id="processing" class="popup text-align-center visibility-hidden">
         <tgs-player data-name="processing" src="assets/lottie/money.tgs" width="150" height="150"></tgs-player>
-        <div class="popup-title">Sending TON</div>
-        <div class="popup-grey-text">Please wait a few seconds for your<br>transaction to be processed..</div>
+        <div class="popup-title" data-l="main.sending.title"></div>
+        <div class="popup-grey-text" data-l="main.sending.message"></div>
 
         <button id="processing_closeBtn" class="popup-close-btn"></button>
     </div>
@@ -538,11 +482,14 @@
 
     <div id="done" class="popup text-align-center pb-10 visibility-hidden">
         <tgs-player data-name="done" src="assets/lottie/done.tgs" width="150" height="150"></tgs-player>
-        <div class="popup-title">Done!</div>
-        <div class="popup-grey-text">1 TON have been send</div>
+        <div class="popup-title" data-l="common.done"></div>
+        <div class="popup-grey-text">
+            <span id="doneAmount"></span>
+            <span data-l="main.ton_sent"></span>
+        </div>
 
         <div class="popup-footer">
-            <button id="done_closeBtn" class="btn-lite">CLOSE</button>
+            <button id="done_closeBtn" class="btn-lite" data-l="common.close"></button>
         </div>
     </div>
 
@@ -551,105 +498,87 @@
     <div id="about" class="popup text-align-center pb-10 visibility-hidden">
         <div class="popup-title">TON Wallet</div>
         <div id="about_version" class="popup-grey-text">
-            Version: {{VERSION}}
+            <span data-l="about.version"></span>: {{VERSION}}
         </div>
         <tgs-player data-name="about" src="assets/lottie/intro.tgs" width="150" height="150"></tgs-player>
 
         <div class="popup-grey-text line-height-24">
-            API provider: <a href="https://toncenter.com" target="_blank">toncenter.com</a><br>
+            <span data-l="about.api_provider"></span>: <a href="https://toncenter.com" target="_blank">toncenter.com</a><br>
             <a href="https://github.com/toncenter/ton-wallet" target="_blank">GitHub</a>,
             <a href="https://github.com/toncenter/ton-wallet/issues" target="_blank">Issue Tracker</a>
         </div>
 
         <div class="popup-black-text about-magic">
-            <h4>What is TON Magic?</h4>
+            <h4 data-l="about.magic.title"></h4>
+            <p data-l="about.magic.description"></p>
             <p>
-                TON Magic provides native <b>Telegram integration</b> by patching the official Telegram web app (Z version).
-            </p>
-            <p>
-                Turn it on to send and receive Toncoins from any Telegram user. <a href="https://telegra.ph/Telegram--TON-11-10" id="about-magic-video" target="_blank">More info and demo</a>.
+                <span data-l="about.magic.info"></span> <a href="https://telegra.ph/Telegram--TON-11-10" id="about-magic-video" target="_blank" data-l="about.magic.more"></a>.
             </p>
         </div>
 
         <div class="popup-footer">
-            <button id="about_closeBtn" class="btn-lite">CLOSE</button>
+            <button id="about_closeBtn" class="btn-lite" data-l="common.close"></button>
         </div>
     </div>
 
     <!-- Change Password Popup -->
 
     <div id="changePassword" class="popup pb-10 visibility-hidden">
-        <div class="popup-title">Change Password</div>
+        <div class="popup-title" data-l="change_password.title"></div>
 
         <tgs-player data-name="changePassword" src="assets/lottie/lock.tgs" width="150" height="150"></tgs-player>
 
-        <input id="changePassword_oldInput" placeholder="Enter your old password" type="password"
+        <input id="changePassword_oldInput" data-l="change_password.old" type="password"
                class="input-password">
-        <input id="changePassword_newInput" placeholder="Enter a new password" type="password"
+        <input id="changePassword_newInput" data-l="change_password.new" type="password"
                class="input-password mt-20">
-        <input id="changePassword_repeatInput" placeholder="Repeat the new password" type="password"
+        <input id="changePassword_repeatInput" data-l="change_password.repeat" type="password"
                class="input-password">
 
         <div class="popup-footer">
-            <button id="changePassword_cancelBtn" class="btn-lite">CANCEL</button>
-            <button id="changePassword_okBtn" class="btn-lite">SAVE</button>
+            <button id="changePassword_cancelBtn" class="btn-lite" data-l="common.cancel"></button>
+            <button id="changePassword_okBtn" class="btn-lite" data-l="change_password.confirm"></button>
         </div>
     </div>
 
     <!-- Enter Password Popup -->
 
     <div id="enterPassword" class="popup pb-10 visibility-hidden">
-        <div class="popup-title">Password</div>
+        <div class="popup-title" data-l="enter_password.title"></div>
 
         <tgs-player data-name="enterPassword" src="assets/lottie/lock.tgs" width="150" height="150"></tgs-player>
-        <input id="enterPassword_input" placeholder="Enter your password" type="password"
+        <input id="enterPassword_input"  data-l="enter_password.placeholder" type="password"
                class="input-password">
 
         <div class="popup-footer">
-            <button id="enterPassword_cancelBtn" class="btn-lite">CANCEL</button>
-            <button id="enterPassword_okBtn" class="btn-lite">NEXT</button>
+            <button id="enterPassword_cancelBtn" class="btn-lite" data-l="common.cancel"></button>
+            <button id="enterPassword_okBtn" class="btn-lite" data-l="enter_password.confirm"></button>
         </div>
     </div>
 
     <!-- Log Out Popup -->
 
     <div id="delete" class="popup pb-10 visibility-hidden">
-        <div class="popup-title">Log Out</div>
-        <div class="popup-black-text">
-            This will disconnect the wallet from this<br>
-            app. You will be able to restore your<br>
-            wallet using <b>24 secret words</b> - or import<br>
-            another wallet.
-        </div>
-        <div class="popup-black-text mt-20">
-            Wallets are located in the decentralized<br>
-            TON Blockchain. If you want the wallet to<br>
-            be deleted simply transfer all the TON<br>
-            from it and leave it empty.
-        </div>
+        <div class="popup-title" data-l="logout.title"></div>
+        <div class="popup-black-text" data-l="logout.description"></div>
+        <div class="popup-black-text mt-20" data-l="logout.transfer"></div>
 
         <div class="popup-footer">
-            <button id="delete_cancelBtn" class="btn-lite">CANCEL</button>
-            <button id="delete_okBtn" class="btn-lite btn-lite-red">DISCONNECT</button>
+            <button id="delete_cancelBtn" class="btn-lite" data-l="common.cancel"></button>
+            <button id="delete_okBtn" class="btn-lite btn-lite-red" data-l="logout.disconnect"></button>
         </div>
     </div>
 
     <!-- Connect Ledger Popup -->
 
     <div id="connectLedger" class="popup pb-10 visibility-hidden">
-        <div class="popup-title">Connect Ledger</div>
-        <div class="popup-black-text">
-            Please use Edge/Google Chrome v89 or later.
-        </div>
-        <div class="popup-black-text mt-20">
-            Turn off Ledger Live.
-        </div>
-        <div class="popup-black-text mt-20">
-            If it does not connect, then try reconnecting the device.
-        </div>
+        <div class="popup-title" data-l="ledger.title"></div>
+        <div class="popup-black-text" data-l="ledger.support"></div>
+        <div class="popup-black-text mt-20" data-l="ledger.turn_off"></div>
+        <div class="popup-black-text mt-20" data-l="ledger.reconnect"></div>
 
         <div class="popup-footer">
-            <button id="connectLedger_cancelBtn" class="btn-lite">OK</button>
+            <button id="connectLedger_cancelBtn" class="btn-lite" data-l="common.got_it"></button>
         </div>
     </div>
 
@@ -661,7 +590,7 @@
 
     <div id="loader" class="popup text-align-center pb-10 visibility-hidden">
         <tgs-player data-name="loader" src="assets/lottie/intro.tgs" width="150" height="150"></tgs-player>
-        <div class="popup-title">Loading..</div>
+        <div class="popup-title" data-l="main.loading"></div>
     </div>
 </div>
 

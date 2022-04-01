@@ -1,4 +1,4 @@
-import storage from './util/storage.js';
+import { storage, clearStorage } from './util/storage.js';
 
 let extensionWindowId = -1;
 let contentScriptPorts = new Set();
@@ -223,12 +223,13 @@ class Controller {
             const mainnetRpc = 'https://toncenter.com/api/v2/jsonRPC';
             const testnetRpc = 'https://testnet.toncenter.com/api/v2/jsonRPC';
 
+            // Values replaced in build step
             const apiKey = this.isTestnet
-                ? TONCENTER_API_KEY_WEB_TEST
-                : TONCENTER_API_KEY_WEB_MAIN;
+                ? __TONCENTER_API_KEY_WEB_TEST__
+                : __TONCENTER_API_KEY_WEB_MAIN__;
             const extensionApiKey = this.isTestnet
-                ? TONCENTER_API_KEY_EXT_TEST
-                : TONCENTER_API_KEY_EXT_MAIN;
+                ? __TONCENTER_API_KEY_EXT_TEST__
+                : __TONCENTER_API_KEY_EXT_MAIN__;
 
             if (IS_EXTENSION && !(await storage.getItem('address'))) {
                 await this._restoreDeprecatedStorage();
@@ -239,7 +240,7 @@ class Controller {
             this.publicKeyHex = await storage.getItem('publicKey');
 
             if (!this.myAddress || !(await storage.getItem('words'))) {
-                await storage.clear();
+                await clearStorage();
                 this.sendToView('showScreen', {name: 'start', noAnimation: true});
             } else {
                 if ((await storage.getItem('isLedger')) === 'true') {
@@ -291,6 +292,8 @@ class Controller {
         } else {
             await storage.removeItem('isDebug');
         }
+        await this._init();
+        await this.sendToView('setIsDebug', this.isDebug);
     }
 
     async getTransactions(limit = 20) {
@@ -303,7 +306,20 @@ class Controller {
         }
 
         const arr = [];
-        const transactions = await this.ton.getTransactions(this.myAddress, limit);
+
+        let transactions;
+        try {
+            transactions = await this.ton.getTransactions(this.myAddress, limit);
+        } catch {}
+
+        if (!transactions) {
+            try {
+                transactions = await this.ton.provider.getTransactions(this.myAddress, limit, undefined, undefined, undefined, true);
+            } catch {}
+        }
+
+        if (!transactions) return [];
+
         for (let t of transactions) {
             let amount = new BN(t.in_msg.value);
             for (let outMsg of t.out_msgs) {
@@ -454,7 +470,7 @@ class Controller {
         const ledgerVersion = (await this.ledgerApp.getAppConfiguration()).version;
         this.debug('ledgerAppConfig=', ledgerVersion);
         if (!ledgerVersion.startsWith('2')) {
-            alert('Please update your Ledger TON-app to v2.0.1 or upper or use old wallet version https://tonwallet.me/prev/');
+            this.sendToView('showNotify', 'ledger.version');
             throw new Error('outdated ledger ton-app version');
         }
         const {publicKey} = await this.ledgerApp.getPublicKey(ACCOUNT_NUMBER, false); // todo: можно сохранять publicKey и не запрашивать это
@@ -634,6 +650,7 @@ class Controller {
         this.sendToView('setIsMagic', (await storage.getItem('magic')) === 'true');
         this.sendToView('setIsProxy', (await storage.getItem('proxy')) === 'true');
         this.sendToView('setIsTestnet', this.isTestnet);
+        this.sendToView('setIsDebug', this.isDebug);
     }
 
     async update(force) {
@@ -645,13 +662,14 @@ class Controller {
         if (!needUpdate) return;
 
         const response = await this.getWallet();
+        this.debug('getWalletResponse', response);
 
         const balance = this.getBalance(response);
         const isBalanceChanged = (this.balance === null) || (this.balance.cmp(balance) !== 0);
         this.balance = balance;
+        this.debug('isBalanceChanged', isBalanceChanged);
 
         const isContractInitialized = this.checkContractInitialized(response) && response.seqno;
-        this.debug('isBalanceChanged', isBalanceChanged);
         this.debug('isContractInitialized', isContractInitialized);
 
         if (!this.isContractInitialized && isContractInitialized) {
@@ -675,7 +693,7 @@ class Controller {
                             if (txAddr === myAddr && txAmount === myAmount) {
                                 this.sendToView('showPopup', {
                                     name: 'done',
-                                    message: formatNanograms(this.sendingData.amount) + ' TON have been sent'
+                                    amount: formatNanograms(this.sendingData.amount)
                                 });
                                 this.processingVisible = false;
                                 this.sendingData = null;
@@ -747,24 +765,24 @@ class Controller {
         try {
             await this.update(true);
         } catch {
-            this.sendToView('sendCheckFailed', { message: 'API request error' });
+            this.sendToView('sendCheckFailed', 'main.api_error');
             this.sendToView('closePopup');
             return false;
         }
-        this.sendToView('closePopup');
 
         if (!amount.gt(new BN(0))) {
-            this.sendToView('sendCheckFailed', { message: 'Invalid amount' });
+            this.sendToView('sendCheckFailed', 'main.invalid_amount');
+            this.sendToView('closePopup');
             return false;
         }
         if (this.balance.lt(amount)) {
-            this.sendToView('sendCheckFailed', {
-                message: 'Not enough balance to pay transaction'
-            });
+            this.sendToView('sendCheckFailed', 'main.not_enough_balance');
+            this.sendToView('closePopup');
             return false;
         }
         if (!Address.isValid(toAddress)) {
-            this.sendToView('sendCheckFailed', { message: 'Invalid address' });
+            this.sendToView('sendCheckFailed', 'main.invalid_address');
+            this.sendToView('closePopup');
             return false;
         }
 
@@ -773,14 +791,18 @@ class Controller {
         try {
             fee = await this.getFees(amount, toAddress, comment, stateInit);
         } catch {
-            this.sendToView('sendCheckFailed', { message: 'API request error' });
+            this.sendToView('sendCheckFailed', 'main.api_error');
+            this.sendToView('closePopup');
             return false;
         }
 
         if (this.balance.sub(fee).lt(amount)) {
             this.sendToView('sendCheckCantPayFee', {fee});
+            this.sendToView('closePopup');
             return false;
         }
+
+        this.sendToView('closePopup');
 
         if (this.isLedger) {
             this.sendToView('showPopup', {
@@ -802,7 +824,7 @@ class Controller {
                     await this.send(toAddress, amount, comment, privateKey, stateInit);
                 } catch (err) {
                     this.debug(err);
-                    this.sendToView('sendCheckFailed', { message: 'API request error' });
+                    this.sendToView('sendCheckFailed', 'main.api_error');
                     dAppPromise.resolve(false);
                 }
 
@@ -834,7 +856,7 @@ class Controller {
     showSignConfirm(hexToSign, needQueue) {
         return new Promise((resolve, reject) => {
             if (this.isLedger) {
-                alert('sign not supported by Ledger');
+                this.sendToView('showNotify', 'ledger.sign_not_support');
                 reject();
             } else {
 
@@ -918,7 +940,7 @@ class Controller {
         } catch (e) {
             this.debug(e);
             this.sendToView('closePopup');
-            alert('Error sending');
+            this.sendToView('showNotify', 'main.send_error');
         }
     }
 
@@ -943,7 +965,7 @@ class Controller {
             // wait for transaction, then show Done popup
         } else {
             this.sendToView('closePopup');
-            alert('Send error');
+            this.sendToView('showNotify', 'main.send_error');
         }
     }
 
@@ -966,7 +988,7 @@ class Controller {
 
     async onDisconnectClick() {
         this.clearVars();
-        await storage.clear();
+        await clearStorage();
         this.sendToView('showScreen', {name: 'start'});
         this.sendToDapp('ton_accounts', []);
     }
@@ -997,9 +1019,9 @@ class Controller {
 
     // TRANSPORT WITH VIEW
 
-    sendToView(method, params, needQueue, needResult) {
+    async sendToView(method, params, needQueue, needResult) {
         if (self.view) {
-            const result = self.view.onMessage(method, params);
+            const result = await self.view.onMessage(method, params);
             if (needResult) {
                 return result;
             }

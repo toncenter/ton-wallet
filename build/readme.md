@@ -65,6 +65,20 @@ Where {version} - value from package.json "version" field
 - Pack extension for Safari by command `npm run pack safari`
 - Extension will automatically added to Safari
 
+## Localization
+
+Files with translated phrases locate it `src/locales` with name format `{locale-code}.json`. For date and time formatting using `Intl.DateTimeFormat` browsers API.
+
+In sources all phrases used by its path in translation json file, like `"main.sending.title"`.
+
+In HTML localization phrases can be added to element by setting `data-l` attribute with locale phrase path.
+
+Adding new language to application:
+- create file with translated phrases by `en.json` template
+- add locale code and name to `AVAILABLE_LOCALES` object in `src/js/view/Locales.js`
+
+For convenience of adding new translations, in Debug mode when hovering over an element with phrase prompt appears with phrase path.
+
 ## Switch between clear console and debug mode
 
 - Support from 1.1.36 version
