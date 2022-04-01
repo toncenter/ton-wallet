@@ -969,6 +969,10 @@ button {
 
 /* EXTENSION */
 
+#menu_protocol {
+    display: none;
+}
+
 #menu_magic {
     display: none;
 }
@@ -998,6 +1002,10 @@ button {
     border-radius: 4px;
     padding: 4px;
     content: 'Soon';
+}
+
+.plugin #menu_protocol {
+    display: block;
 }
 
 .plugin #menu_magic {
