@@ -217,8 +217,11 @@ class Controller {
         return new Promise(async (resolve) => {
             await storage.removeItem('pwdHash');
 
-            this.isTestnet = IS_EXTENSION ? (await storage.getItem('isTestnet')) : (self.location.href.indexOf('testnet') > -1);
-            this.isDebug = IS_EXTENSION ? (await storage.getItem('isDebug')) : (self.location.href.indexOf('debug') > -1);
+            this.isTestnet = (self.location.href.indexOf('testnet') > -1) || ((await storage.getItem('isTestnet')) === 'true') || false;
+            this.isDebug = (self.location.href.indexOf('debug') > -1) || ((await storage.getItem('isDebug')) === 'true') || false;
+
+            this.debug('isDebug', this.isDebug);
+            this.debug('isTestnet', this.isTestnet);
 
             const mainnetRpc = 'https://toncenter.com/api/v2/jsonRPC';
             const testnetRpc = 'https://testnet.toncenter.com/api/v2/jsonRPC';
