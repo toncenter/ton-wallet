@@ -3,7 +3,7 @@ const { TARGETS, TARGETS_BUILD_DESTS } = require('./config');
 
 const publish = async (targetName, done) => {
     if (targetName !== TARGETS.WEB) {
-        console.log(`Publish target "${targetName}" not available`);
+        console.log(`Publish target "${targetName}" not available now`);
         return;
     }
 
