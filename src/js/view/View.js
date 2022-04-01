@@ -1235,7 +1235,7 @@ class View {
                         if (params.myAddress) {
                             this.myAddress = params.myAddress;
                             this.setMyAddress(params.myAddress);
-                            this.port.postMessage({ method: 'ready' });
+                            this.sendMessage('ready');
                         }
                         break;
                 }
