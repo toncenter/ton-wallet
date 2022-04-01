@@ -1,8 +1,8 @@
-# Source code
+## Source code
 
 We deliberately use plain js and do not use frameworks, due to the direct access to the user's private keys. We also try to use the minimum number of third party libraries and consciously include them as static files rather than NPM packages to prevent accidental upgrade to a potentially malicious versions.
 
-# Preparation
+## Preparation
 
 Set required for build environment variables in shell or `.env` file in project root directory. See `.env.example` with required variables names and their description.
 
@@ -14,7 +14,7 @@ Install development dependencies:
 npm install
 ```
 
-# Tasks
+## Tasks
 
 To run build task use next template:
 
@@ -43,20 +43,20 @@ Possible targets for pack task and output files destinations:
 
 Where {version} - value from package.json "version" field
 
-# Chromium-based browsers Extension Developer Mode
+## Chromium-based browsers Extension Developer Mode
 
 - Open web browser
 - Go to `chrome://extensions/`
 - Enable "Developer Mode" in top right corner
 - Click "Load unpacked extension" and specify `artifacts/v3` folder
 
-# Mozilla Firefox Add-on Developer Mode
+## Mozilla Firefox Add-on Developer Mode
 
 - Open Mozilla Firefox
 - Go to `about:debugging#/runtime/this-firefox`
 - Click "Load Temporary Add-on" and select `artifacts/v2/manifest.json` file
 
-# Safari Extension Developer Mode
+## Safari Extension Developer Mode
 
 - Install Xcode Command Line Tools
 - Open Safari and choose Safari > Preferences
