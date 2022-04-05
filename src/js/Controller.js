@@ -741,7 +741,7 @@ class Controller {
 
         if (this.balance.lt(amount)) {
             this.sendToView('sendCheckFailed', {
-                message: 'Not enough balance to pay dApp transaction'
+                message: 'Not enough balance'
             });
             return false;
         }
@@ -1166,7 +1166,11 @@ class Controller {
                     name: 'loader',
                 });
 
-                return await this.showSendConfirm(new BN(param.value), param.to, param.data, needQueue, param.stateInit);
+                const result = await this.showSendConfirm(new BN(param.value), param.to, param.data, needQueue, param.stateInit);
+                if (!result) {
+                    this.sendToView('closePopup');
+                }
+                return result;
             case 'ton_rawSign':
                 const signParam = params[0];
                 await showExtensionWindow();

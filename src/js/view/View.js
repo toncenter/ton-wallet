@@ -1041,10 +1041,6 @@ class View {
                 break;
 
             case 'sendCheckFailed':
-                if (this.popup) {
-                    this.closePopup();
-                }
-
                 if (params && params.message) {
                     $('#notify').innerText = params.message;
                     triggerClass($('#notify'), 'faded-show', 3000);
