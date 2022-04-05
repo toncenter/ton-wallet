@@ -495,8 +495,6 @@ class View {
     async showPopup(name) {
         this.popup = name;
 
-        await this._initLotties;
-
         $('#enterPassword_input').value = '';
 
         //popups switching without animations
