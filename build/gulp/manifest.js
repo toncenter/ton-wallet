@@ -60,7 +60,7 @@ const manifest = async buildDest => {
         // New storage API permissions
         content.permissions.push('storage');
         // Permissions for content script and provider update
-        content.permissions.push('tabs', 'scripting');
+        // content.permissions.push('tabs', 'scripting');
 
         // Matches for content script and provider update
         content.host_permissions = matches;
