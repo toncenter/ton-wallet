@@ -25,7 +25,7 @@ const createDappPromise = () => {
     dAppPromise.reject = (...args) => {
         reject(...args);
         dAppPromise = null;
-    };;
+    };
 };
 
 const showExtensionWindow = () => {
@@ -712,7 +712,7 @@ class Controller {
     };
 
     /**
-     * @param amount    {BN} in nanograms
+     * @param amount    {BN} in nanotons
      * @param toAddress {string}
      * @param comment?  {string | Uint8Array}
      * @param needQueue? {boolean}
@@ -735,7 +735,6 @@ class Controller {
             await this.update(true);
         } catch {
             this.sendToView('sendCheckFailed', { message: 'API request error' });
-            this.sendToView('closePopup');
             return false;
         }
 
@@ -768,23 +767,28 @@ class Controller {
                 fee: fee.toString()
             }, needQueue);
 
-            // TODO: maybe it need call in confirm callback like in else branch
-            this.send(toAddress, amount, comment, null, stateInit);
+            const sendResult = await this.send(toAddress, amount, comment, null, stateInit);
+
+            if (sendResult) {
+                dAppPromise.resolve(true);
+            } else {
+                this.sendToView('sendCheckFailed', { message: 'API request error' });
+                dAppPromise.resolve(false);
+            }
         } else {
             this.afterEnterPassword = async words => {
                 this.processingVisible = true;
                 this.sendToView('showPopup', {name: 'processing'});
                 const privateKey = await Controller.wordsToPrivateKey(words);
 
-                try {
-                    await this.send(toAddress, amount, comment, privateKey, stateInit);
-                } catch (err) {
-                    this.debug(err);
+                const sendResult = await this.send(toAddress, amount, comment, privateKey, stateInit);
+
+                if (sendResult) {
+                    dAppPromise.resolve(true);
+                } else {
                     this.sendToView('sendCheckFailed', { message: 'API request error' });
                     dAppPromise.resolve(false);
                 }
-
-                dAppPromise.resolve(true);
             };
 
             this.onCancelAction = () => {
@@ -838,6 +842,7 @@ class Controller {
      * @param comment   {string}
      * @param privateKey    {string}
      * @param stateInit? {Cell}
+     * @return  {Promise<boolean>}
      */
     async send(toAddress, amount, comment, privateKey, stateInit) {
         try {
@@ -883,20 +888,21 @@ class Controller {
                 this.sendToView('showPopup', {name: 'processing'});
                 this.processingVisible = true;
 
-                await this.sendQuery(query);
+                return await this.sendQuery(query);
 
             } else {
 
                 const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
                 const query = await this.sign(toAddress, amount, comment, keyPair, stateInit);
                 this.sendingData = {toAddress: toAddress, amount: amount, comment: comment, query: query};
-                await this.sendQuery(query);
+                return await this.sendQuery(query);
 
             }
         } catch (e) {
             this.debug(e);
             this.sendToView('closePopup');
             alert('Error sending');
+            return false;
         }
     }
 
@@ -913,15 +919,17 @@ class Controller {
 
     /**
      * @param query - return by sign()
-     * @return {Promise<void>}
+     * @return {Promise<boolean>}
      */
     async sendQuery(query) {
         const sendResponse = await query.send();
         if (sendResponse["@type"] === "ok") {
             // wait for transaction, then show Done popup
+            return true;
         } else {
             this.sendToView('closePopup');
             alert('Send error');
+            return false;
         }
     }
 
