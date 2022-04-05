@@ -395,7 +395,7 @@ class View {
                         {
                             label: 'I\'M SURE',
                             callback: () => {
-                                this.sendMessage('toggleTestnet');
+                                this.sendMessage('toggleDebug');
                             }
                         },
                         {
