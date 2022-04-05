@@ -458,7 +458,7 @@ class View {
                 isBack: this.isBack,
             });
 
-            toggleLottie(lotties[screen], name === screen);
+            toggleLottie(lotties[screen], name === screen, {hideDelay: 300}); //300ms, as for screen show/hide animation duration in CSS
         });
         this.currentScreenName = name;
 
