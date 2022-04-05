@@ -731,10 +731,6 @@ class Controller {
             return false;
         }
 
-        this.sendToView('showPopup', {
-            name: 'loader',
-        });
-
         try {
             await this.update(true);
         } catch {
@@ -742,7 +738,6 @@ class Controller {
             this.sendToView('closePopup');
             return false;
         }
-        this.sendToView('closePopup');
 
         if (this.balance.lt(amount)) {
             this.sendToView('sendCheckFailed', {
@@ -1166,6 +1161,11 @@ class Controller {
                 if (param.stateInit) {
                     param.stateInit = TonWeb.boc.Cell.oneFromBoc(TonWeb.utils.base64ToBytes(param.stateInit));
                 }
+
+                this.sendToView('showPopup', {
+                    name: 'loader',
+                });
+
                 return await this.showSendConfirm(new BN(param.value), param.to, param.data, needQueue, param.stateInit);
             case 'ton_rawSign':
                 const signParam = params[0];
