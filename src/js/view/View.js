@@ -1223,7 +1223,7 @@ if (IS_EXTENSION) {
             });
 
             prevWindow = currentWindow;
-        }, 500);
+        }, 3000);
     })();
 }
 
