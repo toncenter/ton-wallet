@@ -1,16 +1,16 @@
 @font-face {
-    font-family: 'Mulish';
-    src: local('Mulish Regular'), local('Mulish-Regular'),
-         url('assets/fonts/mulish-regular.woff2') format('woff2');
+    font-family: Helvetica, Arial, sans-serif;
+    /*src: local('Mulish Regular'), local('Mulish-Regular'),*/
+    /*     url('assets/fonts/mulish-regular.woff2') format('woff2');*/
     font-weight: 400;
     font-style: normal;
     font-display: block;
 }
 
 @font-face {
-    font-family: 'Mulish';
-    src: local('Mulish Bold'), local('Mulish-Bold'),
-         url('assets/fonts/mulish-bold.woff2') format('woff2');
+    font-family: Helvetica, Arial, sans-serif;
+    /*src: local('Mulish Bold'), local('Mulish-Bold'),*/
+    /*     url('assets/fonts/mulish-bold.woff2') format('woff2');*/
     font-weight: 700;
     font-style: normal;
     font-display: block;
@@ -23,7 +23,7 @@ html {
 }
 
 body, button, input, optgroup, select, textarea {
-    font-family: 'Mulish', sans-serif;
+    font-family: Helvetica, Arial, sans-serif;
 }
 
 body {

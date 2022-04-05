@@ -35,7 +35,7 @@ const drawQRCode = (text, containerSelector) => {
         height: 185 * window.devicePixelRatio,
         colorDark: '#303757',
         logo: "assets/ui/qr-logo.png",
-        logoBackgroundTransparent: true,
+        logoBackgroundTransparent: false,
         logoWidth: 44 * window.devicePixelRatio,
         logoHeight: 44 * window.devicePixelRatio,
         correctLevel: QRCode.CorrectLevel.L
