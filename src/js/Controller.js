@@ -721,6 +721,16 @@ class Controller {
     async showSendConfirm(amount, toAddress, comment, needQueue, stateInit) {
         createDappPromise();
 
+        if (!amount.gt(new BN(0))) {
+            this.sendToView('sendCheckFailed', { message: 'Invalid amount' });
+            return false;
+        }
+
+        if (!Address.isValid(toAddress)) {
+            this.sendToView('sendCheckFailed', { message: 'Invalid address' });
+            return false;
+        }
+
         this.sendToView('showPopup', {
             name: 'loader',
         });
@@ -734,18 +744,10 @@ class Controller {
         }
         this.sendToView('closePopup');
 
-        if (!amount.gt(new BN(0))) {
-            this.sendToView('sendCheckFailed', { message: 'dApp send invalid amount' });
-            return false;
-        }
         if (this.balance.lt(amount)) {
             this.sendToView('sendCheckFailed', {
                 message: 'Not enough balance to pay dApp transaction'
             });
-            return false;
-        }
-        if (!Address.isValid(toAddress)) {
-            this.sendToView('sendCheckFailed', { message: 'dApp send invalid address' });
             return false;
         }
 
