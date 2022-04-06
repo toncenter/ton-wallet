@@ -548,8 +548,8 @@ class Controller {
                 await this.importImpl(keyPair, walletClass);
 
                 this.sendToView('importCompleted', {state: 'success'});
-            } catch (e) {
-                this.debug(e);
+            } catch (err) {
+                console.error(err);
                 this.sendToView('importCompleted', {state: 'failure'});
             }
         } else {
@@ -945,8 +945,8 @@ class Controller {
                 return await this.sendQuery(query);
 
             }
-        } catch (e) {
-            this.debug(e);
+        } catch (err) {
+            console.error(err);
             this.sendToView('closePopup');
             this.sendToView('showNotify', 'main.send_error');
             return false;
