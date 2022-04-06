@@ -201,6 +201,10 @@ class Controller {
         return new BN(getWalletResponse.balance);
     }
 
+    getChainId() {
+        return this.isTestnet ? 2 : 1;
+    }
+
     async _init() {
         return new Promise(async (resolve) => {
             await storage.removeItem('pwdHash');
@@ -270,6 +274,7 @@ class Controller {
         this.clearVars();
         await this._init();
         await this.sendToView('setIsTestnet', this.isTestnet);
+        this.sendToDapp('ton_chain', this.getChainId());
     }
 
     async toggleDebug() {
@@ -1150,6 +1155,8 @@ class Controller {
                     publicKey: this.publicKeyHex,
                     walletVersion: walletVersion
                 }];
+            case 'ton_getChainId':
+                return this.getChainId();
             case 'ton_getBalance':
                 await this.update(true);
                 return (this.balance ? this.balance.toString() : '');
