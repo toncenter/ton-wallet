@@ -47,7 +47,7 @@ const drawQRCode = (text, containerSelector) => {
         height: 185 * window.devicePixelRatio,
         colorDark: '#303757',
         logo: "assets/ui/qr-logo.png",
-        logoBackgroundTransparent: true,
+        logoBackgroundTransparent: false,
         logoWidth: 44 * window.devicePixelRatio,
         logoHeight: 44 * window.devicePixelRatio,
         correctLevel: QRCode.CorrectLevel.L
@@ -329,7 +329,7 @@ class View {
         });
 
         $('#menu_telegram').addEventListener('click', () => {
-            chrome.tabs.update({url: 'https://web.telegram.org/z'});
+            window.open('https://web.telegram.org/z', '_blank');
         });
 
         $('#menu_proxy').addEventListener('click', () => {
@@ -501,7 +501,7 @@ class View {
                 isBack: this.isBack,
             });
 
-            toggleLottie(lotties[screen], name === screen);
+            toggleLottie(lotties[screen], name === screen, {hideDelay: 300}); //300ms, as for screen show/hide animation duration in CSS
         });
         this.currentScreenName = name;
 
@@ -538,8 +538,6 @@ class View {
 
     async showPopup(name) {
         this.popup = name;
-
-        await this._initLotties;
 
         $('#enterPassword_input').value = '';
 
@@ -1159,10 +1157,6 @@ class View {
                 break;
 
             case 'sendCheckFailed':
-                if (this.popup) {
-                    this.closePopup();
-                }
-
                 if (params) {
                     setElementLocaleText($('#notify'), params);
                     triggerClass($('#notify'), 'faded-show', 3000);
@@ -1369,6 +1363,6 @@ if (IS_EXTENSION) {
             });
 
             prevWindow = currentWindow;
-        }, 500);
+        }, 3000);
     })();
 }

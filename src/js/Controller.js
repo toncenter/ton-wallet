@@ -752,7 +752,7 @@ class Controller {
     };
 
     /**
-     * @param amount    {BN} in nanograms
+     * @param amount    {BN} in nanotons
      * @param toAddress {string}
      * @param comment?  {string | Uint8Array}
      * @param needQueue? {boolean}
@@ -761,31 +761,25 @@ class Controller {
     async showSendConfirm(amount, toAddress, comment, needQueue, stateInit) {
         createDappPromise();
 
-        this.sendToView('showPopup', {
-            name: 'loader',
-        });
+        if (!amount.gt(new BN(0))) {
+            this.sendToView('sendCheckFailed', 'main.invalid_amount');
+            return false;
+        }
+
+        if (!Address.isValid(toAddress)) {
+            this.sendToView('sendCheckFailed', 'main.invalid_address');
+            return false;
+        }
 
         try {
             await this.update(true);
         } catch {
             this.sendToView('sendCheckFailed', 'main.api_error');
-            this.sendToView('closePopup');
             return false;
         }
 
-        if (!amount.gt(new BN(0))) {
-            this.sendToView('sendCheckFailed', 'main.invalid_amount');
-            this.sendToView('closePopup');
-            return false;
-        }
         if (this.balance.lt(amount)) {
             this.sendToView('sendCheckFailed', 'main.not_enough_balance');
-            this.sendToView('closePopup');
-            return false;
-        }
-        if (!Address.isValid(toAddress)) {
-            this.sendToView('sendCheckFailed', 'main.invalid_address');
-            this.sendToView('closePopup');
             return false;
         }
 
@@ -815,23 +809,28 @@ class Controller {
                 fee: fee.toString()
             }, needQueue);
 
-            // TODO: maybe it need call in confirm callback like in else branch
-            this.send(toAddress, amount, comment, null, stateInit);
+            const sendResult = await this.send(toAddress, amount, comment, null, stateInit);
+
+            if (sendResult) {
+                dAppPromise.resolve(true);
+            } else {
+                this.sendToView('sendCheckFailed', { message: 'API request error' });
+                dAppPromise.resolve(false);
+            }
         } else {
             this.afterEnterPassword = async words => {
                 this.processingVisible = true;
                 this.sendToView('showPopup', {name: 'processing'});
                 const privateKey = await Controller.wordsToPrivateKey(words);
 
-                try {
-                    await this.send(toAddress, amount, comment, privateKey, stateInit);
-                } catch (err) {
-                    this.debug(err);
+                const sendResult = await this.send(toAddress, amount, comment, privateKey, stateInit);
+
+                if (sendResult) {
+                    dAppPromise.resolve(true);
+                } else {
                     this.sendToView('sendCheckFailed', 'main.api_error');
                     dAppPromise.resolve(false);
                 }
-
-                dAppPromise.resolve(true);
             };
 
             this.onCancelAction = () => {
@@ -885,6 +884,7 @@ class Controller {
      * @param comment   {string}
      * @param privateKey    {string}
      * @param stateInit? {Cell}
+     * @return  {Promise<boolean>}
      */
     async send(toAddress, amount, comment, privateKey, stateInit) {
         try {
@@ -930,20 +930,21 @@ class Controller {
                 this.sendToView('showPopup', {name: 'processing'});
                 this.processingVisible = true;
 
-                await this.sendQuery(query);
+                return await this.sendQuery(query);
 
             } else {
 
                 const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
                 const query = await this.sign(toAddress, amount, comment, keyPair, stateInit);
                 this.sendingData = {toAddress: toAddress, amount: amount, comment: comment, query: query};
-                await this.sendQuery(query);
+                return await this.sendQuery(query);
 
             }
         } catch (e) {
             this.debug(e);
             this.sendToView('closePopup');
             this.sendToView('showNotify', 'main.send_error');
+            return false;
         }
     }
 
@@ -960,15 +961,17 @@ class Controller {
 
     /**
      * @param query - return by sign()
-     * @return {Promise<void>}
+     * @return {Promise<boolean>}
      */
     async sendQuery(query) {
         const sendResponse = await query.send();
         if (sendResponse["@type"] === "ok") {
             // wait for transaction, then show Done popup
+            return true;
         } else {
             this.sendToView('closePopup');
             this.sendToView('showNotify', 'main.send_error');
+            return false;
         }
     }
 
@@ -1230,7 +1233,16 @@ class Controller {
                 if (param.stateInit) {
                     param.stateInit = TonWeb.boc.Cell.oneFromBoc(TonWeb.utils.base64ToBytes(param.stateInit));
                 }
-                return await this.showSendConfirm(new BN(param.value), param.to, param.data, needQueue, param.stateInit);
+
+                this.sendToView('showPopup', {
+                    name: 'loader',
+                });
+
+                const result = await this.showSendConfirm(new BN(param.value), param.to, param.data, needQueue, param.stateInit);
+                if (!result) {
+                    this.sendToView('closePopup');
+                }
+                return result;
             case 'ton_rawSign':
                 const signParam = params[0];
                 await showExtensionWindow();
