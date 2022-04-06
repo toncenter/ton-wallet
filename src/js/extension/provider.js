@@ -141,6 +141,8 @@
                         this._emitNotification(message.params);
                     } else if (method === 'ton_accounts') { // todo
                         this._emitAccountsChanged(message.params);
+                    } else if (method === 'ton_chain') { // todo
+                        this._emitChainChanged(message.params);
                     } else if (method === 'ton_doMagic') {
                         const isTurnedOn = message.params;
 
