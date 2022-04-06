@@ -143,6 +143,8 @@
                         this._emitAccountsChanged(message.params);
                     } else if (method === 'ton_doProtocol') {
                         this._uriHandlerEnable = message.params;
+                    } else if (method === 'ton_chain') {
+                        this._emitChainChanged(message.params);
                     } else if (method === 'ton_doMagic') {
                         const isTurnedOn = message.params;
 
