@@ -537,14 +537,14 @@ class View {
     }
 
     async showPopup(name) {
-        this.popup = name;
-
         $('#enterPassword_input').value = '';
 
         //popups switching without animations
         if (this.popup && name) {
             triggerClass(document.body, 'disable-animations', 20);
         }
+
+        this.popup = name;
 
         toggleFaded($('#modal'), name !== '');
 
