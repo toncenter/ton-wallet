@@ -298,7 +298,7 @@ class View {
         });
 
         $('#menu_telegram').addEventListener('click', () => {
-            chrome.tabs.update({url: 'https://web.telegram.org/z'});
+            window.open('https://web.telegram.org/z', '_blank');
         });
 
         $('#menu_proxy').addEventListener('click', () => {
