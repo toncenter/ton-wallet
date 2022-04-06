@@ -83,6 +83,12 @@ Adding new language to application:
 
 For convenience of adding new translations, in Debug mode when hovering over an element with phrase prompt appears with phrase path.
 
+## Switch between mainnet and testnet
+
+- Support from 1.1.35 version
+- Open menu in right-top corner and select `About` item
+- Click on `Version:` label with Shift key pressed
+
 ## Switch between clear console and debug mode
 
 - Support from 1.1.36 version
