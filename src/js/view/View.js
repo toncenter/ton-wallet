@@ -2,9 +2,6 @@ import {
     $, $$, clearElement,
     copyToClipboard,
     createElement,
-    formatDate,
-    formatDateFull,
-    formatTime,
     IMPORT_WORDS_COUNT,
     CONFIRM_WORDS_COUNT,
     onInput, setAddr,
@@ -12,6 +9,11 @@ import {
     toggleFaded,
     triggerClass
 } from "./Utils.js";
+
+import {
+    getAvailableLocales, getLocaleItem as l, setElementLocaleText,
+    formatDate, formatTime, formatDateTime, setLocalesDebug, setupLocale
+ } from './Locales.js';
 
 import {initLotties, toggleLottie, lotties} from "./Lottie.js";
 import DropDown from "./DropDown.js";
@@ -23,6 +25,16 @@ const formatNanograms = TonWeb.utils.fromNano;
 const BN = TonWeb.utils.BN;
 
 const IS_FIREFOX = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+
+const logXssAttentionMessage = () => {
+    if (window.top !== window || !window.console) return;
+
+    console.log(
+        '%c%s', 'color: red; background: yellow; font-size: 24px;',
+        l('xss_attention.title')
+    );
+    console.log('%c%s', 'font-size: 18px;', l('xss_attention.message'));
+};
 
 const drawQRCode = (text, containerSelector) => {
     const $container = $(containerSelector);
@@ -61,6 +73,8 @@ class View {
         this.currentScreenName = null;
         /** @type   {boolean} */
         this.isTestnet = false;
+        /** @type   {boolean} */
+        this.isDebug = false;
         /** @type   {string} */
         this.popup = ''; // current opened popup
 
@@ -103,13 +117,28 @@ class View {
             }
         }
 
+        const availableLocales = getAvailableLocales();
+        const $localesDropdown = $('#localesDropdown');
+
+        Object.keys(availableLocales).forEach(localeId => {
+            $localesDropdown.appendChild(createElement({
+                tag: 'div',
+                clazz: 'dropdown-item',
+                text: availableLocales[localeId],
+                dataset: { locale: localeId }
+            }));
+        });
+
         $('#toWalletInput').addEventListener('paste', e => {
             const urlString = getClipboardData(e);
+            if (!urlString.startsWith('ton://')) return;
+
             let parsedTransferUrl;
+
             try {
                 parsedTransferUrl = TonWeb.utils.parseTransferUrl(urlString);
             } catch (e) {
-                $('#notify').innerText = 'Parse transfer URL error';
+                setElementLocaleText($('#notify'), 'send.parse_uri_error');
                 triggerClass($('#notify'), 'faded-show', 2000);
                 return;
             }
@@ -132,6 +161,7 @@ class View {
 
         $("#start_createBtn").addEventListener('click', () => this.sendMessage('showScreen', {name: 'created'}));
         $("#start_importBtn").addEventListener('click', () => this.sendMessage('showScreen', {name: 'import'}));
+        $('#start_localeButton').addEventListener('click', () => this.onLocaleClick());
 
         let needShowLedger = false;
         try {
@@ -160,18 +190,11 @@ class View {
 
         $('#import_alertBtn').addEventListener('click', () => {
             this.showAlert({
-                title: 'Too Bad',
-                message: 'Without the secret words, you can\'t restore access to your wallet.',
+                title: 'import.alert_title',
+                message: 'import.alert_message',
                 buttons: [
                     {
-                        label: 'CANCEL',
-                        callback: () => {
-                            this.isBack = true;
-                            this.sendMessage('onImportBack');
-                        }
-                    },
-                    {
-                        label: 'ENTER WORDS',
+                        label: 'common.got_it',
                         callback: () => {
                             this.closePopup();
                         }
@@ -190,17 +213,17 @@ class View {
             const currentTime = +new Date();
             if (currentTime - this.backupShownTime < 60000) { //1 minute
                 this.showAlert({
-                    title: 'Sure done?',
-                    message: 'You didn\'t have enough time to write these words down.',
+                    title: 'save.alert_title',
+                    message: 'save.alert_message',
                     buttons: [
                         {
-                            label: 'I\'M SURE',
+                            label: 'save.alert_confirm',
                             callback: () => {
                                 this.sendMessage('onBackupDone');
                             }
                         },
                         {
-                            label: 'OK, SORRY',
+                            label: 'save.alert_return',
                             callback: () => {
                                 this.closePopup();
                             }
@@ -226,18 +249,18 @@ class View {
 
             if (!confirmWords.isRightWords) {
                 this.showAlert({
-                    title: 'Incorrect words',
-                    message: 'The secret words you have entered do not match the ones in the list.',
+                    title: 'confirm.alert_title',
+                    message: 'confirm.alert_message',
                     buttons: [
                         {
-                            label: 'SEE WORDS',
+                            label: 'confirm.alert_back',
                             callback: () => {
                                 this.isBack = true;
                                 this.sendMessage('onConfirmBack');
                             }
                         },
                         {
-                            label: 'TRY AGAIN',
+                            label: 'confirm.alert_close',
                             callback: () => {
                                 this.closePopup();
                             }
@@ -254,7 +277,8 @@ class View {
             const password = $('#createPassword_input').value;
             const passwordRepeat = $('#createPassword_repeatInput').value;
 
-            const isEmpty = password.length === 0 && !this.isTestnet;
+            const isAllowEmpty = this.isTestnet || this.isDebug;
+            const isEmpty = password.length === 0 && !isAllowEmpty;
 
             if (isEmpty) {
                 $('#createPassword_input').classList.add('error');
@@ -286,9 +310,16 @@ class View {
         });
 
         if (IS_FIREFOX) {
+            toggle($('#menu_protocol'), false);
             toggle($('#menu_magic'), false);
             toggle($('.about-magic'), false);
         }
+
+        $('#menu_protocol').addEventListener('click', () => {
+            $('#menu_protocol .dropdown-toggle').classList.toggle('toggle-on');
+            const isTurnedOn = $('#menu_protocol .dropdown-toggle').classList.contains('toggle-on');
+            this.sendMessage('onProtocolClick', isTurnedOn);
+        });
 
         $('#menu_magic').addEventListener('click', () => {
             $('#menu_magic .dropdown-toggle').classList.toggle('toggle-on');
@@ -312,6 +343,7 @@ class View {
         $('#menu_changePassword').addEventListener('click', () => this.onMessage('showPopup', {name: 'changePassword'}));
         $('#menu_backupWallet').addEventListener('click', () => this.sendMessage('onBackupWalletClick'));
         $('#menu_delete').addEventListener('click', () => this.showPopup('delete'));
+        $('#menu_changeLocale').addEventListener('click', () => this.onLocaleClick());
 
         $('#receive_showAddressOnDeviceBtn').addEventListener('click', () => this.onShowAddressOnDevice());
         $('#receive_invoiceBtn').addEventListener('click', () => this.onCreateInvoiceClick());
@@ -370,17 +402,17 @@ class View {
         $('#about_version').addEventListener('click', (e) => {
             if (e.shiftKey) {
                 this.showAlert({
-                    title: 'Are you sure you want to switch between mainnet/testnet?',
-                    message: 'You can switch back the network by clicking on the version with the Shift key pressed',
+                    title: 'mode_switch.net_title',
+                    message: 'mode_switch.net_message',
                     buttons: [
                         {
-                            label: 'I\'M SURE',
+                            label: 'common.sure',
                             callback: () => {
                                 this.sendMessage('toggleTestnet');
                             }
                         },
                         {
-                            label: 'BACK',
+                            label: 'common.back',
                             callback: () => {
                                 this.closePopup();
                             }
@@ -389,17 +421,17 @@ class View {
                 });
             } else if (e.altKey) {
                 this.showAlert({
-                    title: 'Are you sure you want to switch between clear console/debug mode?',
-                    message: 'You can switch back the clear console by clicking on the version with the Alt key pressed',
+                    title: 'mode_switch.debug_title',
+                    message: 'mode_switch.debug_message',
                     buttons: [
                         {
-                            label: 'I\'M SURE',
+                            label: 'common.sure',
                             callback: () => {
                                 this.sendMessage('toggleDebug');
                             }
                         },
                         {
-                            label: 'BACK',
+                            label: 'common.back',
                             callback: () => {
                                 this.closePopup();
                             }
@@ -415,7 +447,8 @@ class View {
             const newPassword = $('#changePassword_newInput').value;
             const passwordRepeat = $('#changePassword_repeatInput').value;
 
-            const isEmpty = newPassword.length === 0 && !this.isTestnet;
+            const isAllowEmpty = this.isTestnet || this.isDebug;
+            const isEmpty = newPassword.length === 0 && !isAllowEmpty;
 
             if (isEmpty) {
                 $('#changePassword_newInput').classList.add('error');
@@ -444,6 +477,16 @@ class View {
 
         $('#delete_cancelBtn').addEventListener('click', () => this.closePopup());
         $('#delete_okBtn').addEventListener('click', () => this.sendMessage('disconnect'));
+
+        $('#localesDropdown').addEventListener('click', e => {
+            const localeId = e.target.dataset.locale;
+            if (!localeId) return;
+
+            this._localesSetupPromise = setupLocale(localeId).then(logXssAttentionMessage);
+            this.closePopup();
+        });
+
+        this._localesSetupPromise = setupLocale().then(logXssAttentionMessage);
     }
 
     // COMMON
@@ -473,17 +516,18 @@ class View {
     }
 
     showAlert(params) {
-        $('#alert .popup-title').innerText = params.title;
-        $('#alert .popup-black-text').innerText = params.message;
+        setElementLocaleText($('#alert .popup-title'), params.title);
+        setElementLocaleText($('#alert .popup-black-text'), params.message);
+
         $('#alert .popup-footer').innerHTML = '';
 
         if (params.buttons) {
             params.buttons.forEach(button => {
                 const el = createElement({
                     tag: 'button',
-                    clazz: 'btn-lite',
-                    text: button.label
+                    clazz: 'btn-lite'
                 });
+                setElementLocaleText(el, button.label);
                 $('#alert .popup-footer').appendChild(el);
                 el.addEventListener('click', button.callback);
             });
@@ -493,8 +537,6 @@ class View {
     }
 
     async showPopup(name) {
-        this.popup = name;
-
         $('#enterPassword_input').value = '';
 
         //popups switching without animations
@@ -502,9 +544,11 @@ class View {
             triggerClass(document.body, 'disable-animations', 20);
         }
 
+        this.popup = name;
+
         toggleFaded($('#modal'), name !== '');
 
-        const popups = ['alert', 'receive', 'invoice', 'invoiceQr', 'send', 'sendConfirm', 'signConfirm', 'processing', 'done', 'menuDropdown', 'about', 'delete', 'changePassword', 'enterPassword', 'transaction', 'connectLedger', 'loader'];
+        const popups = ['alert', 'receive', 'invoice', 'invoiceQr', 'send', 'sendConfirm', 'signConfirm', 'processing', 'done', 'menuDropdown', 'localesDropdown', 'about', 'delete', 'changePassword', 'enterPassword', 'transaction', 'connectLedger', 'loader'];
 
         popups.forEach(popup => {
             toggleFaded($('#' + popup), name === popup);
@@ -707,7 +751,7 @@ class View {
             .slice(0, CONFIRM_WORDS_COUNT)
             .sort((a, b) => a - b);
 
-        const spans = $$('#confirmWordsNums span');
+        const spans = $$('#confirmWordsNums .js-confirm-number');
         for (let i = 0; i < CONFIRM_WORDS_COUNT; i++) {
             const input = $('#confirmInput' + i);
             input.setAttribute('data-index', nums[i]);
@@ -788,7 +832,7 @@ class View {
     // MAIN SCREEN
 
     setUpdating(updating) {
-        $('#updateLabel').innerText = updating ? 'updating..' : 'updated just now';
+        setElementLocaleText($('#updateLabel'), updating ? 'main.updating' : 'main.updated');
     }
 
     onSettingsClick() {
@@ -796,6 +840,12 @@ class View {
         toggleFaded($('#menuDropdown'), true);
         toggle($('#menu_changePassword'), !this.isLedger);
         toggle($('#menu_backupWallet'), !this.isLedger);
+    }
+
+    onLocaleClick() {
+        toggleFaded($('#modal'), true);
+        toggleFaded($('#menuDropdown'), false);
+        toggleFaded($('#localesDropdown'), true);
     }
 
     clearBalance() {
@@ -817,8 +867,7 @@ class View {
         $('#balance').appendChild(createElement({tag: 'span', text: first}));
         $('#balance').appendChild(createElement({tag: 'span', style: {'font-size': '24px'}, text: last}));
         $('#balance').appendChild(createElement({tag: 'span', text: ' 💎'}));
-
-        $('#sendBalance').innerText = 'Balance: ' + s + ' 💎';
+        $('#sendBalance').innerText = s;
         toggle($('#sendButton'), balance.gt(new BN(0)) ? 'inline-block' : 'none');
         this.setTransactions(txs);
         this.setUpdating(false);
@@ -839,15 +888,15 @@ class View {
 
             const txDate = formatDate(tx.date);
             if (date !== txDate) {
-                this.addDateSeparator(txDate);
+                this.addDateSeparator(txDate, tx.date);
                 date = txDate;
             }
             this.addTx(tx);
         });
     }
 
-    addDateSeparator(dateString) {
-        $('#transactionsList').appendChild(createElement({tag: 'div', clazz: 'date-separator', text: dateString}));
+    addDateSeparator(dateString, dateObject) {
+        $('#transactionsList').appendChild(createElement({tag: 'div', clazz: 'date-separator', text: dateString, dataset: { ldate: +dateObject }}));
     }
 
     addTx(tx) {
@@ -868,17 +917,56 @@ class View {
                             text: '+' + amountFormatted
                         }),
                         createElement({tag: 'span', text: ' 💎'}),
-                        createElement({tag: 'span', clazz: 'tx-from', text: ' from:'})
+                        createElement({
+                            tag: 'span',
+                            clazz: 'tx-from',
+                            child: [
+                                document.createTextNode(' '),
+                                createElement({
+                                    tag: 'span',
+                                    text: l('main.sender'),
+                                    dataset: { l: 'main.sender' }
+                                }),
+                                document.createTextNode(':')
+                            ]
+                        })
                     ] : [
                         createElement({tag: 'span', clazz: 'tx-amount', text: amountFormatted}),
                         createElement({tag: 'span', text: ' 💎'}),
-                        createElement({tag: 'span', clazz: 'tx-from', text: ' to:'})
+                        createElement({
+                            tag: 'span',
+                            clazz: 'tx-from',
+                            child: [
+                                document.createTextNode(' '),
+                                createElement({
+                                    tag: 'span',
+                                    text: l('main.recipient'),
+                                    dataset: { l: 'main.recipient' }
+                                }),
+                                document.createTextNode(':')
+                            ]
+                        })
                     ]
                 }),
                 setAddr(createElement({tag: 'div', clazz: ['tx-addr', 'addr']}), addr),
                 tx.comment ? createElement({tag: 'div', clazz: 'tx-comment', text: tx.comment}) : undefined,
-                createElement({tag: 'div', clazz: 'tx-fee', text: `blockchain fees: ${formatNanograms(tx.fee)}`}),
-                createElement({tag: 'div', clazz: 'tx-item-date', text: formatTime(tx.date)})
+                createElement({
+                    tag: 'div',
+                    clazz: 'tx-fee',
+                    child: [
+                        createElement({
+                            tag: 'span',
+                            text: l('main.fee'),
+                            dataset: { l: 'main.fee' }
+                        }),
+                        document.createTextNode(': '),
+                        createElement({
+                            tag: 'span',
+                            text: formatNanograms(tx.fee)
+                        })
+                    ]
+                }),
+                createElement({tag: 'div', clazz: 'tx-item-date', text: formatTime(tx.date), dataset: { ltime: +tx.date }})
             ]
         });
 
@@ -896,13 +984,21 @@ class View {
         this.currentTransactionAddr = addr;
         const amountFormatted = formatNanograms(tx.amount);
         $('#transactionAmount').innerText = (isReceive ? '+' + amountFormatted : amountFormatted) + ' 💎';
-        $('#transactionFee').innerText = formatNanograms(tx.otherFee) + ' transaction fee';
-        $('#transactionStorageFee').innerText = formatNanograms(tx.storageFee) + ' storage fee';
-        $('#transactionSenderLabel').innerText = isReceive ? 'Sender' : 'Recipient';
+
+        $('#transactionFee').innerText = formatNanograms(tx.otherFee);
+        $('#transactionStorageFee').innerText = formatNanograms(tx.storageFee);
+
+        setElementLocaleText(
+            $('#transactionSenderLabel'), isReceive ? 'main.sender' : 'main.recipient'
+        );
+
         setAddr($('#transactionSender'), addr);
         toggle($('#transactionCommentLabel'), !!tx.comment);
         $('#transactionComment').innerText = tx.comment;
-        $('#transactionDate').innerText = formatDateFull(tx.date);
+
+        const $transactionDate = $('#transactionDate');
+        $transactionDate.dataset.ldatetime = +tx.date;
+        $transactionDate.innerText = formatDateTime(tx.date);
     }
 
     onTransactionButtonClick() {
@@ -925,16 +1021,19 @@ class View {
         drawQRCode(TonWeb.utils.formatTransferUrl(address), '#qr');
     }
 
-    onShareAddressClick(onyAddress) {
-        const data = onyAddress ? this.myAddress : TonWeb.utils.formatTransferUrl(this.myAddress);
-        const text = onyAddress ? 'Wallet address copied to clipboard' : 'Transfer link copied to clipboard';
-        $('#notify').innerText = copyToClipboard(data) ? text : 'Can\'t copy link';
+    onShareAddressClick(onlyAddress) {
+        const data = onlyAddress ? this.myAddress : TonWeb.utils.formatTransferUrl(this.myAddress);
+        const localeItem = onlyAddress ? 'receive.address_copied' : 'receive.link_copied';
+
+        setElementLocaleText(
+            $('#notify'), copyToClipboard(data) ? localeItem : 'receive.copy_error'
+        );
         triggerClass($('#notify'), 'faded-show', 2000);
     }
 
     onShowAddressOnDevice() {
         this.sendMessage('showAddressOnDevice');
-        $('#notify').innerText = 'Please check the address on your device';
+        setElementLocaleText($('#notify'), 'receive.check_device');
         triggerClass($('#notify'), 'faded-show', 2000);
     }
 
@@ -955,7 +1054,10 @@ class View {
     }
 
     onShareInvoiceClick() {
-        $('#notify').innerText = copyToClipboard(this.getInvoiceLink()) ? 'Transfer link copied to clipboard' : 'Can\'t copy link';
+        setElementLocaleText(
+            $('#notify'),
+            copyToClipboard(this.getInvoiceLink()) ? 'receive.link_copied' : 'receive.copy_error'
+        );
         triggerClass($('#notify'), 'faded-show', 2000);
     }
 
@@ -981,7 +1083,9 @@ class View {
     }
 
     // receive message from Controller.js
-    onMessage(method, params) {
+    async onMessage(method, params) {
+        await this._localesSetupPromise;
+
         switch (method) {
             case 'disableCreated':
                 $('#createdContinueButton').disabled = params;
@@ -989,7 +1093,14 @@ class View {
 
             case 'setIsTestnet':
                 this.isTestnet = params;
-                $('.your-balance').innerText = params ? 'Your testnet balance' : 'Your mainnet balance';
+                setElementLocaleText(
+                    $('.your-balance'), params ? 'main.your_balance_testnet' : 'main.your_balance'
+                );
+                break;
+
+            case 'setIsDebug':
+                this.isDebug = params;
+                setLocalesDebug(params);
                 break;
 
             case 'setBalance':
@@ -998,6 +1109,11 @@ class View {
 
             case 'setIsLedger':
                 this.isLedger = params;
+                break;
+
+            case 'setIsProtocol':
+                const isProtocolTurnedOn = params;
+                $('#menu_protocol .dropdown-toggle').classList.toggle('toggle-on', isProtocolTurnedOn && !IS_FIREFOX);
                 break;
 
             case 'setIsMagic':
@@ -1041,8 +1157,8 @@ class View {
                 break;
 
             case 'sendCheckFailed':
-                if (params && params.message) {
-                    $('#notify').innerText = params.message;
+                if (params) {
+                    setElementLocaleText($('#notify'), params);
                     triggerClass($('#notify'), 'faded-show', 3000);
                 }
 
@@ -1057,7 +1173,15 @@ class View {
                 this.toggleButtonLoader($('#send_btn'), false);
                 $('#amountInput').classList.add('error');
 
-                $('#notify').innerText = `Estimated fee is ~${formatNanograms(params.fee)} TON`;
+                const $notify = $('#notify');
+                $notify.dataset.l = 'main.estimated_fee_is';
+                $notify.innerText = `${l('main.estimated_fee_is')} ~${formatNanograms(params.fee)} TON`;
+                triggerClass($notify, 'faded-show', 3000);
+
+                break;
+
+            case 'showNotify':
+                setElementLocaleText($('#notify'), params);
                 triggerClass($('#notify'), 'faded-show', 3000);
 
                 break;
@@ -1105,6 +1229,7 @@ class View {
                         if (params.myAddress) {
                             this.myAddress = params.myAddress;
                             this.setMyAddress(params.myAddress);
+                            this.sendMessage('ready');
                         }
                         break;
                 }
@@ -1122,7 +1247,7 @@ class View {
                         $('#enterPassword_input').focus();
                         break;
                     case 'done':
-                        $('#done .popup-grey-text').innerText = params.message;
+                        $('#doneAmount').innerText = params.amount;
                         break;
                     case 'invoice':
                         $('#invoice_amountInput').value = '';
@@ -1139,13 +1264,32 @@ class View {
                         if (params.toAddr) {
                             $('#toWalletInput').value = params.toAddr;
                         }
+                        if (params.url) {
+                            const parsed = TonWeb.utils.parseTransferUrl(params.url);
+                            $('#toWalletInput').value = parsed.address;
+                            if (parsed.amount) {
+                                $('#amountInput').value = TonWeb.utils.fromNano(new BN(parsed.amount));
+                            }
+                            if (parsed.text) {
+                                $('#commentInput').value = parsed.text;
+                            }
+                        }
                         toggle($('#commentInput'), !this.isLedger);
                         $('#toWalletInput').focus();
                         break;
                     case 'sendConfirm':
                         $('#sendConfirmAmount').innerText = formatNanograms(new BN(params.amount)) + ' TON';
                         setAddr($('#sendConfirmAddr'), params.toAddress);
-                        $('#sendConfirmFee').innerText = params.fee ? 'Fee: ~' + formatNanograms(new BN(params.fee)) + ' TON' : '';
+
+                        const $sendConfirmFee = $('#sendConfirmFee');
+                        if (params.fee) {
+                            $sendConfirmFee.dataset.l = 'main.fee';
+                            $sendConfirmFee.innerText = `${l('main.fee')}: ~${formatNanograms(new BN(params.fee))} TON`;
+                        } else {
+                            delete($sendConfirmFee.dataset.l);
+                            $sendConfirmFee.innerText = '';
+                        }
+
                         toggle($('#sendConfirm .popup-footer'), !this.isLedger);
                         toggle($('#sendConfirm_closeBtn'), !this.isLedger);
                         // todo: show label 'Please approve on device'
@@ -1221,20 +1365,4 @@ if (IS_EXTENSION) {
             prevWindow = currentWindow;
         }, 3000);
     })();
-}
-
-if (window.top == window && window.console) {
-    const selfXssAttentions = {
-        'ru-RU': ['Внимание!', 'Используя эту консоль, вы можете подвергнуться атаке Self-XSS, что позволит злоумышленникам завладеть вашим кошельком.\nНе вводите и не вставляйте программный код, который не понимаете.'],
-        '*': ['Attention!', 'Using this console, you can be exposed to a Self-XSS attack, allowing attackers to take over your wallet.\nDo not enter or paste program code that you do not understand.']
-    };
-
-    const userLanguage = navigator.language || navigator.userLanguage;
-    let localizedSelfXssAttention = selfXssAttentions[userLanguage];
-    if (!localizedSelfXssAttention) localizedSelfXssAttention = selfXssAttentions['*'];
-
-    console.log(
-        '%c%s', 'color: red; background: yellow; font-size: 24px;', localizedSelfXssAttention[0]
-    );
-    console.log('%c%s', 'font-size: 18px;', localizedSelfXssAttention[1]);
 }

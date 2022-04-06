@@ -11,7 +11,8 @@ const BUILD_DESTS_GLOBS = {
         'src/assets/fonts/**/*',
         'src/assets/lottie/**/*',
         'src/assets/ui/**/*',
-        'src/libs/**/*'
+        'src/libs/**/*',
+        'src/locales/**/*'
     ],
     [BUILD_DESTS.WEB]: [
         'src/assets/favicon/**/*'

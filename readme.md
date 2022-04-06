@@ -21,11 +21,7 @@ Please, post your issues and proposals as Issues in this repository.
 - Open menu in right-top corner and select `About` item
 - Click on `Version:` label with Shift key pressed
 
-## Development
-
-See [build](build) project directory.
-
-## Support browsers:
+## Browsers support:
 
 - Chrome (and Chromium-based) 55+ for website version, 88+ for extension
 - Firefox 63+
@@ -39,3 +35,7 @@ See [build](build) project directory.
 - Opera Mobile 64+
 - UC Browser 12.12+
 - Firefox for Android 63+
+
+## Development
+
+See [build](build) project directory.

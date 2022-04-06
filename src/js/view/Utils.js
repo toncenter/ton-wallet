@@ -66,6 +66,11 @@ function createElement(params) {
             item.style[key] = params.style[key];
         }
     }
+    if (params.dataset) {
+        for (let key in params.dataset) {
+            item.dataset[key] = params.dataset[key];
+        }
+    }
     return item;
 }
 
@@ -86,25 +91,6 @@ function onInput(input, handler) {
     input.addEventListener('input', handler);
     input.addEventListener('cut', handler);
     input.addEventListener('paste', handler);
-}
-
-function doubleZero(n) {
-    if (n < 10) return '0' + n;
-    return n;
-}
-
-function formatTime(date) {
-    return doubleZero(date.getHours()) + ':' + doubleZero(date.getMinutes());
-}
-
-const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-function formatDate(date) {
-    return MONTH_NAMES[date.getMonth()] + ' ' + date.getDate();
-}
-
-function formatDateFull(date) {
-    return date.toString();
 }
 
 function copyToClipboard(text) {
@@ -139,10 +125,6 @@ export {
     clearElement,
     onInput,
     setAddr,
-    doubleZero,
-    formatTime,
-    formatDate,
-    formatDateFull,
     copyToClipboard,
     IMPORT_WORDS_COUNT,
     CONFIRM_WORDS_COUNT

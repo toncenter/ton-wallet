@@ -6,7 +6,7 @@ const { version } = require('../../package.json');
 
 const pack = async targetName => {
     if (targetName === TARGETS.WEB) {
-        console.log('Pack target "web" not available now');
+        console.log('Pack target "web" not available');
         return;
     }
 

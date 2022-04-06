@@ -1,17 +1,17 @@
 @font-face {
-    font-family: Helvetica, Arial, sans-serif;
-    /*src: local('Mulish Regular'), local('Mulish-Regular'),*/
-    /*     url('assets/fonts/mulish-regular.woff2') format('woff2');*/
+    font-family: 'Open Sans';
+    src: local('Open Sans'), local('OpenSans'),
+        url('assets/fonts/open-sans-regular.woff2') format('woff2');
     font-weight: 400;
     font-style: normal;
     font-display: block;
 }
 
 @font-face {
-    font-family: Helvetica, Arial, sans-serif;
-    /*src: local('Mulish Bold'), local('Mulish-Bold'),*/
-    /*     url('assets/fonts/mulish-bold.woff2') format('woff2');*/
-    font-weight: 700;
+    font-family: 'Open Sans';
+    src: local('Open Sans Semibold'), local('OpenSans-Semibold'),
+        url('assets/fonts/open-sans-semibold.woff2') format('woff2');
+    font-weight: 600;
     font-style: normal;
     font-display: block;
 }
@@ -23,7 +23,7 @@ html {
 }
 
 body, button, input, optgroup, select, textarea {
-    font-family: Helvetica, Arial, sans-serif;
+    font-family: 'Open Sans', sans-serif;
 }
 
 body {
@@ -31,7 +31,7 @@ body {
 }
 
 body.plugin {
-    min-width: 400px;
+    min-width: 460px;
     min-height: 600px;
 }
 
@@ -107,7 +107,7 @@ input.error {
 }
 
 .input-label {
-    font-weight: 700;
+    font-weight: 600;
     color: #3CA4DB;
 }
 
@@ -123,7 +123,7 @@ button {
     border-radius: 2px;
     height: 39px;
     font-size: 15px;
-    font-weight: 700;
+    font-weight: 600;
 }
 
 .btn-lite {
@@ -131,7 +131,7 @@ button {
     color: #3CA4DB;
     height: 40px;
     font-size: 15px;
-    font-weight: 700;
+    font-weight: 600;
     background: none;
 }
 
@@ -192,7 +192,7 @@ button {
     background-size: 20px 20px;
     border: none;
     background-color: transparent;
-    background-image: url("../assets/ui/arrow.svg");
+    background-image: url("assets/ui/arrow.svg");
     transform: scaleX(-1);
     border-radius: 100%;
     background-color: white;
@@ -326,7 +326,7 @@ button {
 
 .screen-title {
     font-size: 20px;
-    font-weight: 700;
+    font-weight: 600;
 }
 
 .screen-text {
@@ -375,7 +375,7 @@ button {
 /* IMPORT && BACKUP && CONFIRM */
 
 #import .btn-lite {
-    font-weight: 400;
+    font-weight: 600;
     font-size: 14px;
     margin-bottom: 10px;
 }
@@ -545,7 +545,7 @@ button {
     top: 70px;
     left: 50%;
     margin-left: -75px;
-    font-weight: 700;
+    font-weight: 600;
     font-size: 20px;
 }
 
@@ -568,6 +568,18 @@ button {
     padding-bottom: 10px;
     border-radius: 4px;
     min-width: 180px;
+}
+
+#localesDropdown {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    background: white;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    border-radius: 4px;
+    min-width: 180px;
+    transform: translate(-50%, -50%);
 }
 
 .dropdown-item {
@@ -634,7 +646,7 @@ button {
 }
 
 .date-separator {
-    font-weight: 700;
+    font-weight: 600;
     padding-top: 10px;
     padding-bottom: 10px;
     font-size: 14px;
@@ -657,7 +669,7 @@ button {
 }
 
 .tx-amount {
-    font-weight: 700;
+    font-weight: 600;
     font-size: 16px;
     color: #D74D4D;
 }
@@ -730,6 +742,7 @@ button {
 
 .popup.faded-show,
 #menuDropdown.faded-show,
+#localesDropdown.faded-show,
 #modal.faded-show {
     opacity: 1;
     visibility: inherit !important;
@@ -738,6 +751,7 @@ button {
 
 .popup.faded-hide,
 #menuDropdown.faded-hide,
+#localesDropdown.faded-hide,
 #modal.faded-hide {
     opacity: 0;
     visibility: hidden;
@@ -745,7 +759,7 @@ button {
 }
 
 .popup-title {
-    font-weight: 700;
+    font-weight: 600;
     margin-bottom: 20px;
     font-size: 17px;
 }
@@ -795,12 +809,16 @@ button {
     background-size: 40%;
     border: none;
     background-color: transparent;
-    background-image: url("../assets/ui/close.svg");
+    background-image: url("assets/ui/close.svg");
 }
 
 .popup-footer {
     text-align: right;
     margin-top: 10px;
+}
+
+.popup-footer .btn-lite {
+    margin-left: 15px;
 }
 
 .popup .btn-blue {
@@ -870,7 +888,7 @@ button {
     margin-top: 20px;
 }
 
-#sendBalance {
+.sendBalance {
     position: absolute;
     right: 0;
     top: 0;
@@ -939,7 +957,7 @@ button {
     margin-bottom: 8px;
 }
 
-#transactionFee, #transactionStorageFee {
+.transactionFee, .transactionStorageFee {
     color: #999;
     text-align: center;
 }
@@ -950,6 +968,10 @@ button {
 }
 
 /* EXTENSION */
+
+#menu_protocol {
+    display: none;
+}
 
 #menu_magic {
     display: none;
@@ -980,6 +1002,10 @@ button {
     border-radius: 4px;
     padding: 4px;
     content: 'Soon';
+}
+
+.plugin #menu_protocol {
+    display: block;
 }
 
 .plugin #menu_magic {
@@ -1038,8 +1064,8 @@ button {
     font-weight: 400;
 }
 
-.font-weight-bold {
-    font-weight: 700;
+.font-weight-semibold {
+    font-weight: 600;
 }
 
 .text-danger {
@@ -1055,15 +1081,19 @@ button {
 }
 
 .bg-down-left {
-    background-image: url('../assets/ui/down-left.svg')
+    background-image: url('assets/ui/down-left.svg')
 }
 
 .bg-menu {
-    background-image: url('../assets/ui/menu.svg')
+    background-image: url('assets/ui/menu.svg')
 }
 
 .bg-refresh {
-    background-image: url('../assets/ui/refresh.svg')
+    background-image: url('assets/ui/refresh.svg')
+}
+
+.bg-locale {
+    background-image: url('assets/ui/locale.svg')
 }
 
 .w-100 {
@@ -1080,6 +1110,10 @@ button {
 
 .mb-20 {
     margin-bottom: 20px;
+}
+
+.mt-auto {
+    margin-top: auto;
 }
 
 .mt-10 {

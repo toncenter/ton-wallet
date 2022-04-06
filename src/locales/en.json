@@ -1,0 +1,189 @@
+{
+    "common": {
+        "continue": "Continue",
+        "cancel": "Cancel",
+        "close": "Close",
+        "back": "Back",
+        "sure": "I'm sure",
+        "got_it": "Got it",
+        "amount": "Amount",
+        "balance": "Balance",
+        "24_secret_words": "24 secret words",
+        "logout": "Log out",
+        "comment_placeholder": "Comment (optional)",
+        "send_ton": "Send TON",
+        "send_ton_to": "Send TON to this address",
+        "transaction": "Transaction",
+        "date": "Date",
+        "done": "Done!"
+    },
+    "main": {
+        "updating": "Updating...",
+        "updated": "Updated just now",
+        "receive": "Receive",
+        "send": "Send",
+        "buy": "Buy",
+        "crearted": "Wallet created",
+        "your_balance": "Your balance",
+        "your_balance_testnet": "Your testnet balance",
+        "fee": "Fee",
+        "transaction_fee": "Transaction fee",
+        "storage_fee": "Storage fee",
+        "estimated_fee_is": "Estimated fee is",
+        "sender": "Sender",
+        "recipient": "Recipient",
+        "about": "About",
+        "open": "Open",
+        "change_password": "Change password",
+        "backup_wallet": "Back up wallet",
+        "change_language": "Change language",
+        "loading": "Loading...",
+        "ton_sent": "TON have been sent",
+        "api_error": "API request error",
+        "invalid_amount": "Invalid amount",
+        "invalid_address": "Invalid address",
+        "not_enough_balance": "Not enough balance to pay transaction",
+        "send_error": "Sending error",
+        "sending": {
+            "title": "Sending TON",
+            "message": "Please wait a few seconds for your\ntransaction to be processed..."
+        }
+    },
+    "receive": {
+        "title": "Receive TON",
+        "description": "Share this address to receive TON",
+        "show_on_device": "Show address on device",
+        "invoice": "Create invoice",
+        "share": "Share wallet address",
+        "address_copied": "Wallet address copied to clipboard",
+        "link_copied": "Transfer link copied to clipboard",
+        "copy_error": "Copy error",
+        "check_device": "Please check the address on your device"
+    },
+    "invoice": {
+        "title": "Create invoice",
+        "description": "You can specify the amount and purpose of\nthe payment to save the sender some time",
+        "uri": "Invoice URI",
+        "instruction": "Share this address to receive TON",
+        "qr": "Generate QR Code",
+        "share": "Share invoice URI",
+        "amount_placeholder": "Amount in TON you expect to receive",
+        "qr_title": "Invoice QR",
+        "qr_amount": "Expected amount",
+        "qr_share": "Share QR Code"
+    },
+    "send": {
+        "title": "Send TON",
+        "description": "Copy the 48-letter wallet address of the recipient here or ask them to send you a ton:// link",
+        "recipient_label": "Recipient wallet address",
+        "recipient_placeholder": "Enter wallet address",
+        "parse_uri_error": "Parse transfer URI error"
+    },
+    "confirmation": {
+        "title": "Confirmation",
+        "send": {
+            "info": "Do you want to send",
+            "to": "to",
+            "note": "Note: your comment will not be encrypted"
+        },
+        "sign": {
+            "info": "Do you want to sign",
+            "note": "Signing custom data is very dangerous. Use only if you know what you are doing",
+            "confirm": "Sign"
+        }
+    },
+    "ledger": {
+        "title": "Connect Ledger",
+        "support": "Please use Edge/Google Chrome v89 or later.",
+        "turn_off": "Turn off Ledger Live.",
+        "reconnect": "If it does not connect, then try reconnecting the device.",
+        "version": "Please update your Ledger TON-app to v2.0.1 or upper",
+        "sign_not_support": "Sign not supported by Ledger"
+    },
+    "change_password": {
+        "title": "Change password",
+        "old": "Enter your old password",
+        "new": "Enter a new password",
+        "repeat": "Repeat the new password",
+        "confirm": "Save"
+    },
+    "enter_password": {
+        "title": "Password",
+        "placeholder": "Enter your password",
+        "confirm": "Next"
+    },
+    "logout": {
+        "title": "Log out",
+        "disconnect": "Disconnect",
+        "description": "This will disconnect the wallet from this\napp. You will be able to restore your\nwallet using 24 secret words - or import\nanother wallet.",
+        "transfer": "Wallets are located in the decentralized\nTON Blockchain. If you want the wallet to\nbe deleted simply transfer all the TON\nfrom it and leave it empty."
+    },
+    "about": {
+        "version": "Version",
+        "api_provider": "API provider",
+        "magic": {
+            "title": "What is TON Magic?",
+            "description": "TON Magic provides native Telegram integration by patching the official Telegram web app (Z version).",
+            "info": "Turn it on to send and receive Toncoins from any Telegram user.",
+            "more": "More info and demo"
+        }
+    },
+    "start": {
+        "description": "Application allows you to make fast and\nsecure blockchain-based payments\nwithout intermediaries",
+        "create": "Create wallet",
+        "import": "Import existing wallet",
+        "ledger": "Connect Ledger",
+        "ledger_bluetooth": "Connect Ledger via Bluetooth"
+    },
+    "create": {
+        "title": "Congratulations!",
+        "description": "Your TON wallet has just been created.",
+        "instruction": "To be able to always have access to it,\nplease set up a secure password and write\ndown secret words."
+    },
+    "save": {
+        "description": "Write down these 24 words in the correct\norder and store them in secret place.",
+        "instruction": "Use these secret words to restore access to\nyour wallet if you lose your password or\naccess to this device.",
+        "alert_title": "Sure done?",
+        "alert_message": "You didn't have enough time to write these words down",
+        "alert_confirm": "Yes exactly",
+        "alert_return": "No"
+    },
+    "confirm": {
+        "title": "Test time!",
+        "description": "Now let's check that you wrote your secret\nwords correctly.",
+        "instruction": "Please enter the words",
+        "and": "and",
+        "below": "below",
+        "alert_title": "Incorrect words",
+        "alert_message": "The secret words you have entered do not match the ones in the list",
+        "alert_back": "See words",
+        "alert_close": "Try again"
+    },
+    "import": {
+        "description": "Please restore access to your non-hardware wallet by\nentering the 24 secret words you wrote\ndown when creating the wallet",
+        "alert": "I don't have them",
+        "alert_title": "Too Bad",
+        "alert_message": "Without the secret words, you can't restore access to your wallet"
+    },
+    "create_password": {
+        "title": "Secure Password",
+        "description": "Please choose a secure password\nfor confirming your payments",
+        "enter": "Enter your password",
+        "repeat": "Repeat your password"
+    },
+    "ready": {
+        "title": "Ready to go!",
+        "description": "You're all set. Now you have a wallet that\nonly you control - directly, without\nmiddlemen or bankers",
+        "continue": "View my wallet"
+    },
+    "mode_switch": {
+        "net_title": "Are you sure you want to switch between mainnet/testnet?",
+        "net_message": "You can switch back the network by clicking on the version with the Shift key pressed",
+        "debug_title": "Are you sure you want to switch between default/debug mode?",
+        "debug_message": "You can switch back the mode by clicking on the version with the Alt key pressed"
+    },
+    "xss_attention": {
+        "title": "Attention!",
+        "message": "Using this console, you can be exposed to a Self-XSS attack, allowing attackers to take over your wallet.\nDo not enter or paste program code that you do not understand."
+    }
+}

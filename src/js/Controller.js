@@ -1,4 +1,4 @@
-import storage from './util/storage.js';
+import { storage, clearStorage } from './util/storage.js';
 
 let extensionWindowId = -1;
 let contentScriptPorts = new Set();
@@ -28,29 +28,41 @@ const createDappPromise = () => {
     };
 };
 
-const showExtensionWindow = () => {
-    return new Promise(async resolve => {
-        if (extensionWindowId > -1) {
-            chrome.windows.update(extensionWindowId, { focused: true });
-            return resolve();
-        }
+let popupReadyPromise;
 
-        const windowState = (await storage.getItem('windowState')) || {};
+const showExtensionWindow = async () => {
+    let resolve;
 
-        windowState.top = windowState.top || 0;
-        windowState.left = windowState.left || 0;
-        windowState.height = windowState.height || 800;
-        windowState.width = windowState.width || 480;
-
-        chrome.windows.create(Object.assign(windowState, {
-            url: 'index.html',
-            type: 'popup',
-            focused: true
-        }), window => {
-            extensionWindowId = window.id;
-            resolve();
-        });
+    popupReadyPromise = new Promise(localResolve => {
+        resolve = localResolve;
     });
+
+    popupReadyPromise.resolve = (...args) => {
+        resolve(...args);
+        dAppPromise = null;
+    };
+
+    if (extensionWindowId > -1) {
+        chrome.windows.update(extensionWindowId, { focused: true });
+        return;
+    }
+
+    const windowState = (await storage.getItem('windowState')) || {};
+
+    windowState.top = windowState.top || 0;
+    windowState.left = windowState.left || 0;
+    windowState.height = windowState.height || 800;
+    windowState.width = windowState.width || 480;
+
+    chrome.windows.create(Object.assign(windowState, {
+        url: 'index.html',
+        type: 'popup',
+        focused: true
+    }), window => {
+        extensionWindowId = window.id;
+    });
+
+    return popupReadyPromise;
 };
 
 const BN = TonWeb.utils.BN;
@@ -201,22 +213,30 @@ class Controller {
         return new BN(getWalletResponse.balance);
     }
 
+    getChainId() {
+        return this.isTestnet ? 2 : 1;
+    }
+
     async _init() {
         return new Promise(async (resolve) => {
             await storage.removeItem('pwdHash');
 
-            this.isTestnet = IS_EXTENSION ? (await storage.getItem('isTestnet')) : (self.location.href.indexOf('testnet') > -1);
-            this.isDebug = IS_EXTENSION ? (await storage.getItem('isDebug')) : (self.location.href.indexOf('debug') > -1);
+            this.isTestnet = (self.location.href.indexOf('testnet') > -1) || ((await storage.getItem('isTestnet')) === 'true') || false;
+            this.isDebug = (self.location.href.indexOf('debug') > -1) || ((await storage.getItem('isDebug')) === 'true') || false;
+
+            this.debug('isDebug', this.isDebug);
+            this.debug('isTestnet', this.isTestnet);
 
             const mainnetRpc = 'https://toncenter.com/api/v2/jsonRPC';
             const testnetRpc = 'https://testnet.toncenter.com/api/v2/jsonRPC';
 
+            // Values replaced in build step
             const apiKey = this.isTestnet
-                ? TONCENTER_API_KEY_WEB_TEST
-                : TONCENTER_API_KEY_WEB_MAIN;
+                ? __TONCENTER_API_KEY_WEB_TEST__
+                : __TONCENTER_API_KEY_WEB_MAIN__;
             const extensionApiKey = this.isTestnet
-                ? TONCENTER_API_KEY_EXT_TEST
-                : TONCENTER_API_KEY_EXT_MAIN;
+                ? __TONCENTER_API_KEY_EXT_TEST__
+                : __TONCENTER_API_KEY_EXT_MAIN__;
 
             if (IS_EXTENSION && !(await storage.getItem('address'))) {
                 await this._restoreDeprecatedStorage();
@@ -227,7 +247,7 @@ class Controller {
             this.publicKeyHex = await storage.getItem('publicKey');
 
             if (!this.myAddress || !(await storage.getItem('words'))) {
-                await storage.clear();
+                await clearStorage();
                 this.sendToView('showScreen', {name: 'start', noAnimation: true});
             } else {
                 if ((await storage.getItem('isLedger')) === 'true') {
@@ -270,6 +290,7 @@ class Controller {
         this.clearVars();
         await this._init();
         await this.sendToView('setIsTestnet', this.isTestnet);
+        this.sendToDapp('ton_chain', this.getChainId());
     }
 
     async toggleDebug() {
@@ -279,6 +300,8 @@ class Controller {
         } else {
             await storage.removeItem('isDebug');
         }
+        await this._init();
+        await this.sendToView('setIsDebug', this.isDebug);
     }
 
     async getTransactions(limit = 20) {
@@ -291,7 +314,20 @@ class Controller {
         }
 
         const arr = [];
-        const transactions = await this.ton.getTransactions(this.myAddress, limit);
+
+        let transactions;
+        try {
+            transactions = await this.ton.getTransactions(this.myAddress, limit);
+        } catch {}
+
+        if (!transactions) {
+            try {
+                transactions = await this.ton.provider.getTransactions(this.myAddress, limit, undefined, undefined, undefined, true);
+            } catch {}
+        }
+
+        if (!transactions) return [];
+
         for (let t of transactions) {
             let amount = new BN(t.in_msg.value);
             for (let outMsg of t.out_msgs) {
@@ -442,7 +478,7 @@ class Controller {
         const ledgerVersion = (await this.ledgerApp.getAppConfiguration()).version;
         this.debug('ledgerAppConfig=', ledgerVersion);
         if (!ledgerVersion.startsWith('2')) {
-            alert('Please update your Ledger TON-app to v2.0.1 or upper or use old wallet version https://tonwallet.me/prev/');
+            this.sendToView('showNotify', 'ledger.version');
             throw new Error('outdated ledger ton-app version');
         }
         const {publicKey} = await this.ledgerApp.getPublicKey(ACCOUNT_NUMBER, false); // todo: можно сохранять publicKey и не запрашивать это
@@ -512,8 +548,8 @@ class Controller {
                 await this.importImpl(keyPair, walletClass);
 
                 this.sendToView('importCompleted', {state: 'success'});
-            } catch (e) {
-                this.debug(e);
+            } catch (err) {
+                console.error(err);
                 this.sendToView('importCompleted', {state: 'failure'});
             }
         } else {
@@ -594,13 +630,19 @@ class Controller {
         }
         this.updateIntervalId = setInterval(() => this.update(), 5000);
         this.update(true);
+        // TODO: check is this need in every controller instance create,
+        //       because background go to inactive after ~5min idle
         this.sendToDapp('ton_accounts', [this.myAddress]);
     }
 
-    async initDapp() {
-        this.sendToDapp('ton_accounts', this.myAddress ? [this.myAddress] : []);
-        this.doMagic((await storage.getItem('magic')) === 'true');
-        this.doProxy((await storage.getItem('proxy')) === 'true');
+    async initDapp(port) {
+        this.sendToDappInstance(port, 'ton_accounts', this.myAddress ? [this.myAddress] : []);
+        this.sendToDappInstance(
+            port, 'ton_doProtocol', (await storage.getItem('protocol')) !== 'false'
+        );
+        this.sendToDappInstance(
+            port, 'ton_doMagic', (await storage.getItem('magic')) === 'true'
+        );
     }
 
     async initView() {
@@ -612,9 +654,11 @@ class Controller {
                 this.sendToView('setBalance', {balance: this.balance.toString(), txs: this.transactions});
             }
         }
+        this.sendToView('setIsProtocol', (await storage.getItem('protocol')) !== 'false');
         this.sendToView('setIsMagic', (await storage.getItem('magic')) === 'true');
         this.sendToView('setIsProxy', (await storage.getItem('proxy')) === 'true');
         this.sendToView('setIsTestnet', this.isTestnet);
+        this.sendToView('setIsDebug', this.isDebug);
     }
 
     async update(force) {
@@ -626,13 +670,14 @@ class Controller {
         if (!needUpdate) return;
 
         const response = await this.getWallet();
+        this.debug('getWalletResponse', response);
 
         const balance = this.getBalance(response);
         const isBalanceChanged = (this.balance === null) || (this.balance.cmp(balance) !== 0);
         this.balance = balance;
+        this.debug('isBalanceChanged', isBalanceChanged);
 
         const isContractInitialized = this.checkContractInitialized(response) && response.seqno;
-        this.debug('isBalanceChanged', isBalanceChanged);
         this.debug('isContractInitialized', isContractInitialized);
 
         if (!this.isContractInitialized && isContractInitialized) {
@@ -656,7 +701,7 @@ class Controller {
                             if (txAddr === myAddr && txAmount === myAmount) {
                                 this.sendToView('showPopup', {
                                     name: 'done',
-                                    message: formatNanograms(this.sendingData.amount) + ' TON have been sent'
+                                    amount: formatNanograms(this.sendingData.amount)
                                 });
                                 this.processingVisible = false;
                                 this.sendingData = null;
@@ -722,26 +767,24 @@ class Controller {
         createDappPromise();
 
         if (!amount.gt(new BN(0))) {
-            this.sendToView('sendCheckFailed', { message: 'Invalid amount' });
+            this.sendToView('sendCheckFailed', 'main.invalid_amount');
             return false;
         }
 
         if (!Address.isValid(toAddress)) {
-            this.sendToView('sendCheckFailed', { message: 'Invalid address' });
+            this.sendToView('sendCheckFailed', 'main.invalid_address');
             return false;
         }
 
         try {
             await this.update(true);
         } catch {
-            this.sendToView('sendCheckFailed', { message: 'API request error' });
+            this.sendToView('sendCheckFailed', 'main.api_error');
             return false;
         }
 
         if (this.balance.lt(amount)) {
-            this.sendToView('sendCheckFailed', {
-                message: 'Not enough balance'
-            });
+            this.sendToView('sendCheckFailed', 'main.not_enough_balance');
             return false;
         }
 
@@ -750,14 +793,18 @@ class Controller {
         try {
             fee = await this.getFees(amount, toAddress, comment, stateInit);
         } catch {
-            this.sendToView('sendCheckFailed', { message: 'API request error' });
+            this.sendToView('sendCheckFailed', 'main.api_error');
+            this.sendToView('closePopup');
             return false;
         }
 
         if (this.balance.sub(fee).lt(amount)) {
             this.sendToView('sendCheckCantPayFee', {fee});
+            this.sendToView('closePopup');
             return false;
         }
+
+        this.sendToView('closePopup');
 
         if (this.isLedger) {
             this.sendToView('showPopup', {
@@ -786,7 +833,7 @@ class Controller {
                 if (sendResult) {
                     dAppPromise.resolve(true);
                 } else {
-                    this.sendToView('sendCheckFailed', { message: 'API request error' });
+                    this.sendToView('sendCheckFailed', 'main.api_error');
                     dAppPromise.resolve(false);
                 }
             };
@@ -816,7 +863,7 @@ class Controller {
     showSignConfirm(hexToSign, needQueue) {
         return new Promise((resolve, reject) => {
             if (this.isLedger) {
-                alert('sign not supported by Ledger');
+                this.sendToView('showNotify', 'ledger.sign_not_support');
                 reject();
             } else {
 
@@ -898,10 +945,10 @@ class Controller {
                 return await this.sendQuery(query);
 
             }
-        } catch (e) {
-            this.debug(e);
+        } catch (err) {
+            console.error(err);
             this.sendToView('closePopup');
-            alert('Error sending');
+            this.sendToView('showNotify', 'main.send_error');
             return false;
         }
     }
@@ -928,7 +975,7 @@ class Controller {
             return true;
         } else {
             this.sendToView('closePopup');
-            alert('Send error');
+            this.sendToView('showNotify', 'main.send_error');
             return false;
         }
     }
@@ -952,9 +999,17 @@ class Controller {
 
     async onDisconnectClick() {
         this.clearVars();
-        await storage.clear();
+        await clearStorage();
         this.sendToView('showScreen', {name: 'start'});
         this.sendToDapp('ton_accounts', []);
+    }
+
+    doProtocol(enabled) {
+        try {
+            this.sendToDapp('ton_doProtocol', enabled);
+        } catch (e) {
+
+        }
     }
 
     // MAGIC
@@ -975,9 +1030,9 @@ class Controller {
 
     // TRANSPORT WITH VIEW
 
-    sendToView(method, params, needQueue, needResult) {
+    async sendToView(method, params, needQueue, needResult) {
         if (self.view) {
-            const result = self.view.onMessage(method, params);
+            const result = await self.view.onMessage(method, params);
             if (needResult) {
                 return result;
             }
@@ -1006,6 +1061,9 @@ class Controller {
 
     async onViewMessage(method, params) {
         switch (method) {
+            case 'ready':
+                if (popupReadyPromise) popupReadyPromise.resolve();
+                break;
             case 'showScreen':
                 switch (params.name) {
                     case 'created':
@@ -1073,6 +1131,10 @@ class Controller {
             case 'onClosePopup':
                 this.processingVisible = false;
                 break;
+            case 'onProtocolClick':
+                await storage.setItem('protocol', params ? 'true' : 'false');
+                this.doProtocol(params);
+                break;
             case 'onMagicClick':
                 await storage.setItem('magic', params ? 'true' : 'false');
                 this.doMagic(params);
@@ -1109,6 +1171,13 @@ class Controller {
                 message: {jsonrpc: '2.0', method: method, params: params}
             }));
         });
+    }
+
+    sendToDappInstance(port, method, params) {
+        port.postMessage(JSON.stringify({
+            type: 'gramWalletAPI',
+            message: {jsonrpc: '2.0', method: method, params: params}
+        }));
     }
 
     requestPublicKey(needQueue) {
@@ -1150,6 +1219,8 @@ class Controller {
                     publicKey: this.publicKeyHex,
                     walletVersion: walletVersion
                 }];
+            case 'ton_getChainId':
+                return this.getChainId();
             case 'ton_getBalance':
                 await this.update(true);
                 return (this.balance ? this.balance.toString() : '');
@@ -1187,6 +1258,11 @@ class Controller {
             case 'flushMemoryCache':
                 await chrome.webRequest.handlerBehaviorChanged();
                 return true;
+            case 'openTransferUrl':
+                this.debug('openTransferUrl', params[0]);
+                await showExtensionWindow();
+                if (this.myAddress) this.sendToView('showPopup', {name: 'send', url: params[0]});
+                return true;
         }
     }
 }
@@ -1200,7 +1276,7 @@ if (IS_EXTENSION) {
             port.onMessage.addListener(async (msg, port) => {
                 if (msg.type === 'gramWalletAPI_ton_provider_connect') {
                     controller.whenReady.then(() => {
-                        controller.initDapp();
+                        controller.initDapp(port);
                     });
                 }
 

@@ -1,8 +1,8 @@
-# Source code
+## Source code
 
 We deliberately use plain js and do not use frameworks, due to the direct access to the user's private keys. We also try to use the minimum number of third party libraries and consciously include them as static files rather than NPM packages to prevent accidental upgrade to a potentially malicious versions.
 
-# Preparation
+## Preparation
 
 Set required for build environment variables in shell or `.env` file in project root directory. See `.env.example` with required variables names and their description.
 
@@ -14,7 +14,7 @@ Install development dependencies:
 npm install
 ```
 
-# Tasks
+## Tasks
 
 To run build task use next template:
 
@@ -26,10 +26,11 @@ Possible tasks:
 - `build` - create bundles in targets destination directories
 - `watch` - autorebuild bundles on sources change
 - `start` - open target in web-browser and autorebuild bundles on sources change (only for `web` target to test website wallet local)
-- `pack` - create bundles and prepare it to publuish-ready form
+- `pack` - create bundles and prepare it to publish-ready form (`web` target not available because there is nothing to pack)
+- `publish` - create bundles, prepare and publish it (only `web` target available now)
 
 Possible targets and bundle files destinations folder:
-- `web` - docs
+- `web` - artifacts/web
 - `chromium` - artifacts/v3
 - `firefox` - artifacts/v2
 - `safari` - artifacts/v2
@@ -41,22 +42,25 @@ Possible targets for pack task and output files destinations:
 - `safari` - build xcode project to ton-wallet/artifacts/safari
 - `all` - run all targets
 
-Where {version} - value from package.json "version" field
+Where {version} - value from package.json "version" field.
 
-# Chromium-based browsers Extension Developer Mode
+Publishing information
+- `web` - push bundle files destinations folder to `gh-pages` branch of current repository
+
+## Chromium-based browsers Extension Developer Mode
 
 - Open web browser
 - Go to `chrome://extensions/`
 - Enable "Developer Mode" in top right corner
 - Click "Load unpacked extension" and specify `artifacts/v3` folder
 
-# Mozilla Firefox Add-on Developer Mode
+## Mozilla Firefox Add-on Developer Mode
 
 - Open Mozilla Firefox
 - Go to `about:debugging#/runtime/this-firefox`
 - Click "Load Temporary Add-on" and select `artifacts/v2/manifest.json` file
 
-# Safari Extension Developer Mode
+## Safari Extension Developer Mode
 
 - Install Xcode Command Line Tools
 - Open Safari and choose Safari > Preferences
@@ -64,6 +68,26 @@ Where {version} - value from package.json "version" field
 - Choose Develop > Allow Unsigned Extensions (the Allow Unsigned Extensions setting is reset when a user quits Safari, you must set it again the next time Safari is launched)
 - Pack extension for Safari by command `npm run pack safari`
 - Extension will automatically added to Safari
+
+## Localization
+
+Files with translated phrases locate it `src/locales` with name format `{locale-code}.json`. For date and time formatting using `Intl.DateTimeFormat` browsers API.
+
+In sources all phrases used by its path in translation json file, like `"main.sending.title"`.
+
+In HTML localization phrases can be added to element by setting `data-l` attribute with locale phrase path.
+
+Adding new language to application:
+- create file with translated phrases by `en.json` template
+- add locale code and name to `AVAILABLE_LOCALES` object in `src/js/view/Locales.js`
+
+For convenience of adding new translations, in Debug mode when hovering over an element with phrase prompt appears with phrase path.
+
+## Switch between mainnet and testnet
+
+- Support from 1.1.35 version
+- Open menu in right-top corner and select `About` item
+- Click on `Version:` label with Shift key pressed
 
 ## Switch between clear console and debug mode
 
