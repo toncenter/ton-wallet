@@ -1261,7 +1261,7 @@ class Controller {
             case 'openTransferUrl':
                 this.debug('openTransferUrl', params[0]);
                 await showExtensionWindow();
-                this.sendToView('showPopup', {name: 'send', url: params[0]});
+                if (this.myAddress) this.sendToView('showPopup', {name: 'send', url: params[0]});
                 return true;
         }
     }
