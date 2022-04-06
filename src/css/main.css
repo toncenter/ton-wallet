@@ -1,17 +1,17 @@
 @font-face {
-    font-family: Helvetica, Arial, sans-serif;
-    /*src: local('Mulish Regular'), local('Mulish-Regular'),*/
-    /*     url('assets/fonts/mulish-regular.woff2') format('woff2');*/
+    font-family: 'Open Sans';
+    src: local('Open Sans'), local('OpenSans'),
+        url('assets/fonts/open-sans-regular.woff2') format('woff2');
     font-weight: 400;
     font-style: normal;
     font-display: block;
 }
 
 @font-face {
-    font-family: Helvetica, Arial, sans-serif;
-    /*src: local('Mulish Bold'), local('Mulish-Bold'),*/
-    /*     url('assets/fonts/mulish-bold.woff2') format('woff2');*/
-    font-weight: 700;
+    font-family: 'Open Sans';
+    src: local('Open Sans Semibold'), local('OpenSans-Semibold'),
+        url('assets/fonts/open-sans-semibold.woff2') format('woff2');
+    font-weight: 600;
     font-style: normal;
     font-display: block;
 }
@@ -23,7 +23,7 @@ html {
 }
 
 body, button, input, optgroup, select, textarea {
-    font-family: Helvetica, Arial, sans-serif;
+    font-family: 'Open Sans', sans-serif;
 }
 
 body {
@@ -107,7 +107,7 @@ input.error {
 }
 
 .input-label {
-    font-weight: 500;
+    font-weight: 600;
     color: #3CA4DB;
 }
 
@@ -123,7 +123,7 @@ button {
     border-radius: 2px;
     height: 39px;
     font-size: 15px;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .btn-lite {
@@ -131,7 +131,7 @@ button {
     color: #3CA4DB;
     height: 40px;
     font-size: 15px;
-    font-weight: 500;
+    font-weight: 600;
     background: none;
 }
 
@@ -326,7 +326,7 @@ button {
 
 .screen-title {
     font-size: 20px;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .screen-text {
@@ -375,7 +375,7 @@ button {
 /* IMPORT && BACKUP && CONFIRM */
 
 #import .btn-lite {
-    font-weight: 400;
+    font-weight: 600;
     font-size: 14px;
     margin-bottom: 10px;
 }
@@ -545,7 +545,7 @@ button {
     top: 70px;
     left: 50%;
     margin-left: -75px;
-    font-weight: 500;
+    font-weight: 600;
     font-size: 20px;
 }
 
@@ -646,7 +646,7 @@ button {
 }
 
 .date-separator {
-    font-weight: 500;
+    font-weight: 600;
     padding-top: 10px;
     padding-bottom: 10px;
     font-size: 14px;
@@ -669,7 +669,7 @@ button {
 }
 
 .tx-amount {
-    font-weight: 500;
+    font-weight: 600;
     font-size: 16px;
     color: #D74D4D;
 }
@@ -759,7 +759,7 @@ button {
 }
 
 .popup-title {
-    font-weight: 500;
+    font-weight: 600;
     margin-bottom: 20px;
     font-size: 17px;
 }
@@ -1064,8 +1064,8 @@ button {
     font-weight: 400;
 }
 
-.font-weight-medium {
-    font-weight: 500;
+.font-weight-semibold {
+    font-weight: 600;
 }
 
 .text-danger {
