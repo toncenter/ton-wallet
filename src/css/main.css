@@ -1046,6 +1046,10 @@ button {
     color: #D74D4D;
 }
 
+.text-ok {
+    color: #4dd774;
+}
+
 .line-height-24 {
     line-height: 24px;
 }
