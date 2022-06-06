@@ -1,6 +1,6 @@
 # TON 钱包
 
-选择文档语言: [英文](README.md) | [简体中文](README_zh_CN.md)   
+选择文档语言: [英文](readme.md) | [简体中文](README_zh_CN.md)   
 
 TON 钱包是一个免费的客户端界面，用于与开放网络区块链进行交互。
 
