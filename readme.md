@@ -1,5 +1,7 @@
 # TON Wallet
 
+Select language: EN | [CN](./README_zh_CN.md)
+
 TON Wallet is a free client-side interface for interact with The Open Network blockchain.
 
 - [Website (wallet.ton.org)](https://wallet.ton.org)
