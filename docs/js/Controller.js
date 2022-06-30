@@ -1,1 +1,1329 @@
-!function(e){var t={};function s(a){if(t[a])return t[a].exports;var i=t[a]={i:a,l:!1,exports:{}};return e[a].call(i.exports,i,i.exports,s),i.l=!0,i.exports}s.m=e,s.c=t,s.d=function(e,t,a){s.o(e,t)||Object.defineProperty(e,t,{enumerable:!0,get:a})},s.r=function(e){"undefined"!=typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(e,Symbol.toStringTag,{value:"Module"}),Object.defineProperty(e,"__esModule",{value:!0})},s.t=function(e,t){if(1&t&&(e=s(e)),8&t)return e;if(4&t&&"object"==typeof e&&e&&e.__esModule)return e;var a=Object.create(null);if(s.r(a),Object.defineProperty(a,"default",{enumerable:!0,value:e}),2&t&&"string"!=typeof e)for(var i in e)s.d(a,i,function(t){return e[t]}.bind(null,i));return a},s.n=function(e){var t=e&&e.__esModule?function(){return e.default}:function(){return e};return s.d(t,"a",t),t},s.o=function(e,t){return Object.prototype.hasOwnProperty.call(e,t)},s.p="",s(s.s=1)}([,function(e,t,s){"use strict";s.r(t);var a=self.localStorage||{setItem:(e,t)=>chrome.storage.local.set({[e]:t}),getItem:e=>chrome.storage.local.get(e).then(({[e]:t})=>t),removeItem:e=>chrome.storage.local.remove(e),clear:()=>chrome.storage.local.clear()};let i=null,n=null;const o=[],r=()=>{chrome.windows.create({url:"popup.html",type:"popup",width:400,height:600,top:0,left:0},e=>{})},d=TonWeb.utils.BN,c=TonWeb.utils.nacl,l=TonWeb.utils.Address,h=TonWeb.utils.fromNano;const w=self.location.href.indexOf("testnet")>-1,p=!!(self.chrome&&chrome.runtime&&chrome.runtime.onConnect);class m{constructor(){this.myAddress=null,this.publicKeyHex=null,this.myMnemonicWords=null,this.balance=null,this.walletContract=null,this.transactions=[],this.updateIntervalId=0,this.lastTransactionTime=0,this.isContractInitialized=!1,this.sendingData=null,this.processingVisible=!1,this.ledgerApp=null,this.isLedger=!1,self.view&&(self.view.controller=this),this.pendingMessageResolvers=new Map,this._lastMsgId=1,this.sendToView("setIsTestnet",w),this.whenReady=this._init()}static async wordsToPrivateKey(e){const t=await TonWeb.mnemonic.mnemonicToKeyPair(e);return TonWeb.utils.bytesToBase64(t.secretKey.slice(0,32))}static async saveWords(e,t){await a.setItem("words",await async function(e,t){const s=(new TextEncoder).encode(t),a=await crypto.subtle.digest("SHA-256",s),i=crypto.getRandomValues(new Uint8Array(12)),n={name:"AES-GCM",iv:i},o=await crypto.subtle.importKey("raw",a,n,!1,["encrypt"]),r=(new TextEncoder).encode(e),d=await crypto.subtle.encrypt(n,o,r),c=Array.from(new Uint8Array(d)).map(e=>String.fromCharCode(e)).join(""),l=btoa(c);return Array.from(i).map(e=>("00"+e.toString(16)).slice(-2)).join("")+l}(e.join(","),t))}static async loadWords(e){return(await async function(e,t){const s=(new TextEncoder).encode(t),a=await crypto.subtle.digest("SHA-256",s),i=e.slice(0,24).match(/.{2}/g).map(e=>parseInt(e,16)),n={name:"AES-GCM",iv:new Uint8Array(i)},o=await crypto.subtle.importKey("raw",a,n,!1,["decrypt"]),r=atob(e.slice(24)),d=new Uint8Array(r.match(/[\s\S]/g).map(e=>e.charCodeAt(0))),c=await crypto.subtle.decrypt(n,o,d);return(new TextDecoder).decode(c)}(await a.getItem("words"),e)).split(",")}async getWallet(){return this.ton.provider.getWalletInfo(this.myAddress)}checkContractInitialized(e){return"active"===e.account_state}getBalance(e){return new d(e.balance)}async _init(){return new Promise(async e=>{await a.removeItem("pwdHash");p&&!await a.getItem("address")&&await this._restoreDeprecatedStorage(),this.ton=new TonWeb(new TonWeb.HttpProvider(w?"https://testnet.toncenter.com/api/v2/jsonRPC":"https://toncenter.com/api/v2/jsonRPC",{apiKey:p?"503af517296765c3f1729fcb301b063a00650a50a881eeaddb6307d5d45e21aa":"4f96a149e04e0821d20f9e99ee716e20ff52db7238f38663226b1c0f303003e0"})),this.myAddress=await a.getItem("address"),this.publicKeyHex=await a.getItem("publicKey"),this.myAddress&&await a.getItem("words")?("true"===await a.getItem("isLedger")&&(this.isLedger=!0,this.sendToView("setIsLedger",this.isLedger)),await this.showMain()):(await a.clear(),this.sendToView("showScreen",{name:"start",noAnimation:!0})),e()})}async _restoreDeprecatedStorage(){const{address:e,words:t,walletVersion:s,magic:i,proxy:n}=await this.sendToView("restoreDeprecatedStorage",void 0,!0,!0);e&&t&&await Promise.all([a.setItem("address",e),a.setItem("words",t),a.setItem("walletVersion",s),a.setItem("magic",i),a.setItem("proxy",n)])}async getTransactions(e=20){function t(e){if(!e.msg_data)return"";if("msg.dataText"!==e.msg_data["@type"])return"";const t=e.msg_data.text;return(new TextDecoder).decode(TonWeb.utils.base64ToBytes(t))}const s=[],a=await this.ton.getTransactions(this.myAddress,e);for(let e of a){let a=new d(e.in_msg.value);for(let t of e.out_msgs)a=a.sub(new d(t.value));let i="",n="",o="";e.in_msg.source?(i=e.in_msg.source,n=e.in_msg.destination,o=t(e.in_msg)):e.out_msgs.length&&(i=e.out_msgs[0].source,n=e.out_msgs[0].destination,o=t(e.out_msgs[0])),n&&s.push({amount:a.toString(),from_addr:i,to_addr:n,fee:e.fee.toString(),storageFee:e.storage_fee.toString(),otherFee:e.other_fee.toString(),comment:o,date:1e3*e.utime})}return s}async sign(e,t,s,a,i){let n=(await this.getWallet(this.myAddress)).seqno;n||(n=0);const o=a?a.secretKey:null;return this.walletContract.methods.transfer({secretKey:o,toAddress:e,amount:t,seqno:n,payload:s,sendMode:3,stateInit:i})}async showCreated(){this.sendToView("showScreen",{name:"created"}),this.sendToView("disableCreated",!0),this.myMnemonicWords=await TonWeb.mnemonic.generateMnemonic();const e=await m.wordsToPrivateKey(this.myMnemonicWords),t=c.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(e)),s=this.ton.wallet.all.v3R2;this.walletContract=new s(this.ton.provider,{publicKey:t.publicKey,wc:0}),this.myAddress=(await this.walletContract.getAddress()).toString(!0,!0,!0),this.publicKeyHex=TonWeb.utils.bytesToHex(t.publicKey),await a.setItem("publicKey",this.publicKeyHex),await a.setItem("walletVersion","v3R2"),this.sendToView("disableCreated",!1)}async createPrivateKey(){this.showBackup(this.myMnemonicWords,!0)}onBackupWalletClick(){this.afterEnterPassword=async e=>{this.showBackup(e)},this.sendToView("showPopup",{name:"enterPassword"})}showBackup(e,t){this.sendToView("showScreen",{name:"backup",words:e,isFirst:t})}async onBackupDone(){await a.getItem("words")?this.sendToView("showScreen",{name:"main"}):this.sendToView("showScreen",{name:"wordsConfirm",words:this.myMnemonicWords})}onConfirmDone(e){if(e){let t=!0;if(Object.keys(e).forEach(s=>{this.myMnemonicWords[s]!==e[s]&&(t=!1)}),!t)return;this.showCreatePassword()}}async createLedger(e){let t;switch(e){case"hid":t=await TonWeb.ledger.TransportWebHID.create();break;case"ble":t=await TonWeb.ledger.BluetoothTransport.create();break;default:throw new Error("unknown transportType"+e)}t.setDebugMode(!0),this.isLedger=!0,this.ledgerApp=new TonWeb.ledger.AppTon(t,this.ton);const s=(await this.ledgerApp.getAppConfiguration()).version;if(console.log("ledgerAppConfig=",s),!s.startsWith("2"))throw alert("Please update your Ledger TON-app to v2.0.1 or upper or use old wallet version https://tonwallet.me/prev/"),new Error("outdated ledger ton-app version");const{publicKey:a}=await this.ledgerApp.getPublicKey(0,!1),i=new(0,this.ton.wallet.all.v3R1)(this.ton.provider,{publicKey:a,wc:0});this.walletContract=i;const n=await i.getAddress();this.myAddress=n.toString(!0,!0,!0),this.publicKeyHex=TonWeb.utils.bytesToHex(a)}async importLedger(e){await this.createLedger(e),await a.setItem("walletVersion",this.walletContract.getName()),await a.setItem("address",this.myAddress),await a.setItem("isLedger","true"),await a.setItem("ledgerTransportType",e),await a.setItem("words","ledger"),await a.setItem("publicKey",this.publicKeyHex),this.sendToView("setIsLedger",this.isLedger),this.sendToView("showScreen",{name:"readyToGo"})}showImport(){this.sendToView("showScreen",{name:"import"})}async import(e){if(this.myMnemonicWords=e,this.myMnemonicWords)try{const e=await m.wordsToPrivateKey(this.myMnemonicWords),t=c.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(e));let s=[];for(let e of this.ton.wallet.list){const a=new e(this.ton.provider,{publicKey:t.publicKey,wc:0}),i=(await a.getAddress()).toString(!0,!0,!0),n=await this.ton.provider.getWalletInfo(i),o=this.getBalance(n);o.gt(new d(0))&&s.push({balance:o,clazz:e}),console.log(a.getName(),i,n,o.toString())}let a=this.ton.wallet.all.v3R2;s.length>0&&(s.sort((e,t)=>e.balance.cmp(t.balance)),a=s[s.length-1].clazz),await this.importImpl(t,a),this.sendToView("importCompleted",{state:"success"})}catch(e){console.error(e),this.sendToView("importCompleted",{state:"failure"})}else this.sendToView("importCompleted",{state:"failure"})}async importImpl(e,t){this.walletContract=new t(this.ton.provider,{publicKey:e.publicKey,wc:0}),this.myAddress=(await this.walletContract.getAddress()).toString(!0,!0,!0),this.publicKeyHex=TonWeb.utils.bytesToHex(e.publicKey),await a.setItem("publicKey",this.publicKeyHex),await a.setItem("walletVersion",this.walletContract.getName()),this.showCreatePassword()}showCreatePassword(){this.sendToView("showScreen",{name:"createPassword"})}async savePrivateKey(e){this.isLedger=!1,await a.setItem("isLedger","false"),await a.setItem("address",this.myAddress),await m.saveWords(this.myMnemonicWords,e),this.myMnemonicWords=null,this.sendToView("setIsLedger",this.isLedger),this.sendToView("showScreen",{name:"readyToGo"}),this.sendToView("privateKeySaved")}async onChangePassword(e,t){let s;try{s=await m.loadWords(e)}catch(e){return void this.sendToView("showChangePasswordError")}await m.saveWords(s,t),this.sendToView("closePopup"),this.sendToView("passwordChanged")}async onEnterPassword(e){let t;try{t=await m.loadWords(e)}catch(e){return void this.sendToView("showEnterPasswordError")}this.afterEnterPassword(t),this.sendToView("passwordEntered")}async showMain(){if(this.sendToView("showScreen",{name:"main",myAddress:this.myAddress}),!this.walletContract){const e=await a.getItem("walletVersion"),t=e?this.ton.wallet.all[e]:this.ton.wallet.default;this.walletContract=new t(this.ton.provider,{address:this.myAddress,publicKey:this.publicKeyHex?TonWeb.utils.hexToBytes(this.publicKeyHex):void 0,wc:0})}this.updateIntervalId=setInterval(()=>this.update(),5e3),this.update(!0),this.sendToDapp("ton_accounts",[this.myAddress])}async initDapp(){this.sendToDapp("ton_accounts",this.myAddress?[this.myAddress]:[]),this.doMagic("true"===await a.getItem("magic")),this.doProxy("true"===await a.getItem("proxy"))}async initView(){this.myAddress&&await a.getItem("words")?(this.sendToView("showScreen",{name:"main",myAddress:this.myAddress}),null!==this.balance&&this.sendToView("setBalance",{balance:this.balance.toString(),txs:this.transactions})):this.sendToView("showScreen",{name:"start",noAnimation:!0}),this.sendToView("setIsMagic","true"===await a.getItem("magic")),this.sendToView("setIsProxy","true"===await a.getItem("proxy"))}update(e){(this.processingVisible&&this.sendingData||null===this.balance||e)&&this.getWallet().then(e=>{const t=this.getBalance(e),s=null===this.balance||0!==this.balance.cmp(t);this.balance=t;const a=this.checkContractInitialized(e)&&e.seqno;!this.isContractInitialized&&a&&(this.isContractInitialized=!0),s?this.getTransactions().then(e=>{if(e.length>0){this.transactions=e;const t=e.filter(e=>Number(e.date)>this.lastTransactionTime);if(this.lastTransactionTime=Number(e[0].date),this.processingVisible&&this.sendingData)for(let e of t){const t=new l(e.to_addr).toString(!0,!0,!0),s=new l(this.sendingData.toAddress).toString(!0,!0,!0),a=e.amount,i="-"+this.sendingData.amount.toString();if(t===s&&a===i){this.sendToView("showPopup",{name:"done",message:h(this.sendingData.amount)+" TON have been sent"}),this.processingVisible=!1,this.sendingData=null;break}}}this.sendToView("setBalance",{balance:t.toString(),txs:e})}):this.sendToView("setBalance",{balance:t.toString(),txs:this.transactions})})}async showAddressOnDevice(){this.ledgerApp||await this.createLedger(await a.getItem("ledgerTransportType")||"hid");const{address:e}=await this.ledgerApp.getAddress(0,!0,this.ledgerApp.ADDRESS_FORMAT_USER_FRIENDLY+this.ledgerApp.ADDRESS_FORMAT_URL_SAFE+this.ledgerApp.ADDRESS_FORMAT_BOUNCEABLE);console.log(e.toString(!0,!0,!0))}async getFees(e,t,s,a){if(!this.isContractInitialized&&!this.publicKeyHex)return TonWeb.utils.toNano(.010966001);const i=await this.sign(t,e,s,null,a),n=(await i.estimateFee()).source_fees,o=new d(n.in_fwd_fee),r=new d(n.storage_fee),c=new d(n.gas_fee),l=new d(n.fwd_fee);return o.add(r).add(c).add(l)}async showSendConfirm(e,t,s,a,i){if(!e.gt(new d(0))||this.balance.lt(e))return void this.sendToView("sendCheckFailed");if(!l.isValid(t))return void this.sendToView("sendCheckFailed");let n;try{n=await this.getFees(e,t,s,i)}catch(e){return console.error(e),void this.sendToView("sendCheckFailed")}this.balance.sub(n).lt(e)?this.sendToView("sendCheckCantPayFee",{fee:n}):(this.isLedger?(this.sendToView("showPopup",{name:"sendConfirm",amount:e.toString(),toAddress:t,fee:n.toString()},a),this.send(t,e,s,null,i)):(this.afterEnterPassword=async a=>{this.processingVisible=!0,this.sendToView("showPopup",{name:"processing"});const n=await m.wordsToPrivateKey(a);this.send(t,e,s,n,i)},this.sendToView("showPopup",{name:"sendConfirm",amount:e.toString(),toAddress:t,fee:n.toString()},a)),this.sendToView("sendCheckSucceeded"))}showSignConfirm(e,t){return new Promise((s,a)=>{this.isLedger?(alert("sign not supported by Ledger"),a()):(this.afterEnterPassword=async t=>{this.sendToView("closePopup");const a=await m.wordsToPrivateKey(t),i=this.rawSign(e,a);s(i)},this.sendToView("showPopup",{name:"signConfirm",data:e},t))})}async send(e,t,s,i,n){try{let o=0;if(this.isLedger){if(n)throw new Error("stateInit dont supported by Ledger");this.ledgerApp||await this.createLedger(await a.getItem("ledgerTransportType")||"hid");const t=new l(e);t.isUserFriendly&&(o+=this.ledgerApp.ADDRESS_FORMAT_USER_FRIENDLY,t.isUrlSafe&&(o+=this.ledgerApp.ADDRESS_FORMAT_URL_SAFE),t.isBounceable&&(o+=this.ledgerApp.ADDRESS_FORMAT_BOUNCEABLE),t.isTestOnly&&(o+=this.ledgerApp.ADDRESS_FORMAT_TEST_ONLY))}if(this.checkContractInitialized(await this.ton.provider.getWalletInfo(e))||(e=new l(e).toString(!0,!0,!1)),this.isLedger){let a=(await this.getWallet(this.myAddress)).seqno;a||(a=0);const i=await this.ledgerApp.transfer(0,this.walletContract,e,t,a,o);this.sendingData={toAddress:e,amount:t,comment:s,query:i},this.sendToView("showPopup",{name:"processing"}),this.processingVisible=!0,await this.sendQuery(i)}else{const a=c.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(i)),o=await this.sign(e,t,s,a,n);this.sendingData={toAddress:e,amount:t,comment:s,query:o},await this.sendQuery(o)}}catch(e){console.error(e),this.sendToView("closePopup"),alert("Error sending")}}rawSign(e,t){const s=c.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(t)),a=c.sign.detached(TonWeb.utils.hexToBytes(e),s.secretKey);return TonWeb.utils.bytesToHex(a)}async sendQuery(e){console.log("Send"),"ok"===(await e.send())["@type"]||(this.sendToView("closePopup"),alert("Send error"))}async onDisconnectClick(){this.myAddress=null,this.publicKeyHex=null,this.balance=null,this.walletContract=null,this.transactions=[],this.lastTransactionTime=0,this.isContractInitialized=!1,this.sendingData=null,this.processingVisible=!1,this.isLedger=!1,this.ledgerApp=null,clearInterval(this.updateIntervalId),await a.clear(),this.sendToView("showScreen",{name:"start"}),this.sendToDapp("ton_accounts",[])}doMagic(e){try{this.sendToDapp("ton_doMagic",e)}catch(e){}}doProxy(e){}sendToView(e,t,s,a){if(!self.view){const i={method:e,params:t},r=()=>{n?n.postMessage(i):s&&o.push(i)};return a?new Promise(e=>{i.id=this._lastMsgId++,this.pendingMessageResolvers.set(i.id,e),r()}):void r()}{const s=self.view.onMessage(e,t);if(a)return s}}async onViewMessage(e,t){switch(e){case"showScreen":switch(t.name){case"created":await this.showCreated();break;case"import":this.showImport();break;case"importLedger":await this.importLedger(t.transportType)}break;case"import":await this.import(t.words);break;case"createPrivateKey":await this.createPrivateKey();break;case"passwordCreated":await this.savePrivateKey(t.password);break;case"update":this.update(!0);break;case"showAddressOnDevice":await this.showAddressOnDevice();break;case"onEnterPassword":await this.onEnterPassword(t.password);break;case"onChangePassword":await this.onChangePassword(t.oldPassword,t.newPassword);break;case"onSend":await this.showSendConfirm(new d(t.amount),t.toAddress,t.comment);break;case"onBackupDone":await this.onBackupDone();break;case"onConfirmBack":this.showBackup(this.myMnemonicWords);break;case"onImportBack":this.sendToView("showScreen",{name:"start"});break;case"onConfirmDone":this.onConfirmDone(t.words);break;case"showMain":await this.showMain();break;case"onBackupWalletClick":this.onBackupWalletClick();break;case"disconnect":await this.onDisconnectClick();break;case"onClosePopup":this.processingVisible=!1;break;case"onMagicClick":await a.setItem("magic",t?"true":"false"),this.doMagic(t);break;case"onProxyClick":await a.setItem("proxy",t?"true":"false"),this.doProxy(t)}}sendToDapp(e,t){i&&i.postMessage(JSON.stringify({type:"gramWalletAPI",message:{jsonrpc:"2.0",method:e,params:t}}))}requestPublicKey(e){return new Promise((t,s)=>{n||r(),this.afterEnterPassword=async e=>{const s=await m.wordsToPrivateKey(e),i=c.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(s));this.publicKeyHex=TonWeb.utils.bytesToHex(i.publicKey),await a.setItem("publicKey",this.publicKeyHex),t()},this.sendToView("showPopup",{name:"enterPassword"},e)})}async onDappMessage(e,t){const s=!n;switch(e){case"ton_requestAccounts":return this.myAddress?[this.myAddress]:[];case"ton_requestWallets":if(!this.myAddress)return[];this.publicKeyHex||await this.requestPublicKey(s);const e=await a.getItem("walletVersion");return[{address:this.myAddress,publicKey:this.publicKeyHex,walletVersion:e}];case"ton_getBalance":return this.balance?this.balance.toString():"";case"ton_sendTransaction":const i=t[0];return n||r(),i.data&&("hex"===i.dataType?i.data=TonWeb.utils.hexToBytes(i.data):"base64"===i.dataType?i.data=TonWeb.utils.base64ToBytes(i.data):"boc"===i.dataType&&(i.data=TonWeb.boc.Cell.oneFromBoc(TonWeb.utils.base64ToBytes(i.data)))),i.stateInit&&(i.stateInit=TonWeb.boc.Cell.oneFromBoc(TonWeb.utils.base64ToBytes(i.stateInit))),this.showSendConfirm(new d(i.value),i.to,i.data,s,i.stateInit),!0;case"ton_rawSign":const o=t[0];return n||r(),this.showSignConfirm(o.data,s);case"flushMemoryCache":return await chrome.webRequest.handlerBehaviorChanged(),!0}}}const u=new m;p&&chrome.runtime.onConnect.addListener(e=>{if("gramWalletContentScript"===e.name)i=e,i.onMessage.addListener(async e=>{if("gramWalletAPI_ton_provider_connect"===e.type&&u.whenReady.then(()=>{u.initDapp()}),!e.message)return;const t=await u.onDappMessage(e.message.method,e.message.params);i&&i.postMessage(JSON.stringify({type:"gramWalletAPI",message:{jsonrpc:"2.0",id:e.message.id,method:e.message.method,result:t}}))}),i.onDisconnect.addListener(()=>{i=null});else if("gramWalletPopup"===e.name){n=e,n.onMessage.addListener((function(e){if("response"===e.method){const t=u.pendingMessageResolvers.get(e.id);t&&(t(e.result),u.pendingMessageResolvers.delete(e.id))}else u.onViewMessage(e.method,e.params)})),n.onDisconnect.addListener(()=>{n=null});const t=()=>{o.forEach(e=>n.postMessage(e)),o.length=0};u.myAddress||t(),u.whenReady.then(async()=>{await u.initView(),t()})}})}]);
+/******/ (() => { // webpackBootstrap
+/******/ 	"use strict";
+/******/ 	// The require scope
+/******/ 	var __webpack_require__ = {};
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__webpack_require__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/************************************************************************/
+var __webpack_exports__ = {};
+// ESM COMPAT FLAG
+__webpack_require__.r(__webpack_exports__);
+
+;// CONCATENATED MODULE: ./src/js/util/storage.js
+/**
+ *  `localStorage` polyfill for Chrome Extension environment
+ */
+
+/* harmony default export */ const storage = (self.localStorage || {
+    setItem(key, value) {
+        return chrome.storage.local.set({[key]: value});
+    },
+
+    getItem(key) {
+        return chrome.storage.local.get(key)
+            .then(({[key]: value}) => value);
+    },
+
+    removeItem(key) {
+        return chrome.storage.local.remove(key);
+    },
+
+    clear() {
+        return chrome.storage.local.clear();
+    },
+});
+
+;// CONCATENATED MODULE: ./src/js/Controller.js
+
+
+let extensionWindowId = -1;
+let contentScriptPorts = new Set();
+let popupPort = null;
+const queueToPopup = [];
+
+let dAppPromise = null;
+
+const createDappPromise = () => {
+    if (dAppPromise) dAppPromise.resolve(false);
+
+    let resolve;
+    let reject;
+
+    dAppPromise = new Promise((localResolve, localReject) => {
+        resolve = localResolve;
+        reject = localReject;
+    });
+
+    dAppPromise.resolve = (...args) => {
+        resolve(...args);
+        dAppPromise = null;
+    };
+    dAppPromise.reject = (...args) => {
+        reject(...args);
+        dAppPromise = null;
+    };
+};
+
+const showExtensionWindow = () => {
+    return new Promise(async resolve => {
+        if (extensionWindowId > -1) {
+            chrome.windows.update(extensionWindowId, { focused: true });
+            return resolve();
+        }
+
+        const windowState = (await storage.getItem('windowState')) || {};
+
+        windowState.top = windowState.top || 0;
+        windowState.left = windowState.left || 0;
+        windowState.height = windowState.height || 800;
+        windowState.width = windowState.width || 480;
+
+        chrome.windows.create(Object.assign(windowState, {
+            url: 'index.html',
+            type: 'popup',
+            focused: true
+        }), window => {
+            extensionWindowId = window.id;
+            resolve();
+        });
+    });
+};
+
+const BN = TonWeb.utils.BN;
+const nacl = TonWeb.utils.nacl;
+const Address = TonWeb.utils.Address;
+const formatNanograms = TonWeb.utils.fromNano;
+
+// ENCRYPTION
+
+/**
+ * @param plaintext {string}
+ * @param password {string}
+ * @return {Promise<string>}
+ */
+async function encrypt(plaintext, password) {
+    const pwUtf8 = new TextEncoder().encode(password);                                 // encode password as UTF-8
+    const pwHash = await crypto.subtle.digest('SHA-256', pwUtf8);                      // hash the password
+
+    const iv = crypto.getRandomValues(new Uint8Array(12));                             // get 96-bit random iv
+
+    const alg = {name: 'AES-GCM', iv: iv};                                           // specify algorithm to use
+
+    const key = await crypto.subtle.importKey('raw', pwHash, alg, false, ['encrypt']); // generate key from pw
+
+    const ptUint8 = new TextEncoder().encode(plaintext);                               // encode plaintext as UTF-8
+    const ctBuffer = await crypto.subtle.encrypt(alg, key, ptUint8);                   // encrypt plaintext using key
+
+    const ctArray = Array.from(new Uint8Array(ctBuffer));                              // ciphertext as byte array
+    const ctStr = ctArray.map(byte => String.fromCharCode(byte)).join('');             // ciphertext as string
+    const ctBase64 = btoa(ctStr);                                                      // encode ciphertext as base64
+
+    const ivHex = Array.from(iv).map(b => ('00' + b.toString(16)).slice(-2)).join(''); // iv as hex string
+
+    return ivHex + ctBase64;                                                             // return iv+ciphertext
+}
+
+/**
+ * @param ciphertext {string}
+ * @param password {string}
+ * @return {Promise<string>}
+ */
+async function decrypt(ciphertext, password) {
+    const pwUtf8 = new TextEncoder().encode(password);                                  // encode password as UTF-8
+    const pwHash = await crypto.subtle.digest('SHA-256', pwUtf8);                       // hash the password
+
+    const iv = ciphertext.slice(0, 24).match(/.{2}/g).map(byte => parseInt(byte, 16));   // get iv from ciphertext
+
+    const alg = {name: 'AES-GCM', iv: new Uint8Array(iv)};                            // specify algorithm to use
+
+    const key = await crypto.subtle.importKey('raw', pwHash, alg, false, ['decrypt']);  // use pw to generate key
+
+    const ctStr = atob(ciphertext.slice(24));                                           // decode base64 ciphertext
+    const ctUint8 = new Uint8Array(ctStr.match(/[\s\S]/g).map(ch => ch.charCodeAt(0))); // ciphertext as Uint8Array
+    // note: why doesn't ctUint8 = new TextEncoder().encode(ctStr) work?
+
+    const plainBuffer = await crypto.subtle.decrypt(alg, key, ctUint8);                 // decrypt ciphertext using key
+    const plaintext = new TextDecoder().decode(plainBuffer);                            // decode password from UTF-8
+
+    return plaintext;                                                                   // return the plaintext
+}
+
+// CONTROLLER
+
+const IS_EXTENSION = !!(self.chrome && chrome.runtime && chrome.runtime.onConnect);
+
+const ACCOUNT_NUMBER = 0;
+
+const DEFAULT_WALLET_VERSION = 'v3R2';
+const DEFAULT_LEDGER_WALLET_VERSION = 'v3R1';
+
+class Controller {
+    constructor() {
+        this.isTestnet = false;
+        this.isDebug = false;
+        /** @type {string} */
+        this.myAddress = null;
+        /** @type {string} */
+        this.publicKeyHex = null;
+        /** @type {string[]} */
+        this.myMnemonicWords = null;
+        /** @type   {BN | null} */
+        this.balance = null;
+        /** @type {WalletContract} */
+        this.walletContract = null;
+        this.transactions = [];
+        this.updateIntervalId = 0;
+        this.lastTransactionTime = 0;
+        this.isContractInitialized = false;
+        this.sendingData = null;
+        this.processingVisible = false;
+
+        this.ledgerApp = null;
+        this.isLedger = false;
+
+        if (self.view) {
+            self.view.controller = this;
+        }
+
+        this.pendingMessageResolvers = new Map();
+        this._lastMsgId = 1;
+
+        this.whenReady = this._init();
+    }
+
+    debug(...args) {
+        if (!this.isDebug) return;
+        console.log(...args);
+    }
+
+    /**
+     * @param words {string[]}
+     * @return {Promise<string>}
+     */
+    static async wordsToPrivateKey(words) {
+        const keyPair = await TonWeb.mnemonic.mnemonicToKeyPair(words);
+        return TonWeb.utils.bytesToBase64(keyPair.secretKey.slice(0, 32));
+    }
+
+    /**
+     * @param words {string[]}
+     * @param password  {string}
+     * @return {Promise<void>}
+     */
+    static async saveWords(words, password) {
+        await storage.setItem('words', await encrypt(words.join(','), password));
+    }
+
+    /**
+     * @param password  {string}
+     * @return {Promise<string[]>}
+     */
+    static async loadWords(password) {
+        return (await decrypt(await storage.getItem('words'), password)).split(',');
+    }
+
+    async getWallet() {
+        return this.ton.provider.getWalletInfo(this.myAddress);
+    }
+
+    checkContractInitialized(getWalletResponse) {
+        return getWalletResponse.account_state === "active";
+    }
+
+    /**
+     * @return {BN} in nanograms
+     */
+    getBalance(getWalletResponse) {
+        return new BN(getWalletResponse.balance);
+    }
+
+    async _init() {
+        return new Promise(async (resolve) => {
+            await storage.removeItem('pwdHash');
+
+            this.isTestnet = IS_EXTENSION ? (await storage.getItem('isTestnet')) : (self.location.href.indexOf('testnet') > -1);
+            this.isDebug = IS_EXTENSION ? (await storage.getItem('isDebug')) : (self.location.href.indexOf('debug') > -1);
+
+            const mainnetRpc = 'https://toncenter.com/api/v2/jsonRPC';
+            const testnetRpc = 'https://testnet.toncenter.com/api/v2/jsonRPC';
+
+            const apiKey = this.isTestnet
+                ? '4f96a149e04e0821d20f9e99ee716e20ff52db7238f38663226b1c0f303003e0'
+                : '4f96a149e04e0821d20f9e99ee716e20ff52db7238f38663226b1c0f303003e0';
+            const extensionApiKey = this.isTestnet
+                ? '503af517296765c3f1729fcb301b063a00650a50a881eeaddb6307d5d45e21aa'
+                : '503af517296765c3f1729fcb301b063a00650a50a881eeaddb6307d5d45e21aa';
+
+            if (IS_EXTENSION && !(await storage.getItem('address'))) {
+                await this._restoreDeprecatedStorage();
+            }
+
+            this.ton = new TonWeb(new TonWeb.HttpProvider(this.isTestnet ? testnetRpc : mainnetRpc, {apiKey: IS_EXTENSION ? extensionApiKey : apiKey}));
+            this.myAddress = await storage.getItem('address');
+            this.publicKeyHex = await storage.getItem('publicKey');
+
+            if (!this.myAddress || !(await storage.getItem('words'))) {
+                await storage.clear();
+                this.sendToView('showScreen', {name: 'start', noAnimation: true});
+            } else {
+                if ((await storage.getItem('isLedger')) === 'true') {
+                    this.isLedger = true;
+                    this.sendToView('setIsLedger', this.isLedger);
+                }
+
+                await this.showMain();
+            }
+            this.sendToView('setIsTestnet', this.isTestnet);
+
+            resolve();
+        });
+    }
+
+    async _restoreDeprecatedStorage() {
+        const {
+            address, words, walletVersion, magic, proxy,
+        } = await this.sendToView('restoreDeprecatedStorage', undefined, true, true);
+
+        if (!address || !words) {
+            return;
+        }
+
+        await Promise.all([
+            storage.setItem('address', address),
+            storage.setItem('words', words),
+            storage.setItem('walletVersion', walletVersion),
+            storage.setItem('magic', magic),
+            storage.setItem('proxy', proxy),
+        ]);
+    }
+
+    async toggleTestnet() {
+        this.isTestnet = !this.isTestnet;
+        if (this.isTestnet) {
+            await storage.setItem('isTestnet', 'true');
+        } else {
+            await storage.removeItem('isTestnet');
+        }
+        this.clearVars();
+        await this._init();
+        await this.sendToView('setIsTestnet', this.isTestnet);
+    }
+
+    async toggleDebug() {
+        this.isDebug = !this.isDebug;
+        if (this.isDebug) {
+            await storage.setItem('isDebug', 'true');
+        } else {
+            await storage.removeItem('isDebug');
+        }
+    }
+
+    async getTransactions(limit = 20) {
+
+        function getComment(msg) {
+            if (!msg.msg_data) return '';
+            if (msg.msg_data['@type'] !== 'msg.dataText') return '';
+            const base64 = msg.msg_data.text;
+            return new TextDecoder().decode(TonWeb.utils.base64ToBytes(base64));
+        }
+
+        const arr = [];
+        const transactions = await this.ton.getTransactions(this.myAddress, limit);
+        for (let t of transactions) {
+            let amount = new BN(t.in_msg.value);
+            for (let outMsg of t.out_msgs) {
+                amount = amount.sub(new BN(outMsg.value));
+            }
+            //amount = amount.sub(new BN(t.fee));
+
+            let from_addr = "";
+            let to_addr = "";
+            let comment = "";
+            if (t.in_msg.source) { // internal message with grams, set source
+                from_addr = t.in_msg.source;
+                to_addr = t.in_msg.destination;
+                comment = getComment(t.in_msg);
+            } else if (t.out_msgs.length) { // external message, we sending grams
+                from_addr = t.out_msgs[0].source;
+                to_addr = t.out_msgs[0].destination;
+                comment = getComment(t.out_msgs[0]);
+                //TODO support many out messages. We need to show separate outgoing payment for each? How to show fees?
+            } else {
+                // Deploying wallet contract onchain
+            }
+
+            if (to_addr) {
+                arr.push({
+                    amount: amount.toString(),
+                    from_addr: from_addr,
+                    to_addr: to_addr,
+                    fee: t.fee.toString(),
+                    storageFee: t.storage_fee.toString(),
+                    otherFee: t.other_fee.toString(),
+                    comment: comment,
+                    date: t.utime * 1000
+                });
+            }
+        }
+        return arr;
+    }
+
+    /**
+     * @param toAddress {String}  Destination address in any format
+     * @param amount    {BN}  Transfer value in nanograms
+     * @param comment   {String}  Transfer comment
+     * @param keyPair    nacl.KeyPair
+     * @param stateInit? {Cell}
+     * @return Promise<{send: Function, estimateFee: Function}>
+     */
+    async sign(toAddress, amount, comment, keyPair, stateInit) {
+        const wallet = await this.getWallet(this.myAddress);
+        let seqno = wallet.seqno;
+        if (!seqno) seqno = 0;
+
+        const secretKey = keyPair ? keyPair.secretKey : null;
+        return this.walletContract.methods.transfer({
+            secretKey: secretKey,
+            toAddress: toAddress,
+            amount: amount,
+            seqno: seqno,
+            payload: comment,
+            sendMode: 3,
+            stateInit
+        });
+    }
+
+    // CREATE WALLET
+
+    async showCreated() {
+        this.sendToView('showScreen', {name: 'created'});
+        this.sendToView('disableCreated', true);
+        this.myMnemonicWords = await TonWeb.mnemonic.generateMnemonic();
+        const privateKey = await Controller.wordsToPrivateKey(this.myMnemonicWords);
+        const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
+        const walletVersion = DEFAULT_WALLET_VERSION;
+        const WalletClass = this.ton.wallet.all[walletVersion];
+        this.walletContract = new WalletClass(this.ton.provider, {
+            publicKey: keyPair.publicKey,
+            wc: 0
+        });
+        this.myAddress = (await this.walletContract.getAddress()).toString(true, true, true);
+        this.publicKeyHex = TonWeb.utils.bytesToHex(keyPair.publicKey);
+        await storage.setItem('publicKey', this.publicKeyHex);
+        await storage.setItem('walletVersion', walletVersion);
+        this.sendToView('disableCreated', false);
+    }
+
+    async createPrivateKey() {
+        this.showBackup(this.myMnemonicWords, true);
+    }
+
+    // BACKUP WALLET
+
+    onBackupWalletClick() {
+        this.afterEnterPassword = async mnemonicWords => {
+            this.showBackup(mnemonicWords);
+        };
+        this.sendToView('showPopup', {name: 'enterPassword'});
+    }
+
+    showBackup(words, isFirst) {
+        this.sendToView('showScreen', {name: 'backup', words, isFirst});
+    }
+
+    async onBackupDone() {
+        if (await storage.getItem('words')) {
+            this.sendToView('showScreen', {name: 'main'});
+        } else {
+            this.sendToView('showScreen', {name: 'wordsConfirm', words: this.myMnemonicWords});
+        }
+    }
+
+    onConfirmDone(words) {
+        if (words) {
+            let isValid = true;
+
+            Object.keys(words).forEach(index => {
+                if (this.myMnemonicWords[index] !== words[index]) {
+                    isValid = false;
+                }
+            });
+
+            if (!isValid) {
+                return;
+            }
+
+            this.showCreatePassword();
+        }
+    }
+
+    // IMPORT LEDGER
+
+    async createLedger(transportType) {
+        let transport;
+
+        switch (transportType) {
+            case 'hid':
+                transport = await TonWeb.ledger.TransportWebHID.create();
+                break;
+            case 'ble':
+                transport = await TonWeb.ledger.BluetoothTransport.create();
+                break;
+            default:
+                throw new Error('unknown transportType' + transportType);
+        }
+
+        transport.setDebugMode(true);
+        this.isLedger = true;
+        this.ledgerApp = new TonWeb.ledger.AppTon(transport, this.ton);
+        const ledgerVersion = (await this.ledgerApp.getAppConfiguration()).version;
+        this.debug('ledgerAppConfig=', ledgerVersion);
+        if (!ledgerVersion.startsWith('2')) {
+            alert('Please update your Ledger TON-app to v2.0.1 or upper or use old wallet version https://tonwallet.me/prev/');
+            throw new Error('outdated ledger ton-app version');
+        }
+        const {publicKey} = await this.ledgerApp.getPublicKey(ACCOUNT_NUMBER, false); // todo: можно сохранять publicKey и не запрашивать это
+
+        const WalletClass = this.ton.wallet.all[DEFAULT_LEDGER_WALLET_VERSION];
+        const wallet = new WalletClass(this.ton.provider, {
+            publicKey: publicKey,
+            wc: 0
+        });
+        this.walletContract = wallet;
+
+        const address = await wallet.getAddress();
+        this.myAddress = address.toString(true, true, true);
+        this.publicKeyHex = TonWeb.utils.bytesToHex(publicKey);
+    }
+
+    async importLedger(transportType) {
+        await this.createLedger(transportType);
+        await storage.setItem('walletVersion', this.walletContract.getName());
+        await storage.setItem('address', this.myAddress);
+        await storage.setItem('isLedger', 'true');
+        await storage.setItem('ledgerTransportType', transportType);
+        await storage.setItem('words', 'ledger');
+        await storage.setItem('publicKey', this.publicKeyHex);
+        this.sendToView('setIsLedger', this.isLedger);
+        this.sendToView('showScreen', {name: 'readyToGo'});
+    }
+
+    // IMPORT WALLET
+
+    showImport() {
+        this.sendToView('showScreen', {name: 'import'});
+    }
+
+    async import(words) {
+        this.myMnemonicWords = words;
+        if (this.myMnemonicWords) {
+            try {
+                const privateKey = await Controller.wordsToPrivateKey(this.myMnemonicWords);
+                const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
+
+                let hasBalance = [];
+
+                for (let WalletClass of this.ton.wallet.list) {
+                    const wallet = new WalletClass(this.ton.provider, {
+                        publicKey: keyPair.publicKey,
+                        wc: 0
+                    });
+                    const walletAddress = (await wallet.getAddress()).toString(true, true, true);
+                    const walletInfo = await this.ton.provider.getWalletInfo(walletAddress);
+                    const walletBalance = this.getBalance(walletInfo);
+                    if (walletBalance.gt(new BN(0))) {
+                        hasBalance.push({balance: walletBalance, clazz: WalletClass});
+                    }
+                    this.debug(wallet.getName(), walletAddress, walletInfo, walletBalance.toString());
+                }
+
+                let walletClass = this.ton.wallet.all[DEFAULT_WALLET_VERSION];
+
+                if (hasBalance.length > 0) {
+                    hasBalance.sort((a, b) => {
+                        return a.balance.cmp(b.balance);
+                    });
+                    walletClass = hasBalance[hasBalance.length - 1].clazz;
+                }
+
+                await this.importImpl(keyPair, walletClass);
+
+                this.sendToView('importCompleted', {state: 'success'});
+            } catch (e) {
+                this.debug(e);
+                this.sendToView('importCompleted', {state: 'failure'});
+            }
+        } else {
+            this.sendToView('importCompleted', {state: 'failure'});
+        }
+    }
+
+    async importImpl(keyPair, WalletClass) {
+        this.walletContract = new WalletClass(this.ton.provider, {
+            publicKey: keyPair.publicKey,
+            wc: 0
+        });
+        this.myAddress = (await this.walletContract.getAddress()).toString(true, true, true);
+        this.publicKeyHex = TonWeb.utils.bytesToHex(keyPair.publicKey);
+        await storage.setItem('publicKey', this.publicKeyHex);
+        await storage.setItem('walletVersion', this.walletContract.getName());
+        this.showCreatePassword();
+    }
+
+    // PASSWORD
+
+    showCreatePassword() {
+        this.sendToView('showScreen', {name: 'createPassword'});
+    }
+
+    async savePrivateKey(password) {
+        this.isLedger = false;
+        await storage.setItem('isLedger', 'false');
+        await storage.setItem('address', this.myAddress);
+        await Controller.saveWords(this.myMnemonicWords, password);
+        this.myMnemonicWords = null;
+
+        this.sendToView('setIsLedger', this.isLedger);
+        this.sendToView('showScreen', {name: 'readyToGo'});
+        this.sendToView('privateKeySaved');
+    }
+
+    async onChangePassword(oldPassword, newPassword) {
+        let words;
+        try {
+            words = await Controller.loadWords(oldPassword);
+        } catch (e) {
+            this.sendToView('showChangePasswordError');
+            return;
+        }
+        await Controller.saveWords(words, newPassword);
+
+        this.sendToView('closePopup');
+        this.sendToView('passwordChanged');
+    }
+
+    async onEnterPassword(password) {
+        let words;
+        try {
+            words = await Controller.loadWords(password);
+        } catch (e) {
+            this.sendToView('showEnterPasswordError');
+            return;
+        }
+
+        this.afterEnterPassword(words);
+        this.sendToView('passwordEntered');
+    }
+
+    // MAIN
+
+    async showMain() {
+        this.sendToView('showScreen', {name: 'main', myAddress: this.myAddress});
+        if (!this.walletContract) {
+            const walletVersion = await storage.getItem('walletVersion');
+            const walletClass = walletVersion ? this.ton.wallet.all[walletVersion] : this.ton.wallet.default;
+
+            this.walletContract = new walletClass(this.ton.provider, {
+                address: this.myAddress,
+                publicKey: this.publicKeyHex ? TonWeb.utils.hexToBytes(this.publicKeyHex) : undefined,
+                wc: 0
+            });
+        }
+        this.updateIntervalId = setInterval(() => this.update(), 5000);
+        this.update(true);
+        this.sendToDapp('ton_accounts', [this.myAddress]);
+    }
+
+    async initDapp() {
+        this.sendToDapp('ton_accounts', this.myAddress ? [this.myAddress] : []);
+        this.doMagic((await storage.getItem('magic')) === 'true');
+        this.doProxy((await storage.getItem('proxy')) === 'true');
+    }
+
+    async initView() {
+        if (!this.myAddress || !(await storage.getItem('words'))) {
+            this.sendToView('showScreen', {name: 'start', noAnimation: true});
+        } else {
+            this.sendToView('showScreen', {name: 'main', myAddress: this.myAddress});
+            if (this.balance !== null) {
+                this.sendToView('setBalance', {balance: this.balance.toString(), txs: this.transactions});
+            }
+        }
+        this.sendToView('setIsMagic', (await storage.getItem('magic')) === 'true');
+        this.sendToView('setIsProxy', (await storage.getItem('proxy')) === 'true');
+        this.sendToView('setIsTestnet', this.isTestnet);
+    }
+
+    async update(force) {
+        // if (!document.hasFocus()) {
+        //     return;
+        // }
+        const needUpdate = (this.processingVisible && this.sendingData) || (this.balance === null) || force;
+
+        if (!needUpdate) return;
+
+        const response = await this.getWallet();
+
+        const balance = this.getBalance(response);
+        const isBalanceChanged = (this.balance === null) || (this.balance.cmp(balance) !== 0);
+        this.balance = balance;
+
+        const isContractInitialized = this.checkContractInitialized(response) && response.seqno;
+        this.debug('isBalanceChanged', isBalanceChanged);
+        this.debug('isContractInitialized', isContractInitialized);
+
+        if (!this.isContractInitialized && isContractInitialized) {
+            this.isContractInitialized = true;
+        }
+
+        if (isBalanceChanged) {
+            this.getTransactions().then(txs => {
+                if (txs.length > 0) {
+                    this.transactions = txs;
+                    const newTxs = txs.filter(tx => Number(tx.date) > this.lastTransactionTime);
+                    this.lastTransactionTime = Number(txs[0].date);
+
+                    if (this.processingVisible && this.sendingData) {
+                        for (let tx of newTxs) {
+                            const txAddr = (new Address(tx.to_addr)).toString(true, true, true);
+                            const myAddr = (new Address(this.sendingData.toAddress)).toString(true, true, true);
+                            const txAmount = tx.amount;
+                            const myAmount = '-' + this.sendingData.amount.toString();
+
+                            if (txAddr === myAddr && txAmount === myAmount) {
+                                this.sendToView('showPopup', {
+                                    name: 'done',
+                                    message: formatNanograms(this.sendingData.amount) + ' TON have been sent'
+                                });
+                                this.processingVisible = false;
+                                this.sendingData = null;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                this.sendToView('setBalance', {balance: balance.toString(), txs});
+            });
+        } else {
+            this.sendToView('setBalance', {balance: balance.toString(), txs: this.transactions});
+        }
+    }
+
+    async showAddressOnDevice() {
+        if (!this.ledgerApp) {
+            await this.createLedger((await storage.getItem('ledgerTransportType')) || 'hid');
+        }
+        const {address} = await this.ledgerApp.getAddress(ACCOUNT_NUMBER, true, this.ledgerApp.ADDRESS_FORMAT_USER_FRIENDLY + this.ledgerApp.ADDRESS_FORMAT_URL_SAFE + this.ledgerApp.ADDRESS_FORMAT_BOUNCEABLE);
+        this.debug(address.toString(true, true, true));
+    }
+
+    // SEND GRAMS
+
+    /**
+     * @param amount    {BN}    in nanograms
+     * @param toAddress {string}
+     * @param comment?  {string}
+     * @param stateInit? {Cell}
+     * @return {Promise<BN>} in nanograms
+     */
+    async getFees(amount, toAddress, comment, stateInit) {
+        if (!this.isContractInitialized && !this.publicKeyHex) {
+            return TonWeb.utils.toNano('0.010966001');
+        }
+
+        const query = await this.sign(toAddress, amount, comment, null, stateInit);
+        const all_fees = await query.estimateFee();
+        const fees = all_fees.source_fees;
+        const in_fwd_fee = new BN(fees.in_fwd_fee);
+        const storage_fee = new BN(fees.storage_fee);
+        const gas_fee = new BN(fees.gas_fee);
+        const fwd_fee = new BN(fees.fwd_fee);
+
+        // const tooltip_text = '<span>External processing fee ' + (fees.in_fwd_fee / 1e9).toString() + ' grams</span></br>' +
+        //     '<span>Storage fee ' + (fees.storage_fee / 1e9).toString() + ' grams</span></br>' +
+        //     '<span>Gas fee ' + (fees.gas_fee / 1e9).toString() + ' grams</span></br>' +
+        //     '<span>Forwarding fees ' + (fees.fwd_fee / 1e9).toString() + ' grams</span>';
+        //
+        return in_fwd_fee.add(storage_fee).add(gas_fee).add(fwd_fee);
+    };
+
+    /**
+     * @param amount    {BN} in nanotons
+     * @param toAddress {string}
+     * @param comment?  {string | Uint8Array}
+     * @param needQueue? {boolean}
+     * @param stateInit? {Cell}
+     */
+    async showSendConfirm(amount, toAddress, comment, needQueue, stateInit) {
+        createDappPromise();
+
+        if (!amount.gt(new BN(0))) {
+            this.sendToView('sendCheckFailed', { message: 'Invalid amount' });
+            return false;
+        }
+
+        if (!Address.isValid(toAddress)) {
+            try {
+                toAddress = toAddress.toLowerCase();
+                if (this.isTestnet && toAddress.endsWith('.ton')) {
+                    toAddress = await this.ton.dns.getWalletAddress(toAddress);
+                    if (!toAddress) {
+                        throw new Error();
+                    }
+                    if (!Address.isValid(toAddress)) {
+                        throw new Error();
+                    }
+                    toAddress = toAddress.toString(true, true, true);
+                }
+            } catch (e) {
+                this.sendToView('sendCheckFailed', {message: 'Invalid address or domain'});
+                return false;
+            }
+        }
+
+        try {
+            await this.update(true);
+        } catch {
+            this.sendToView('sendCheckFailed', { message: 'API request error' });
+            return false;
+        }
+
+        if (this.balance.lt(amount)) {
+            this.sendToView('sendCheckFailed', {
+                message: 'Not enough balance'
+            });
+            return false;
+        }
+
+        let fee;
+
+        try {
+            fee = await this.getFees(amount, toAddress, comment, stateInit);
+        } catch {
+            this.sendToView('sendCheckFailed', { message: 'API request error' });
+            return false;
+        }
+
+        if (this.balance.sub(fee).lt(amount)) {
+            this.sendToView('sendCheckCantPayFee', {fee});
+            return false;
+        }
+
+        if (this.isLedger) {
+            this.sendToView('showPopup', {
+                name: 'sendConfirm',
+                amount: amount.toString(),
+                toAddress: toAddress,
+                fee: fee.toString()
+            }, needQueue);
+
+            const sendResult = await this.send(toAddress, amount, comment, null, stateInit);
+
+            if (sendResult) {
+                dAppPromise.resolve(true);
+            } else {
+                this.sendToView('sendCheckFailed', { message: 'API request error' });
+                dAppPromise.resolve(false);
+            }
+        } else {
+            this.afterEnterPassword = async words => {
+                this.processingVisible = true;
+                this.sendToView('showPopup', {name: 'processing'});
+                const privateKey = await Controller.wordsToPrivateKey(words);
+
+                const sendResult = await this.send(toAddress, amount, comment, privateKey, stateInit);
+
+                if (sendResult) {
+                    dAppPromise.resolve(true);
+                } else {
+                    this.sendToView('sendCheckFailed', { message: 'API request error' });
+                    dAppPromise.resolve(false);
+                }
+            };
+
+            this.onCancelAction = () => {
+                dAppPromise.resolve(false);
+            };
+
+            this.sendToView('showPopup', {
+                name: 'sendConfirm',
+                amount: amount.toString(),
+                toAddress: toAddress,
+                fee: fee.toString()
+            }, needQueue);
+        }
+
+        this.sendToView('sendCheckSucceeded');
+
+        return dAppPromise || false;
+    }
+
+    /**
+     * @param hexToSign  {string} hex data to sign
+     * @param needQueue {boolean}
+     * @returns {Promise<string>} signature in hex
+     */
+    showSignConfirm(hexToSign, needQueue) {
+        return new Promise((resolve, reject) => {
+            if (this.isLedger) {
+                alert('sign not supported by Ledger');
+                reject();
+            } else {
+
+                this.afterEnterPassword = async words => {
+                    this.sendToView('closePopup');
+                    const privateKey = await Controller.wordsToPrivateKey(words);
+                    const signature = this.rawSign(hexToSign, privateKey);
+                    resolve(signature);
+                };
+
+                this.sendToView('showPopup', {
+                    name: 'signConfirm',
+                    data: hexToSign,
+                }, needQueue);
+
+            }
+        });
+    }
+
+    /**
+     * @param toAddress {string}
+     * @param amount    {BN} in nanograms
+     * @param comment   {string}
+     * @param privateKey    {string}
+     * @param stateInit? {Cell}
+     * @return  {Promise<boolean>}
+     */
+    async send(toAddress, amount, comment, privateKey, stateInit) {
+        try {
+            let addressFormat = 0;
+            if (this.isLedger) {
+
+                if (stateInit) {
+                    throw new Error('stateInit dont supported by Ledger');
+                }
+
+                if (!this.ledgerApp) {
+                    await this.createLedger((await storage.getItem('ledgerTransportType')) || 'hid');
+                }
+
+                const toAddress_ = new Address(toAddress);
+                if (toAddress_.isUserFriendly) {
+                    addressFormat += this.ledgerApp.ADDRESS_FORMAT_USER_FRIENDLY;
+                    if (toAddress_.isUrlSafe) {
+                        addressFormat += this.ledgerApp.ADDRESS_FORMAT_URL_SAFE;
+                    }
+                    if (toAddress_.isBounceable) {
+                        addressFormat += this.ledgerApp.ADDRESS_FORMAT_BOUNCEABLE;
+                    }
+                    if (toAddress_.isTestOnly) {
+                        addressFormat += this.ledgerApp.ADDRESS_FORMAT_TEST_ONLY;
+                    }
+                }
+            }
+
+            if (!this.checkContractInitialized(await this.ton.provider.getWalletInfo(toAddress))) {
+                toAddress = (new Address(toAddress)).toString(true, true, false);
+            }
+
+            if (this.isLedger) {
+
+                const wallet = await this.getWallet(this.myAddress);
+                let seqno = wallet.seqno;
+                if (!seqno) seqno = 0;
+
+                const query = await this.ledgerApp.transfer(ACCOUNT_NUMBER, this.walletContract, toAddress, amount, seqno, addressFormat);
+                this.sendingData = {toAddress: toAddress, amount: amount, comment: comment, query: query};
+
+                this.sendToView('showPopup', {name: 'processing'});
+                this.processingVisible = true;
+
+                return await this.sendQuery(query);
+
+            } else {
+
+                const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
+                const query = await this.sign(toAddress, amount, comment, keyPair, stateInit);
+                this.sendingData = {toAddress: toAddress, amount: amount, comment: comment, query: query};
+                return await this.sendQuery(query);
+
+            }
+        } catch (e) {
+            this.debug(e);
+            this.sendToView('closePopup');
+            alert('Error sending');
+            return false;
+        }
+    }
+
+    /**
+     * @param hex   {string} hex to sign
+     * @param privateKey    {string}
+     * @returns {Promise<string>} signature in hex
+     */
+    rawSign(hex, privateKey) {
+        const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
+        const signature = nacl.sign.detached(TonWeb.utils.hexToBytes(hex), keyPair.secretKey);
+        return TonWeb.utils.bytesToHex(signature);
+    }
+
+    /**
+     * @param query - return by sign()
+     * @return {Promise<boolean>}
+     */
+    async sendQuery(query) {
+        const sendResponse = await query.send();
+        if (sendResponse["@type"] === "ok") {
+            // wait for transaction, then show Done popup
+            return true;
+        } else {
+            this.sendToView('closePopup');
+            alert('Send error');
+            return false;
+        }
+    }
+
+    // DISCONNECT WALLET
+
+    clearVars() {
+        this.myAddress = null;
+        this.publicKeyHex = null;
+        this.balance = null;
+        this.walletContract = null;
+        this.transactions = [];
+        this.lastTransactionTime = 0;
+        this.isContractInitialized = false;
+        this.sendingData = null;
+        this.processingVisible = false;
+        this.isLedger = false;
+        this.ledgerApp = null;
+        clearInterval(this.updateIntervalId);
+    }
+
+    async onDisconnectClick() {
+        this.clearVars();
+        await storage.clear();
+        this.sendToView('showScreen', {name: 'start'});
+        this.sendToDapp('ton_accounts', []);
+    }
+
+    // MAGIC
+
+    doMagic(enabled) {
+        try {
+            this.sendToDapp('ton_doMagic', enabled);
+        } catch (e) {
+
+        }
+    }
+
+    // PROXY
+
+    doProxy(enabled) {
+
+    }
+
+    // TRANSPORT WITH VIEW
+
+    sendToView(method, params, needQueue, needResult) {
+        if (self.view) {
+            const result = self.view.onMessage(method, params);
+            if (needResult) {
+                return result;
+            }
+        } else {
+            const msg = {method, params};
+            const exec = () => {
+                if (popupPort) {
+                    popupPort.postMessage(msg);
+                } else if (needQueue) {
+                    queueToPopup.push(msg);
+                }
+            };
+
+            if (!needResult) {
+                exec();
+                return;
+            }
+
+            return new Promise((resolve) => {
+                msg.id = this._lastMsgId++;
+                this.pendingMessageResolvers.set(msg.id, resolve);
+                exec();
+            });
+        }
+    }
+
+    async onViewMessage(method, params) {
+        switch (method) {
+            case 'showScreen':
+                switch (params.name) {
+                    case 'created':
+                        await this.showCreated();
+                        break;
+                    case 'import':
+                        this.showImport();
+                        break;
+                    case 'importLedger':
+                        await this.importLedger(params.transportType);
+                        break;
+                }
+                break;
+            case 'import':
+                await this.import(params.words);
+                break;
+            case 'createPrivateKey':
+                await this.createPrivateKey();
+                break;
+            case 'passwordCreated':
+                await this.savePrivateKey(params.password);
+                break;
+            case 'update':
+                this.update(true);
+                break;
+            case 'showAddressOnDevice':
+                await this.showAddressOnDevice();
+                break;
+            case 'onCancelAction':
+                if (this.onCancelAction) {
+                    await this.onCancelAction();
+                    this.onCancelAction = null;
+                }
+                break;
+            case 'onEnterPassword':
+                await this.onEnterPassword(params.password);
+                break;
+            case 'onChangePassword':
+                await this.onChangePassword(params.oldPassword, params.newPassword);
+                break;
+            case 'onSend':
+                await this.showSendConfirm(new BN(params.amount), params.toAddress, params.comment);
+                break;
+            case 'onBackupDone':
+                await this.onBackupDone();
+                break;
+            case 'onConfirmBack':
+                this.showBackup(this.myMnemonicWords);
+                break;
+            case 'onImportBack':
+                this.sendToView('showScreen', {name: 'start'});
+                break;
+            case 'onConfirmDone':
+                this.onConfirmDone(params.words);
+                break;
+            case 'showMain':
+                await this.showMain();
+                break;
+            case 'onBackupWalletClick':
+                this.onBackupWalletClick();
+                break;
+            case 'disconnect':
+                await this.onDisconnectClick();
+                break;
+            case 'onClosePopup':
+                this.processingVisible = false;
+                break;
+            case 'onMagicClick':
+                await storage.setItem('magic', params ? 'true' : 'false');
+                this.doMagic(params);
+                break;
+            case 'onProxyClick':
+                await storage.setItem('proxy', params ? 'true' : 'false');
+                this.doProxy(params);
+                break;
+            case 'toggleTestnet':
+                await this.toggleTestnet();
+                break;
+            case 'toggleDebug':
+                await this.toggleDebug();
+                break;
+            case 'onWindowUpdate':
+                await storage.setItem('windowState', {
+                    top: params.top,
+                    left: params.left,
+                    // -2 need for remove frames size
+                    // TODO: check in linux and macos
+                    height: params.height - 2,
+                    width: params.width - 2
+                });
+                break;
+        }
+    }
+
+    // TRANSPORT WITH DAPP
+
+    sendToDapp(method, params) {
+        contentScriptPorts.forEach(port => {
+            port.postMessage(JSON.stringify({
+                type: 'gramWalletAPI',
+                message: {jsonrpc: '2.0', method: method, params: params}
+            }));
+        });
+    }
+
+    requestPublicKey(needQueue) {
+        return new Promise(async (resolve, reject) => {
+            await showExtensionWindow();
+
+            this.afterEnterPassword = async words => {
+                const privateKey = await Controller.wordsToPrivateKey(words);
+                const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
+                this.publicKeyHex = TonWeb.utils.bytesToHex(keyPair.publicKey);
+                await storage.setItem('publicKey', this.publicKeyHex);
+                resolve();
+            };
+
+            this.sendToView('showPopup', {name: 'enterPassword'}, needQueue);
+        });
+    }
+
+    async onDappMessage(method, params) {
+        // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md
+        // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1102.md
+        await this.whenReady;
+
+        const needQueue = !popupPort;
+
+        switch (method) {
+            case 'ton_requestAccounts':
+                return (this.myAddress ? [this.myAddress] : []);
+            case 'ton_requestWallets':
+                if (!this.myAddress) {
+                    return [];
+                }
+                if (!this.publicKeyHex) {
+                    await this.requestPublicKey(needQueue);
+                }
+                const walletVersion = await storage.getItem('walletVersion');
+                return [{
+                    address: this.myAddress,
+                    publicKey: this.publicKeyHex,
+                    walletVersion: walletVersion
+                }];
+            case 'ton_getBalance':
+                await this.update(true);
+                return (this.balance ? this.balance.toString() : '');
+            case 'ton_sendTransaction':
+                const param = params[0];
+                await showExtensionWindow();
+
+                if (param.data) {
+                    if (param.dataType === 'hex') {
+                        param.data = TonWeb.utils.hexToBytes(param.data);
+                    } else if (param.dataType === 'base64') {
+                        param.data = TonWeb.utils.base64ToBytes(param.data);
+                    } else if (param.dataType === 'boc') {
+                        param.data = TonWeb.boc.Cell.oneFromBoc(TonWeb.utils.base64ToBytes(param.data));
+                    }
+                }
+                if (param.stateInit) {
+                    param.stateInit = TonWeb.boc.Cell.oneFromBoc(TonWeb.utils.base64ToBytes(param.stateInit));
+                }
+
+                this.sendToView('showPopup', {
+                    name: 'loader',
+                });
+
+                const result = await this.showSendConfirm(new BN(param.value), param.to, param.data, needQueue, param.stateInit);
+                if (!result) {
+                    this.sendToView('closePopup');
+                }
+                return result;
+            case 'ton_rawSign':
+                const signParam = params[0];
+                await showExtensionWindow();
+
+                return this.showSignConfirm(signParam.data, needQueue);
+            case 'flushMemoryCache':
+                await chrome.webRequest.handlerBehaviorChanged();
+                return true;
+        }
+    }
+}
+
+const controller = new Controller();
+
+if (IS_EXTENSION) {
+    chrome.runtime.onConnect.addListener(port => {
+        if (port.name === 'gramWalletContentScript') {
+            contentScriptPorts.add(port)
+            port.onMessage.addListener(async (msg, port) => {
+                if (msg.type === 'gramWalletAPI_ton_provider_connect') {
+                    controller.whenReady.then(() => {
+                        controller.initDapp();
+                    });
+                }
+
+                if (!msg.message) return;
+
+                const result = await controller.onDappMessage(msg.message.method, msg.message.params);
+                if (port) {
+                    port.postMessage(JSON.stringify({
+                        type: 'gramWalletAPI',
+                        message: {jsonrpc: '2.0', id: msg.message.id, method: msg.message.method, result}
+                    }));
+                }
+            });
+            port.onDisconnect.addListener(port => {
+                contentScriptPorts.delete(port)
+            })
+        } else if (port.name === 'gramWalletPopup') {
+            popupPort = port;
+            popupPort.onMessage.addListener(function (msg) {
+                if (msg.method === 'response') {
+                    const resolver = controller.pendingMessageResolvers.get(msg.id);
+                    if (resolver) {
+                        resolver(msg.result);
+                        controller.pendingMessageResolvers.delete(msg.id);
+                    }
+                } else {
+                    controller.onViewMessage(msg.method, msg.params);
+                }
+            });
+            popupPort.onDisconnect.addListener(() => {
+                popupPort = null;
+            });
+
+            const runQueueToPopup = () => {
+                queueToPopup.forEach(msg => popupPort.postMessage(msg));
+                queueToPopup.length = 0;
+            };
+
+            if (!controller.myAddress) { // if controller not initialized yet
+                runQueueToPopup();
+            }
+
+            controller.whenReady.then(async () => {
+                await controller.initView();
+                runQueueToPopup();
+            });
+        }
+    });
+
+    let actionApiName = 'action';
+    if (chrome.runtime.getManifest().manifest_version === 2) actionApiName = 'browserAction';
+
+    chrome[actionApiName].onClicked.addListener(showExtensionWindow);
+
+    chrome.windows.onRemoved.addListener(removedWindowId => {
+        if (dAppPromise) dAppPromise.resolve(false);
+
+        if (removedWindowId !== extensionWindowId) return;
+        extensionWindowId = -1;
+    });
+}
+
+/******/ })()
+;

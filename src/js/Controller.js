@@ -237,6 +237,7 @@ class Controller {
 
                 await this.showMain();
             }
+            this.sendToView('setIsTestnet', this.isTestnet);
 
             resolve();
         });
@@ -692,7 +693,7 @@ class Controller {
      */
     async getFees(amount, toAddress, comment, stateInit) {
         if (!this.isContractInitialized && !this.publicKeyHex) {
-            return TonWeb.utils.toNano(0.010966001);
+            return TonWeb.utils.toNano('0.010966001');
         }
 
         const query = await this.sign(toAddress, amount, comment, null, stateInit);
@@ -727,8 +728,22 @@ class Controller {
         }
 
         if (!Address.isValid(toAddress)) {
-            this.sendToView('sendCheckFailed', { message: 'Invalid address' });
-            return false;
+            try {
+                toAddress = toAddress.toLowerCase();
+                if (this.isTestnet && toAddress.endsWith('.ton')) {
+                    toAddress = await this.ton.dns.getWalletAddress(toAddress);
+                    if (!toAddress) {
+                        throw new Error();
+                    }
+                    if (!Address.isValid(toAddress)) {
+                        throw new Error();
+                    }
+                    toAddress = toAddress.toString(true, true, true);
+                }
+            } catch (e) {
+                this.sendToView('sendCheckFailed', {message: 'Invalid address or domain'});
+                return false;
+            }
         }
 
         try {

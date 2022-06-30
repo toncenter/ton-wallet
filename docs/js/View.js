@@ -1,20 +1,324 @@
-import {
-    $, $$, clearElement,
-    copyToClipboard,
-    createElement,
-    formatDate,
-    formatDateFull,
-    formatTime,
-    IMPORT_WORDS_COUNT,
-    CONFIRM_WORDS_COUNT,
-    onInput, setAddr,
-    toggle,
-    toggleFaded,
-    triggerClass
-} from "./Utils.js";
+/******/ (() => { // webpackBootstrap
+/******/ 	"use strict";
+/******/ 	// The require scope
+/******/ 	var __webpack_require__ = {};
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__webpack_require__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/************************************************************************/
+var __webpack_exports__ = {};
+// ESM COMPAT FLAG
+__webpack_require__.r(__webpack_exports__);
 
-import {initLotties, toggleLottie, lotties} from "./Lottie.js";
-import DropDown from "./DropDown.js";
+;// CONCATENATED MODULE: ./src/js/view/Utils.js
+// UI Utils
+
+function $(x) {
+    return document.querySelector(x);
+}
+
+function $$(x) {
+    return document.querySelectorAll(x);
+}
+
+function toggle(div, visible) {
+    let d = visible;
+    if (visible === true) d = 'block';
+    if (visible === false) d = 'none';
+
+    div.style.display = d;
+}
+
+function toggleFaded(div, isVisible, params) {
+    params = params || {};
+    if (params.isBack) {
+        div.classList.add('isBack');
+    } else {
+        div.classList.remove('isBack');
+    }
+    if (isVisible) {
+        div.classList.add('faded-show');
+        div.classList.remove('faded-hide');
+    } else {
+        div.classList.remove('faded-show');
+        div.classList.add('faded-hide');
+    }
+}
+
+function triggerClass(div, className, duration) {
+    div.classList.add(className);
+
+    setTimeout(() => {
+        div.classList.remove(className);
+    }, duration);
+}
+
+function createElement(params) {
+    const item = document.createElement(params.tag);
+    if (params.clazz) {
+        if (Array.isArray(params.clazz)) {
+            for (let c of params.clazz) {
+                if (c) {
+                    item.classList.add(c);
+                }
+            }
+        } else {
+            item.classList.add(params.clazz);
+        }
+    }
+    if (params.text) item.innerText = params.text;
+    if (params.child) {
+        for (let c of params.child) {
+            if (c) {
+                item.appendChild(c);
+            }
+        }
+    }
+    if (params.style) {
+        for (let key in params.style) {
+            item.style[key] = params.style[key];
+        }
+    }
+    return item;
+}
+
+function setAddr(el, s) {
+    el.innerHTML = '';
+    el.appendChild(document.createTextNode(s.substring(0, s.length / 2)));
+    el.appendChild(document.createElement('wbr'));
+    el.appendChild(document.createTextNode(s.substring(s.length / 2)));
+    return el;
+}
+
+function clearElement(el) {
+    el.innerHTML = '';
+}
+
+function onInput(input, handler) {
+    input.addEventListener('change', handler);
+    input.addEventListener('input', handler);
+    input.addEventListener('cut', handler);
+    input.addEventListener('paste', handler);
+}
+
+function doubleZero(n) {
+    if (n < 10) return '0' + n;
+    return n;
+}
+
+function formatTime(date) {
+    return doubleZero(date.getHours()) + ':' + doubleZero(date.getMinutes());
+}
+
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+function formatDate(date) {
+    return MONTH_NAMES[date.getMonth()] + ' ' + date.getDate();
+}
+
+function formatDateFull(date) {
+    return date.toString();
+}
+
+function copyToClipboard(text) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";  //avoid scrolling to bottom
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    var result = false;
+    try {
+        const successful = document.execCommand('copy');
+        result = successful ? 'successful' : 'unsuccessful';
+    } catch (err) {
+    }
+
+    document.body.removeChild(textArea);
+    return result;
+}
+
+const IMPORT_WORDS_COUNT = 24;
+const CONFIRM_WORDS_COUNT = 3;
+
+
+
+;// CONCATENATED MODULE: ./src/js/view/Lottie.js
+
+
+var lotties = {};
+
+function initLottie(div) {
+    return new Promise((resolve, reject) => {
+        const url = div.getAttribute('src');
+        const name = div.getAttribute('data-name');
+        const w = Number(div.getAttribute('width'));
+        const h = Number(div.getAttribute('height'));
+
+        const xmlHttp = new XMLHttpRequest();
+        xmlHttp.responseType = 'arraybuffer';
+        xmlHttp.onreadystatechange = function () {
+            if (xmlHttp.readyState === 4) {
+                if (xmlHttp.status === 200) {
+                    const canvas = document.createElement('canvas');
+                    canvas.setAttribute('width', w * window.devicePixelRatio);
+                    canvas.setAttribute('height', h * window.devicePixelRatio);
+                    canvas.style.width = w + 'px';
+                    canvas.style.height = h + 'px';
+                    div.appendChild(canvas);
+                    const ctx = canvas.getContext('2d');
+
+                    const animationData = JSON.parse(new TextDecoder('utf-8').decode(pako.inflate(xmlHttp.response)));
+                    lotties[name] = {
+                        ctx: ctx,
+                        player: lottie.loadAnimation({
+                            renderer: 'canvas',
+                            loop: name === 'processing' || name === 'start' || name === 'about',
+                            autoplay: false,
+                            animationData,
+                            rendererSettings: {
+                                context: ctx,
+                                scaleMode: 'noScale',
+                                clearCanvas: true
+                            },
+                        })
+                    };
+                    ctx.clearRect(0, 0, 1000, 1000);
+                    resolve();
+                } else {
+                    reject();
+                }
+            }
+        };
+        xmlHttp.open("GET", url, true);
+        xmlHttp.send(null);
+    });
+}
+
+async function initLotties() {
+    const divs = $$('tgs-player');
+    for (let i = 0; i < divs.length; i++) {
+        try {
+            await initLottie(divs[i]);
+        } catch (e) {
+        }
+    }
+}
+
+function toggleLottie(lottie, visible, params) {
+    if (!lottie) return;
+
+    params = params || {};
+    clearTimeout(lottie.hideTimeout);
+    if (visible) {
+        lottie.player.play();
+    } else {
+        lottie.player.stop();
+
+        if (params.hideDelay) {
+            lottie.hideTimeout = setTimeout(() => {
+                lottie.ctx.clearRect(0, 0, 1000, 1000);
+            }, params.hideDelay);
+        } else {
+            lottie.ctx.clearRect(0, 0, 1000, 1000);
+        }
+    }
+}
+
+
+;// CONCATENATED MODULE: ./src/js/view/DropDown.js
+
+
+class DropDown {
+    constructor(container, onEnter, mnemonicWords) {
+        this.container = container;
+        this.onEnter = onEnter;
+        this.mnemonicWords = mnemonicWords;
+    }
+
+    show(input, text) {
+        clearElement(this.container);
+
+        const onMouseDown = e => {
+            input.value = e.target.innerText;
+            input.classList.remove('error');
+            this.hide();
+            e.preventDefault();
+            this.onEnter(input);
+        };
+
+        this.mnemonicWords
+            .filter(w => w.indexOf(text) === 0)
+            .forEach(w => {
+                const item = createElement({tag: 'div', clazz: 'words-popup-item', text: w});
+                item.addEventListener('mousedown', onMouseDown);
+                this.container.appendChild(item);
+            });
+
+        this.selectedI = -1;
+        if (this.container.children.length > 0) this.select(0);
+
+        this.container.style.left = input.offsetLeft + 'px';
+        this.container.style.top = (input.offsetTop + input.offsetHeight) + 'px';
+        toggle(this.container, true);
+    };
+
+    hide() {
+        toggle(this.container, false);
+        clearElement(this.container);
+        this.selectedI = -1;
+    }
+
+    select(i) {
+        if (this.selectedI > -1) {
+            this.container.children[this.selectedI].classList.remove('selected');
+        }
+        this.selectedI = i;
+        if (this.selectedI > -1) {
+            this.container.children[this.selectedI].classList.add('selected');
+            const ITEM_HEIGHT = 30;
+            this.container.scrollTo(0, ITEM_HEIGHT * this.selectedI);
+        }
+    }
+
+    getSelectedText() {
+        if (this.selectedI === -1) return null;
+        return this.container.children[this.selectedI].innerText;
+    }
+
+    up() {
+        if (this.selectedI === -1) return;
+
+        if (this.selectedI > 0) {
+            this.select(this.selectedI - 1);
+        }
+    }
+
+    down() {
+        if (this.selectedI === -1) return;
+
+        if (this.selectedI < this.container.children.length - 1) {
+            this.select(this.selectedI + 1);
+        }
+    }
+}
+
+;// CONCATENATED MODULE: ./src/js/view/View.js
+
+
+
+
 
 const IS_EXTENSION = !!(self.chrome && chrome.runtime && chrome.runtime.onConnect);
 
@@ -1238,3 +1542,6 @@ if (window.top == window && window.console) {
     );
     console.log('%c%s', 'font-size: 18px;', localizedSelfXssAttention[1]);
 }
+
+/******/ })()
+;
