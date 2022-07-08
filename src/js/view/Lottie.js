@@ -27,7 +27,7 @@ function initLottie(div) {
                         ctx: ctx,
                         player: lottie.loadAnimation({
                             renderer: 'canvas',
-                            loop: name === 'processing' || name === 'start' || name === 'about',
+                            loop: name === 'processing' || name === 'start' || name === 'about' || name === 'symbol',
                             autoplay: false,
                             animationData,
                             rendererSettings: {

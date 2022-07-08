@@ -199,7 +199,7 @@ button {
 }
 
 .btn-back:hover {
-   background-color: #F7F7F7;
+    background-color: #F7F7F7;
 }
 
 @keyframes loading-animation-spin {
@@ -279,27 +279,45 @@ button {
 
 
 @keyframes screen-delayed-overflow {
-    from { overflow: hidden }
+    from {
+        overflow: hidden
+    }
 }
 
 @keyframes screen-hide-left {
-    from { transform: translateX(0px) }
-    to { transform: translateX(-25px) }
+    from {
+        transform: translateX(0px)
+    }
+    to {
+        transform: translateX(-25px)
+    }
 }
 
 @keyframes screen-hide-right {
-    from { transform: translateX(0px) }
-    to { transform: translateX(25px) }
+    from {
+        transform: translateX(0px)
+    }
+    to {
+        transform: translateX(25px)
+    }
 }
 
 @keyframes screen-show-left {
-    from { transform: translateX(25px) }
-    to { transform: translateX(0px) }
+    from {
+        transform: translateX(25px)
+    }
+    to {
+        transform: translateX(0px)
+    }
 }
 
 @keyframes screen-show-right {
-    from { transform: translateX(-25px) }
-    to { transform: translateX(0px) }
+    from {
+        transform: translateX(-25px)
+    }
+    to {
+        transform: translateX(0px)
+    }
 }
 
 .addr {
@@ -496,9 +514,48 @@ button {
     font-size: 14px
 }
 
+.balance-container {
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 #balance {
     font-size: 32px;
-    margin-bottom: 6px
+}
+
+.balance-symbol {
+    width: 32px;
+    height: 32px;
+}
+
+@keyframes MoveUpDown {
+    0%, 100% {
+        transform: translate(0, -2px);
+    }
+    50% {
+        transform: translate(0, 2px);
+    }
+}
+
+.balance-diamond-container {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    margin-left: -4px;
+}
+
+#diamond {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 48px;
+    height: 48px;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 150%;
+    animation: MoveUpDown 3s linear infinite;
 }
 
 .your-balance {
