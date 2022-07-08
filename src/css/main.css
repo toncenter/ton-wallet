@@ -554,7 +554,7 @@ button {
     height: 48px;
     background-repeat: no-repeat;
     background-position: center;
-    background-size: 150%;
+    background-size: 110%;
     animation: MoveUpDown 3s linear infinite;
 }
 
