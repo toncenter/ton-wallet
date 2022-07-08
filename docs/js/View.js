@@ -184,7 +184,7 @@ function initLottie(div) {
                         ctx: ctx,
                         player: lottie.loadAnimation({
                             renderer: 'canvas',
-                            loop: name === 'processing' || name === 'start' || name === 'about',
+                            loop: name === 'processing' || name === 'start' || name === 'about' || name === 'symbol',
                             autoplay: false,
                             animationData,
                             rendererSettings: {
@@ -383,7 +383,10 @@ class View {
             multiColumns: false
         });
 
-        this._initLotties = initLotties().then(() => toggleLottie(lotties[this.currentScreenName], true));
+        this._initLotties = initLotties().then(() => {
+            toggleLottie(lotties[this.currentScreenName], true);
+            toggleLottie(lotties.symbol, this.currentScreenName === 'main');
+        });
 
         function resetErrors(e) {
             const input = e.target;
@@ -764,6 +767,7 @@ class View {
 
             toggleLottie(lotties[screen], name === screen, {hideDelay: 300}); //300ms, as for screen show/hide animation duration in CSS
         });
+        toggleLottie(lotties.symbol, name === 'main', {hideDelay: 300});
         this.currentScreenName = name;
 
         this.isBack = false;
@@ -1104,7 +1108,6 @@ class View {
 
     clearBalance() {
         clearElement($('#balance'));
-        $('#balance').innerText = '💎';
         clearElement($('#transactionsList'));
         toggle($('#walletCreated'), false);
     }
@@ -1120,7 +1123,6 @@ class View {
         clearElement($('#balance'));
         $('#balance').appendChild(createElement({tag: 'span', text: first}));
         $('#balance').appendChild(createElement({tag: 'span', style: {'font-size': '24px'}, text: last}));
-        $('#balance').appendChild(createElement({tag: 'span', text: ' 💎'}));
 
         $('#sendBalance').innerText = 'Balance: ' + s + ' 💎';
         toggle($('#sendButton'), balance.gt(new BN(0)) ? 'inline-block' : 'none');
@@ -1225,8 +1227,34 @@ class View {
 
     setMyAddress(address) {
         setAddr($('#receive .addr'), address);
-
         drawQRCode(TonWeb.utils.formatTransferUrl(address), '#qr');
+        this.address = address;
+        this.loadDiamond(address);
+    }
+
+    async loadDiamond(address) {
+        toggle($('.balance-symbol'), true);
+        toggle($('.balance-diamond-container'), false);
+        toggle($('#diamond'), false);
+
+        try {
+            if (this.isTestnet) return;
+            const res = await fetch('https://ton.diamonds/api/wallet/diamond_nfts?address=' + address + '&perPage=1&current=1');
+            if (res.status !== 200) return;
+            const json = await res.json();
+            if (json.ok !== true) return;
+            if (json.result.total < 1) return;
+            const nftNumber = json.result.rows[0].nftNumber;
+            const diamondImageUrl = 'https://nft.ton.diamonds/nft/' + nftNumber + '/' + nftNumber + '_diamond.svg';
+            if (address === this.address) {
+                toggle($('.balance-symbol'), false);
+                $('#diamond').style.backgroundImage = 'url("' + diamondImageUrl + '")';
+                toggle($('.balance-diamond-container'), true);
+                toggle($('#diamond'), true);
+            }
+        } catch (e) {
+            console.error('Diamonds Error', e);
+        }
     }
 
     onShareAddressClick(onyAddress) {

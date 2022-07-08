@@ -924,6 +924,7 @@ class View {
     setMyAddress(address) {
         setAddr($('#receive .addr'), address);
         drawQRCode(TonWeb.utils.formatTransferUrl(address), '#qr');
+        this.address = address;
         this.loadDiamond(address);
     }
 
@@ -933,6 +934,7 @@ class View {
         toggle($('#diamond'), false);
 
         try {
+            if (this.isTestnet) return;
             const res = await fetch('https://ton.diamonds/api/wallet/diamond_nfts?address=' + address + '&perPage=1&current=1');
             if (res.status !== 200) return;
             const json = await res.json();
@@ -940,11 +942,12 @@ class View {
             if (json.result.total < 1) return;
             const nftNumber = json.result.rows[0].nftNumber;
             const diamondImageUrl = 'https://nft.ton.diamonds/nft/' + nftNumber + '/' + nftNumber + '_diamond.svg';
-
-            toggle($('.balance-symbol'), false);
-            $('#diamond').style.backgroundImage = 'url("' + diamondImageUrl + '")';
-            toggle($('.balance-diamond-container'), true);
-            toggle($('#diamond'), true);
+            if (address === this.address) {
+                toggle($('.balance-symbol'), false);
+                $('#diamond').style.backgroundImage = 'url("' + diamondImageUrl + '")';
+                toggle($('.balance-diamond-container'), true);
+                toggle($('#diamond'), true);
+            }
         } catch (e) {
             console.error('Diamonds Error', e);
         }
