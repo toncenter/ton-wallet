@@ -730,7 +730,7 @@ class Controller {
         if (!Address.isValid(toAddress)) {
             try {
                 toAddress = toAddress.toLowerCase();
-                if (this.isTestnet && toAddress.endsWith('.ton')) {
+                if (toAddress.endsWith('.ton')) {
                     toAddress = await this.ton.dns.getWalletAddress(toAddress);
                     if (!toAddress) {
                         throw new Error();

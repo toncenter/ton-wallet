@@ -342,7 +342,7 @@ class View {
                 return;
             }
             const toAddress = $('#toWalletInput').value;
-            if (!(this.isTestnet && toAddress.toLowerCase().endsWith('.ton')) && !TonWeb.Address.isValid(toAddress)) {
+            if (!toAddress.toLowerCase().endsWith('.ton') && !TonWeb.Address.isValid(toAddress)) {
                 $('#toWalletInput').classList.add('error');
                 return;
             }
