@@ -121,6 +121,15 @@ const ACCOUNT_NUMBER = 0;
 const DEFAULT_WALLET_VERSION = 'v3R2';
 const DEFAULT_LEDGER_WALLET_VERSION = 'v3R1';
 
+/**
+ * @param {string} data
+ * @returns {boolean}
+ */
+function isHexString(data) {
+    return typeof data === 'string'
+        && !!data.match(/^[\da-fA-F]+$/);
+}
+
 class Controller {
     constructor() {
         this.isTestnet = false;
@@ -824,29 +833,33 @@ class Controller {
     }
 
     /**
-     * @param hexToSign  {string} hex data to sign
+     * @param data {string} data to sign
+     * @param dataType {string} type of signing data
      * @param needQueue {boolean}
      * @returns {Promise<string>} signature in hex
      */
-    showSignConfirm(hexToSign, needQueue) {
+    showSignConfirm(data, dataType, needQueue) {
         return new Promise((resolve, reject) => {
             if (this.isLedger) {
                 alert('sign not supported by Ledger');
                 reject();
             } else {
+                if (dataType === 'hex' && !isHexString(data)) {
+                    reject(new Error('Hexadecimal string contains non-hex character'));
+                    return;
+                }
 
                 this.afterEnterPassword = async words => {
                     this.sendToView('closePopup');
                     const privateKey = await Controller.wordsToPrivateKey(words);
-                    const signature = this.rawSign(hexToSign, privateKey);
+                    const signature = this.rawSign(data, dataType, privateKey);
                     resolve(signature);
                 };
 
                 this.sendToView('showPopup', {
                     name: 'signConfirm',
-                    data: hexToSign,
+                    data: data,
                 }, needQueue);
-
             }
         });
     }
@@ -922,13 +935,19 @@ class Controller {
     }
 
     /**
-     * @param hex   {string} hex to sign
+     * @param data {string} data to sign
+     * @param dataType {string} type of signing
      * @param privateKey    {string}
      * @returns {Promise<string>} signature in hex
      */
-    rawSign(hex, privateKey) {
+    rawSign(data, dataType, privateKey) {
+        const signingData = dataType === 'text'
+            ? new TextEncoder().encode(data)
+            : TonWeb.utils.hexToBytes(data);
+
         const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
-        const signature = nacl.sign.detached(TonWeb.utils.hexToBytes(hex), keyPair.secretKey);
+        const signature = nacl.sign.detached(signingData, keyPair.secretKey);
+
         return TonWeb.utils.bytesToHex(signature);
     }
 
@@ -1198,7 +1217,7 @@ class Controller {
                 const signParam = params[0];
                 await showExtensionWindow();
 
-                return this.showSignConfirm(signParam.data, needQueue);
+                return this.showSignConfirm(signParam.data, signParam.dataType || 'hex', needQueue);
             case 'flushMemoryCache':
                 await chrome.webRequest.handlerBehaviorChanged();
                 return true;
@@ -1221,13 +1240,28 @@ if (IS_EXTENSION) {
 
                 if (!msg.message) return;
 
-                const result = await controller.onDappMessage(msg.message.method, msg.message.params);
-                if (port) {
-                    port.postMessage(JSON.stringify({
-                        type: 'gramWalletAPI',
-                        message: {jsonrpc: '2.0', id: msg.message.id, method: msg.message.method, result}
-                    }));
+                const response = {
+                    jsonrpc: '2.0',
+                    id: msg.message.id,
+                    method: msg.message.method,
+                };
+
+                try {
+                    response.result = await controller.onDappMessage(msg.message.method, msg.message.params);
+                } catch (error) {
+                    response.error = {
+                        code: error.code,
+                        message: error.message,
+                    };
+                } finally {
+                    if (port) {
+                        port.postMessage(JSON.stringify({
+                            type: 'gramWalletAPI',
+                            message: response,
+                        }));
+                    }
                 }
+
             });
             port.onDisconnect.addListener(port => {
                 contentScriptPorts.delete(port)

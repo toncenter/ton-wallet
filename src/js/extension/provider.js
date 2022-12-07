@@ -1,5 +1,13 @@
 // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md#sample-class-implementation
 (() => {
+    class TonProviderError extends Error {
+        constructor(message, code) {
+            super(message);
+            this.code = code;
+            this.name = 'TonProviderError';
+        }
+    }
+
     class TonProvider {
         constructor() {
             this.listeners = window.ton ? window.ton.listeners : {};
@@ -125,10 +133,8 @@
                 const promise = this._promises[id];
                 if (promise) {
                     // Handle pending promise
-                    if (data.type === 'error') {
-                        promise.reject(message);
-                    } else if (message.error) {
-                        promise.reject(error);
+                    if (error) {
+                        promise.reject(new TonProviderError(error.message, error.code));
                     } else {
                         promise.resolve(result);
                     }
