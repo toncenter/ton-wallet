@@ -779,7 +779,8 @@ class Controller {
                 name: 'sendConfirm',
                 amount: amount.toString(),
                 toAddress: toAddress,
-                fee: fee.toString()
+                fee: fee.toString(),
+                comment
             }, needQueue);
 
             const sendResult = await this.send(toAddress, amount, comment, null, stateInit);
@@ -814,7 +815,8 @@ class Controller {
                 name: 'sendConfirm',
                 amount: amount.toString(),
                 toAddress: toAddress,
-                fee: fee.toString()
+                fee: fee.toString(),
+                comment
             }, needQueue);
         }
 
