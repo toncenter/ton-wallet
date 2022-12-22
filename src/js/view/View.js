@@ -1174,6 +1174,12 @@ class View {
                         $('#sendConfirmAmount').innerText = formatNanograms(new BN(params.amount)) + ' TON';
                         setAddr($('#sendConfirmAddr'), params.toAddress);
                         $('#sendConfirmFee').innerText = params.fee ? 'Fee: ~' + formatNanograms(new BN(params.fee)) + ' TON' : '';
+                        if (typeof params.comment === 'string' && params.comment.length) {
+                            $('#sendConfirmComment').innerText = 'Comment: ' + params.comment;
+                            $('#sendConfirmComment').style.display = 'block';
+                        } else {
+                            $('#sendConfirmComment').style.display = 'none';
+                        }
                         toggle($('#sendConfirm .popup-footer'), !this.isLedger);
                         toggle($('#sendConfirm_closeBtn'), !this.isLedger);
                         // todo: show label 'Please approve on device'
