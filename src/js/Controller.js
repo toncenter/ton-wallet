@@ -824,11 +824,11 @@ class Controller {
     }
 
     /**
-     * @param hexToSign  {string} hex data to sign
+     * @param dataToSign  {string} hex data to sign
      * @param needQueue {boolean}
      * @returns {Promise<string>} signature in hex
      */
-    showSignConfirm(hexToSign, needQueue) {
+    showSignConfirm(dataToSign, isPersonal, needQueue) {
         return new Promise((resolve, reject) => {
             if (this.isLedger) {
                 alert('sign not supported by Ledger');
@@ -838,13 +838,16 @@ class Controller {
                 this.afterEnterPassword = async words => {
                     this.sendToView('closePopup');
                     const privateKey = await Controller.wordsToPrivateKey(words);
-                    const signature = this.rawSign(hexToSign, privateKey);
+                    const signature = isPersonal
+                                    ? this.personalSign(dataToSign, privateKey)
+                                    : this.rawSign(dataToSign, privateKey);
                     resolve(signature);
                 };
 
                 this.sendToView('showPopup', {
                     name: 'signConfirm',
-                    data: hexToSign,
+                    data: dataToSign,
+                    isPersonal
                 }, needQueue);
 
             }
@@ -929,6 +932,19 @@ class Controller {
     rawSign(hex, privateKey) {
         const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
         const signature = nacl.sign.detached(TonWeb.utils.hexToBytes(hex), keyPair.secretKey);
+        return TonWeb.utils.bytesToHex(signature);
+    }
+
+    /**
+     * @param string   {string} hex to sign
+     * @param privateKey    {string}
+     * @returns {Promise<string>} signature in hex
+     */
+    personalSign(string, privateKey) {
+        const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
+        const signature = nacl.sign.detached(
+            TonWeb.utils.stringToBytes(`TON Prefixed Singature: ${string}`), keyPair.secretKey
+        );
         return TonWeb.utils.bytesToHex(signature);
     }
 
@@ -1195,10 +1211,21 @@ class Controller {
                 }
                 return result;
             case 'ton_rawSign':
-                const signParam = params[0];
+                if(!params || !Array.isArray(params) || !params.length) return null;
+                const signData = params[0].data;
+                if (typeof(signData) !== 'string') return null;
+
                 await showExtensionWindow();
 
-                return this.showSignConfirm(signParam.data, needQueue);
+                return this.showSignConfirm(signData, false, needQueue);
+            case 'ton_personalSign':
+                if(!params || !Array.isArray(params) || !params.length) return null;
+                const personalSignData = params[0].data;
+                if (typeof(personalSignData) !== 'string') return null;
+
+                await showExtensionWindow();
+
+                return this.showSignConfirm(personalSignData, true, needQueue);
             case 'flushMemoryCache':
                 await chrome.webRequest.handlerBehaviorChanged();
                 return true;

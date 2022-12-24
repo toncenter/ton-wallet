@@ -1181,6 +1181,8 @@ class View {
                     case 'signConfirm':
                         const hex = params.data.length > 48 ? params.data.substring(0, 47) + '…' : params.data;
                         setAddr($('#signConfirmData'), hex);
+                        toggle($('#signConfirmDanger'), !params.isPersonal)
+                        toggle($('#signConfirmSecure'), params.isPersonal)
                         break;
                 }
                 break;
