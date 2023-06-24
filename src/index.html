@@ -458,9 +458,9 @@
 
         <div id="transactionCommentLabel" class="input-label">Comment</div>
 
-        <div id="transactionComment" class="popup-black-text">
+        <div id="transactionComment" class="popup-black-text"></div>
 
-        </div>
+        <div id="transactionDecryptCommentButton" class="btn-lite">Enter password to view comment</div>
 
         <button id="transaction_sendBtn" class="btn-blue mt-20">Send TON to this address</button>
 
@@ -489,6 +489,11 @@
         <input id="amountInput" type="number" placeholder="0.0">
         <input id="commentInput" type="text" placeholder="Comment (optional)">
 
+        <label id="encryptCommentCheckboxContainer" class="checkbox-container"> Encrypt Comment
+            <input type="checkbox" id="encryptCommentCheckbox">
+            <span class="checkmark"></span>
+        </label>
+
         <button id="send_btn" class="btn-blue">Send TON</button>
 
         <button id="send_closeBtn" class="popup-close-btn"></button>
@@ -504,7 +509,7 @@
 
         <div id="sendConfirmFee" class="popup-grey-text text-align-center">Fee: ~x TON</div>
 
-        <div class="popup-grey-text text-align-center">Note: Your comment will not be <b>encrypted</b></div>
+        <div id="sendConfirmNotEncryptedNote" class="popup-grey-text text-align-center">Note: Your comment will <b>not</b> be encrypted</div>
 
         <button id="sendConfirm_closeBtn" class="popup-close-btn"></button>
 
@@ -677,6 +682,9 @@
 <script type="text/javascript" src="libs/pako.min.js?v={{VERSION}}"></script>
 <script type="text/javascript" src="libs/lottie.min.js?v={{VERSION}}"></script>
 <script type="text/javascript" src="libs/easy.qrcode.min.js?v={{VERSION}}"></script>
+
+<script type="text/javascript" src="libs/aes-js-3.1.2.js"></script>
+<script type="text/javascript" src="libs/noble-ed25519-1.7.3.js"></script>
 
 <script type="text/javascript" src="libs/tonweb.min.js?v={{VERSION}}"></script>
 <script type="text/javascript" src="libs/tonweb-mnemonic.min.js?v={{VERSION}}"></script>

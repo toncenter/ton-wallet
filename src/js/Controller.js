@@ -1,4 +1,5 @@
 import storage from './util/storage.js';
+import {encryptMessageComment, decryptMessageComment} from "./util/encryption.js";
 
 let extensionWindowId = -1;
 let contentScriptPorts = new Set();
@@ -291,6 +292,13 @@ class Controller {
             return new TextDecoder().decode(TonWeb.utils.base64ToBytes(base64));
         }
 
+        function getEncryptedComment(msg) {
+            if (!msg.msg_data) return '';
+            if (msg.msg_data['@type'] !== 'msg.dataEncryptedText') return '';
+            const base64 = msg.msg_data.text;
+            return base64;
+        }
+
         const arr = [];
         const transactions = await this.ton.getTransactions(this.myAddress, limit);
         for (let t of transactions) {
@@ -303,14 +311,21 @@ class Controller {
             let from_addr = "";
             let to_addr = "";
             let comment = "";
-            if (t.in_msg.source) { // internal message with grams, set source
+            let encryptedComment = "";
+            let inbound = false;
+
+            if (t.in_msg.source) { // internal message with Toncoins, set source
+                inbound = true;
                 from_addr = t.in_msg.source;
                 to_addr = t.in_msg.destination;
                 comment = getComment(t.in_msg);
-            } else if (t.out_msgs.length) { // external message, we sending grams
+                encryptedComment = getEncryptedComment(t.in_msg);
+            } else if (t.out_msgs.length) { // external message, we sending Toncoins
+                inbound = false;
                 from_addr = t.out_msgs[0].source;
                 to_addr = t.out_msgs[0].destination;
                 comment = getComment(t.out_msgs[0]);
+                encryptedComment = getEncryptedComment(t.out_msgs[0]);
                 //TODO support many out messages. We need to show separate outgoing payment for each? How to show fees?
             } else {
                 // Deploying wallet contract onchain
@@ -318,6 +333,8 @@ class Controller {
 
             if (to_addr) {
                 arr.push({
+                    inbound,
+                    hash: t.transaction_id.hash,
                     amount: amount.toString(),
                     from_addr: from_addr,
                     to_addr: to_addr,
@@ -325,6 +342,7 @@ class Controller {
                     storageFee: t.storage_fee.toString(),
                     otherFee: t.other_fee.toString(),
                     comment: comment,
+                    encryptedComment: encryptedComment,
                     date: t.utime * 1000
                 });
             }
@@ -682,6 +700,22 @@ class Controller {
         this.debug(address.toString(true, true, true));
     }
 
+    // DECRYPT MESSAGE COMMENT
+
+    onDecryptComment(hash, encryptedComment, senderAddress) {
+        this.afterEnterPassword = async mnemonicWords => {
+            const keyPair = await TonWeb.mnemonic.mnemonicToKeyPair(mnemonicWords);
+            let decryptedComment = ''
+            try {
+                decryptedComment = await decryptMessageComment(TonWeb.utils.base64ToBytes(encryptedComment), keyPair.publicKey, keyPair.secretKey, senderAddress);
+            } catch (e) {
+                console.error(e);
+            }
+            this.sendToView('decryptedComment', {hash, decryptedComment});
+        };
+        this.sendToView('showPopup', {name: 'enterPassword'});
+    }
+
     // SEND GRAMS
 
     /**
@@ -716,13 +750,19 @@ class Controller {
      * @param amount    {BN} in nanotons
      * @param toAddress {string}
      * @param comment?  {string | Uint8Array}
+     * @param needEncryptComment {boolean}
      * @param needQueue? {boolean}
      * @param stateInit? {Cell}
      */
-    async showSendConfirm(amount, toAddress, comment, needQueue, stateInit) {
+    async showSendConfirm(amount, toAddress, comment, needEncryptComment, needQueue, stateInit) {
         createDappPromise();
 
-        if (!amount.gt(new BN(0))) {
+        if (!amount.gte(new BN(0))) {
+            this.sendToView('sendCheckFailed', { message: 'Invalid amount' });
+            return false;
+        }
+
+        if (amount.eq(new BN(0)) && !comment) {
             this.sendToView('sendCheckFailed', { message: 'Invalid amount' });
             return false;
         }
@@ -774,12 +814,32 @@ class Controller {
             return false;
         }
 
+        if (!comment) {
+            needEncryptComment = false;
+        }
+
+        let toPublicKey = null;
+
+        if (needEncryptComment) {
+            try {
+                const toPublicKeyBN = await this.ton.provider.call2(toAddress, 'get_public_key');
+                toPublicKey = TonWeb.utils.hexToBytes(toPublicKeyBN.toString(16));
+            } catch (e) {
+            }
+
+            if (!toPublicKey) {
+                this.sendToView('sendCheckCantPublicKey', {});
+                return false;
+            }
+        }
+
         if (this.isLedger) {
             this.sendToView('showPopup', {
                 name: 'sendConfirm',
                 amount: amount.toString(),
                 toAddress: toAddress,
-                fee: fee.toString()
+                fee: fee.toString(),
+                needEncryptComment: false
             }, needQueue);
 
             const sendResult = await this.send(toAddress, amount, comment, null, stateInit);
@@ -794,8 +854,14 @@ class Controller {
             this.afterEnterPassword = async words => {
                 this.processingVisible = true;
                 this.sendToView('showPopup', {name: 'processing'});
-                const privateKey = await Controller.wordsToPrivateKey(words);
 
+                if (needEncryptComment) {
+                    const keyPair = await TonWeb.mnemonic.mnemonicToKeyPair(words);
+                    const encryptedCommentBytes = await encryptMessageComment(comment, keyPair.publicKey, toPublicKey, keyPair.secretKey, this.myAddress);
+                    comment = encryptedCommentBytes;
+                }
+
+                const privateKey = await Controller.wordsToPrivateKey(words);
                 const sendResult = await this.send(toAddress, amount, comment, privateKey, stateInit);
 
                 if (sendResult) {
@@ -814,7 +880,8 @@ class Controller {
                 name: 'sendConfirm',
                 amount: amount.toString(),
                 toAddress: toAddress,
-                fee: fee.toString()
+                fee: fee.toString(),
+                needEncryptComment: needEncryptComment
             }, needQueue);
         }
 
@@ -854,7 +921,7 @@ class Controller {
     /**
      * @param toAddress {string}
      * @param amount    {BN} in nanograms
-     * @param comment   {string}
+     * @param comment   {string | Uint8Array}
      * @param privateKey    {string}
      * @param stateInit? {Cell}
      * @return  {Promise<boolean>}
@@ -1058,11 +1125,14 @@ class Controller {
             case 'onEnterPassword':
                 await this.onEnterPassword(params.password);
                 break;
+            case 'decryptComment':
+                await this.onDecryptComment(params.hash, params.encryptedComment, params.senderAddress);
+                break;
             case 'onChangePassword':
                 await this.onChangePassword(params.oldPassword, params.newPassword);
                 break;
             case 'onSend':
-                await this.showSendConfirm(new BN(params.amount), params.toAddress, params.comment);
+                await this.showSendConfirm(new BN(params.amount), params.toAddress, params.comment, params.needEncryptComment);
                 break;
             case 'onBackupDone':
                 await this.onBackupDone();
@@ -1189,7 +1259,7 @@ class Controller {
                     name: 'loader',
                 });
 
-                const result = await this.showSendConfirm(new BN(param.value), param.to, param.data, needQueue, param.stateInit);
+                const result = await this.showSendConfirm(new BN(param.value), param.to, param.data, false, needQueue, param.stateInit);
                 if (!result) {
                     this.sendToView('closePopup');
                 }

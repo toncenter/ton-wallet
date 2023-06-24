@@ -347,9 +347,10 @@ class View {
                 return;
             }
             const comment = $('#commentInput').value;
+            const needEncryptComment = $('#encryptCommentCheckbox').checked;
 
             this.toggleButtonLoader(e.currentTarget, true);
-            this.sendMessage('onSend', {amount: amountNano.toString(), toAddress, comment});
+            this.sendMessage('onSend', {amount: amountNano.toString(), toAddress, comment, needEncryptComment});
         });
         $('#send_closeBtn').addEventListener('click', () => this.closePopup());
 
@@ -447,6 +448,16 @@ class View {
 
         $('#delete_cancelBtn').addEventListener('click', () => this.closePopup());
         $('#delete_okBtn').addEventListener('click', () => this.sendMessage('disconnect'));
+
+        $('#transactionDecryptCommentButton').addEventListener('click', () => {
+            if (!this.currentOpenTransaction) return;
+
+            this.sendMessage('decryptComment', {
+                hash: this.currentOpenTransaction.hash,
+                senderAddress: this.currentOpenTransaction.from_addr,
+                encryptedComment: this.currentOpenTransaction.encryptedComment,
+            });
+        });
     }
 
     // COMMON
@@ -517,6 +528,7 @@ class View {
     }
 
     closePopup() {
+        this.currentOpenTransaction = null;
         this.showPopup('');
         this.sendMessage('onClosePopup');
     }
@@ -853,7 +865,7 @@ class View {
     }
 
     addTx(tx) {
-        const isReceive = !tx.amount.isNeg();
+        const isReceive = tx.inbound;
         const amountFormatted = formatNanograms(tx.amount);
         const addr = isReceive ? tx.from_addr : tx.to_addr;
 
@@ -878,6 +890,7 @@ class View {
                     ]
                 }),
                 setAddr(createElement({tag: 'div', clazz: ['tx-addr', 'addr']}), addr),
+                tx.encryptedComment ? createElement({tag: 'div', clazz: 'tx-item-encrypted-icon'}) : undefined,
                 tx.comment ? createElement({tag: 'div', clazz: 'tx-comment', text: tx.comment}) : undefined,
                 createElement({tag: 'div', clazz: 'tx-fee', text: `blockchain fees: ${formatNanograms(tx.fee)}`}),
                 createElement({tag: 'div', clazz: 'tx-item-date', text: formatTime(tx.date)})
@@ -892,6 +905,7 @@ class View {
     // TRANSACTION POPUP
 
     onTransactionClick(tx) {
+        this.currentOpenTransaction = tx;
         this.showPopup('transaction');
         const isReceive = !tx.amount.isNeg();
         const addr = isReceive ? tx.from_addr : tx.to_addr;
@@ -902,7 +916,9 @@ class View {
         $('#transactionStorageFee').innerText = formatNanograms(tx.storageFee) + ' storage fee';
         $('#transactionSenderLabel').innerText = isReceive ? 'Sender' : 'Recipient';
         setAddr($('#transactionSender'), addr);
-        toggle($('#transactionCommentLabel'), !!tx.comment);
+        toggle($('#transactionCommentLabel'), !!tx.comment || !!tx.encryptedComment);
+        toggle($('#transactionDecryptCommentButton'), !!tx.encryptedComment);
+        toggle($('#transactionComment'), !!tx.comment);
         $('#transactionComment').innerText = tx.comment;
         $('#transactionDate').innerText = formatDateFull(tx.date);
     }
@@ -917,6 +933,7 @@ class View {
         $('#toWalletInput').value = '';
         $('#amountInput').value = '';
         $('#commentInput').value = '';
+        $('#encryptCommentCheckbox').checked = false;
     }
 
     // RECEIVE POPUP
@@ -1081,6 +1098,12 @@ class View {
                 this.toggleButtonLoader($('#send_btn'), false);
                 break;
 
+            case 'sendCheckCantPublicKey':
+                this.toggleButtonLoader($('#send_btn'), false);
+                $('#notify').innerText = `To encrypt a message, the destination wallet must have at least one outgoing transfer`;
+                triggerClass($('#notify'), 'faded-show', 3000);
+                break;
+
             case 'sendCheckCantPayFee':
                 this.toggleButtonLoader($('#send_btn'), false);
                 $('#amountInput').classList.add('error');
@@ -1088,6 +1111,14 @@ class View {
                 $('#notify').innerText = `Estimated fee is ~${formatNanograms(params.fee)} TON`;
                 triggerClass($('#notify'), 'faded-show', 3000);
 
+                break;
+
+            case 'decryptedComment':
+                if (this.currentOpenTransaction && this.currentOpenTransaction.hash === params.hash) {
+                    this.currentOpenTransaction.encryptedComment = null;
+                    this.currentOpenTransaction.comment = params.decryptedComment;
+                    this.onTransactionClick(this.currentOpenTransaction);
+                }
                 break;
 
             case 'showScreen':
@@ -1168,12 +1199,15 @@ class View {
                             $('#toWalletInput').value = params.toAddr;
                         }
                         toggle($('#commentInput'), !this.isLedger);
+                        toggle($('#encryptCommentCheckboxContainer'), !this.isLedger ? 'flex' : false);
                         $('#toWalletInput').focus();
                         break;
                     case 'sendConfirm':
                         $('#sendConfirmAmount').innerText = formatNanograms(new BN(params.amount)) + ' TON';
                         setAddr($('#sendConfirmAddr'), params.toAddress);
                         $('#sendConfirmFee').innerText = params.fee ? 'Fee: ~' + formatNanograms(new BN(params.fee)) + ' TON' : '';
+
+                        toggle($('#sendConfirmNotEncryptedNote'), !params.needEncryptComment);
                         toggle($('#sendConfirm .popup-footer'), !this.isLedger);
                         toggle($('#sendConfirm_closeBtn'), !this.isLedger);
                         // todo: show label 'Please approve on device'
