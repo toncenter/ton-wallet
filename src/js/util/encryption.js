@@ -5,7 +5,7 @@
 // - aes-js - 3.1.2 - https://github.com/ricmoo/aes-js/releases/tag/v3.1.2 - for aes-cbc without padding
 // - noble-ed25519 - 1.7.3 - // https://github.com/paulmillr/noble-ed25519/releases/tag/1.7.3 - for getSharedKey
 
-const ed25519 = window.nobleEd25519;
+const ed25519 = self.nobleEd25519;
 
 /**
  * @param key {Uint8Array}
@@ -14,8 +14,8 @@ const ed25519 = window.nobleEd25519;
  */
 const hmac_sha512 = async (key, data) => {
     const hmacAlgo = {name: "HMAC", hash: "SHA-512"};
-    const hmacKey = await window.crypto.subtle.importKey("raw", key, hmacAlgo, false, ["sign"]);
-    const signature = await window.crypto.subtle.sign(hmacAlgo, hmacKey, data);
+    const hmacKey = await self.crypto.subtle.importKey("raw", key, hmacAlgo, false, ["sign"]);
+    const signature = await self.crypto.subtle.sign(hmacAlgo, hmacKey, data);
     const result = new Uint8Array(signature);
     if (result.length !== 512 / 8) throw new Error();
     return result;
@@ -44,7 +44,7 @@ const getAesCbcState = async (hash) => {
  */
 const getRandomPrefix = (dataLength, minPadding) => {
     const prefixLength = ((minPadding + 15 + dataLength) & -16) - dataLength;
-    const prefix = window.crypto.getRandomValues(new Uint8Array(prefixLength));
+    const prefix = self.crypto.getRandomValues(new Uint8Array(prefixLength));
     prefix[0] = prefixLength;
     if ((prefixLength + dataLength) % 16 !== 0) throw new Error();
     return prefix;

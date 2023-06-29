@@ -1,5 +1,5 @@
 import storage from './util/storage.js';
-import {encryptMessageComment, decryptMessageComment} from "./util/encryption.js";
+import {decryptMessageComment, encryptMessageComment} from "./util/encryption.js";
 
 let extensionWindowId = -1;
 let contentScriptPorts = new Set();
@@ -32,7 +32,7 @@ const createDappPromise = () => {
 const showExtensionWindow = () => {
     return new Promise(async resolve => {
         if (extensionWindowId > -1) {
-            chrome.windows.update(extensionWindowId, { focused: true });
+            chrome.windows.update(extensionWindowId, {focused: true});
             return resolve();
         }
 
@@ -152,6 +152,10 @@ class Controller {
 
         this.pendingMessageResolvers = new Map();
         this._lastMsgId = 1;
+
+        if (IS_EXTENSION) {
+            setInterval(() => storage.setItem('__time', Date.now()), 5 * 1000);
+        }
 
         this.whenReady = this._init();
     }
@@ -758,12 +762,12 @@ class Controller {
         createDappPromise();
 
         if (!amount.gte(new BN(0))) {
-            this.sendToView('sendCheckFailed', { message: 'Invalid amount' });
+            this.sendToView('sendCheckFailed', {message: 'Invalid amount'});
             return false;
         }
 
         if (amount.eq(new BN(0)) && !comment) {
-            this.sendToView('sendCheckFailed', { message: 'Invalid amount' });
+            this.sendToView('sendCheckFailed', {message: 'Invalid amount'});
             return false;
         }
 
@@ -789,7 +793,7 @@ class Controller {
         try {
             await this.update(true);
         } catch {
-            this.sendToView('sendCheckFailed', { message: 'API request error' });
+            this.sendToView('sendCheckFailed', {message: 'API request error'});
             return false;
         }
 
@@ -805,7 +809,7 @@ class Controller {
         try {
             fee = await this.getFees(amount, toAddress, comment, stateInit);
         } catch {
-            this.sendToView('sendCheckFailed', { message: 'API request error' });
+            this.sendToView('sendCheckFailed', {message: 'API request error'});
             return false;
         }
 
@@ -847,7 +851,7 @@ class Controller {
             if (sendResult) {
                 dAppPromise.resolve(true);
             } else {
-                this.sendToView('sendCheckFailed', { message: 'API request error' });
+                this.sendToView('sendCheckFailed', {message: 'API request error'});
                 dAppPromise.resolve(false);
             }
         } else {
@@ -867,7 +871,7 @@ class Controller {
                 if (sendResult) {
                     dAppPromise.resolve(true);
                 } else {
-                    this.sendToView('sendCheckFailed', { message: 'API request error' });
+                    this.sendToView('sendCheckFailed', {message: 'API request error'});
                     dAppPromise.resolve(false);
                 }
             };
