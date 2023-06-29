@@ -713,6 +713,17 @@ button {
     margin-right: auto;
 }
 
+.tx-item-encrypted-icon {
+    position: absolute;
+    right: 0px;
+    top: 30px;
+    width: 32px;
+    height: 32px;
+    background-image: url("../assets/ui/encrypted-message.png");
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
 .tx-amount {
     font-weight: 700;
     font-size: 16px;
@@ -947,6 +958,16 @@ button {
     background-color: #F1F1F1;
 }
 
+#encryptCommentCheckboxContainer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-top: 12px;
+}
+
+#encryptCommentCheckbox {
+}
+
 /* INVOICE POPUP */
 
 #invoice .popup-black-text {
@@ -988,6 +1009,14 @@ button {
 
 #transactionComment {
     word-break: break-all;
+}
+
+#transactionDecryptCommentButton {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    font-weight: normal;
+    height: auto;
+    cursor: pointer;
 }
 
 #transactionAmount {
@@ -1185,4 +1214,62 @@ button {
 
 .pb-10 {
     padding-bottom: 10px;
+}
+
+/* checkbox */
+
+.checkbox-container {
+    display: block;
+    position: relative;
+    padding-left: 24px;
+    line-height: 18px;
+    cursor: pointer;
+
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.checkbox-container input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.checkmark {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 18px;
+    width: 18px;
+    background-color: #eee;
+}
+
+.checkbox-container input:checked ~ .checkmark {
+    background-color: #3CA4DB;
+}
+
+.checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+}
+
+.checkbox-container input:checked ~ .checkmark:after {
+    display: block;
+}
+
+.checkbox-container .checkmark:after {
+    left: 6px;
+    top: 2px;
+    width: 4px;
+    height: 8px;
+    border: solid white;
+    border-width: 0 3px 3px 0;
+    -webkit-transform: rotate(45deg);
+    -ms-transform: rotate(45deg);
+    transform: rotate(45deg);
 }

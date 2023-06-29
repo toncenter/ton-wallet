@@ -40,7 +40,7 @@
     <meta name="msapplication-config" content="assets/favicon/browserconfig.xml">
     <meta name="theme-color" content="#ffffff">
 
-    <link rel="stylesheet" href="main.css?v=1.1.42">
+    <link rel="stylesheet" href="main.css?v=1.1.43">
 </head>
 <body>
 
@@ -458,9 +458,9 @@
 
         <div id="transactionCommentLabel" class="input-label">Comment</div>
 
-        <div id="transactionComment" class="popup-black-text">
+        <div id="transactionComment" class="popup-black-text"></div>
 
-        </div>
+        <div id="transactionDecryptCommentButton" class="btn-lite">Enter password to view comment</div>
 
         <button id="transaction_sendBtn" class="btn-blue mt-20">Send TON to this address</button>
 
@@ -489,6 +489,11 @@
         <input id="amountInput" type="number" placeholder="0.0">
         <input id="commentInput" type="text" placeholder="Comment (optional)">
 
+        <label id="encryptCommentCheckboxContainer" class="checkbox-container"> Encrypt Comment
+            <input type="checkbox" id="encryptCommentCheckbox">
+            <span class="checkmark"></span>
+        </label>
+
         <button id="send_btn" class="btn-blue">Send TON</button>
 
         <button id="send_closeBtn" class="popup-close-btn"></button>
@@ -504,7 +509,7 @@
 
         <div id="sendConfirmFee" class="popup-grey-text text-align-center">Fee: ~x TON</div>
 
-        <div class="popup-grey-text text-align-center">Note: Your comment will not be <b>encrypted</b></div>
+        <div id="sendConfirmNotEncryptedNote" class="popup-grey-text text-align-center">Note: Your comment will <b>not</b> be encrypted</div>
 
         <button id="sendConfirm_closeBtn" class="popup-close-btn"></button>
 
@@ -559,7 +564,7 @@
     <div id="about" class="popup text-align-center pb-10 visibility-hidden">
         <div class="popup-title">TON Wallet</div>
         <div id="about_version" class="popup-grey-text">
-            Version: 1.1.42
+            Version: 1.1.43
         </div>
         <tgs-player data-name="about" src="assets/lottie/intro.tgs" width="150" height="150"></tgs-player>
 
@@ -674,15 +679,18 @@
 
 <!-- Scripts -->
 
-<script type="text/javascript" src="libs/pako.min.js?v=1.1.42"></script>
-<script type="text/javascript" src="libs/lottie.min.js?v=1.1.42"></script>
-<script type="text/javascript" src="libs/easy.qrcode.min.js?v=1.1.42"></script>
+<script type="text/javascript" src="libs/pako.min.js?v=1.1.43"></script>
+<script type="text/javascript" src="libs/lottie.min.js?v=1.1.43"></script>
+<script type="text/javascript" src="libs/easy.qrcode.min.js?v=1.1.43"></script>
 
-<script type="text/javascript" src="libs/tonweb.min.js?v=1.1.42"></script>
-<script type="text/javascript" src="libs/tonweb-mnemonic.min.js?v=1.1.42"></script>
+<script type="text/javascript" src="libs/aes-js-3.1.2.js"></script>
+<script type="text/javascript" src="libs/noble-ed25519-1.7.3.js"></script>
 
-<script src="js/View.js?v=1.1.42" type="module"></script>
-<script src="js/Controller.js?v=1.1.42" type="module"></script>
+<script type="text/javascript" src="libs/tonweb.min.js?v=1.1.43"></script>
+<script type="text/javascript" src="libs/tonweb-mnemonic.min.js?v=1.1.43"></script>
+
+<script src="js/View.js?v=1.1.43" type="module"></script>
+<script src="js/Controller.js?v=1.1.43" type="module"></script>
 
 </body>
 </html>

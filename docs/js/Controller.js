@@ -44,7 +44,231 @@ __webpack_require__.r(__webpack_exports__);
     },
 });
 
+;// CONCATENATED MODULE: ./src/js/util/encryption.js
+// This JS library implements TON message comment encryption and decryption for Web
+// Reference C++ code - SimpleEncryptionV2 - https://github.com/ton-blockchain/ton/blob/cc0eb453cb3bf69f92693160103d33112856c056/tonlib/tonlib/keys/SimpleEncryption.cpp#L110
+// Dependencies:
+// - TonWeb 0.0.60
+// - aes-js - 3.1.2 - https://github.com/ricmoo/aes-js/releases/tag/v3.1.2 - for aes-cbc without padding
+// - noble-ed25519 - 1.7.3 - // https://github.com/paulmillr/noble-ed25519/releases/tag/1.7.3 - for getSharedKey
+
+const ed25519 = self.nobleEd25519;
+
+/**
+ * @param key {Uint8Array}
+ * @param data {Uint8Array}
+ * @return {Promise<Uint8Array>}
+ */
+const hmac_sha512 = async (key, data) => {
+    const hmacAlgo = {name: "HMAC", hash: "SHA-512"};
+    const hmacKey = await self.crypto.subtle.importKey("raw", key, hmacAlgo, false, ["sign"]);
+    const signature = await self.crypto.subtle.sign(hmacAlgo, hmacKey, data);
+    const result = new Uint8Array(signature);
+    if (result.length !== 512 / 8) throw new Error();
+    return result;
+}
+
+/**
+ * @param hash  {Uint8Array}
+ * @return {Promise<any>}
+ */
+const getAesCbcState = async (hash) => {
+    if (hash.length < 48) throw new Error();
+    const key = hash.slice(0, 32);
+    const iv = hash.slice(32, 32 + 16);
+
+    // Note that native crypto.subtle AES-CBC not suitable here because
+    // even if the data IS a multiple of 16 bytes, padding will still be added
+    // So we use aes-js
+
+    return new aesjs.ModeOfOperation.cbc(key, iv);
+}
+
+/**
+ * @param dataLength    {number}
+ * @param minPadding    {number}
+ * @return {Uint8Array}
+ */
+const getRandomPrefix = (dataLength, minPadding) => {
+    const prefixLength = ((minPadding + 15 + dataLength) & -16) - dataLength;
+    const prefix = self.crypto.getRandomValues(new Uint8Array(prefixLength));
+    prefix[0] = prefixLength;
+    if ((prefixLength + dataLength) % 16 !== 0) throw new Error();
+    return prefix;
+}
+
+/**
+ * @param a {Uint8Array}
+ * @param b {Uint8Array}
+ * @return {Promise<Uint8Array>}
+ */
+const combineSecrets = async (a, b) => {
+    return hmac_sha512(a, b);
+}
+
+/**
+ * @param data  {Uint8Array}
+ * @param sharedSecret {Uint8Array}
+ * @param salt  {Uint8Array}
+ * @return {Promise<Uint8Array>}
+ */
+const encryptDataWithPrefix = async (data, sharedSecret, salt) => {
+    if (data.length % 16 !== 0) throw new Error();
+    const dataHash = await combineSecrets(salt, data);
+    const msgKey = dataHash.slice(0, 16);
+
+    const res = new Uint8Array(data.length + 16);
+    res.set(msgKey, 0);
+
+    const cbcStateSecret = await combineSecrets(sharedSecret, msgKey);
+    const encrypted = (await getAesCbcState(cbcStateSecret)).encrypt(data);
+    res.set(encrypted, 16);
+
+    return res;
+}
+
+/**
+ * @param data  {Uint8Array}
+ * @param sharedSecret {Uint8Array}
+ * @param salt  {Uint8Array}
+ * @return {Promise<Uint8Array>}
+ */
+const encryptDataImpl = async (data, sharedSecret, salt) => {
+    const prefix = await getRandomPrefix(data.length, 16);
+    const combined = new Uint8Array(prefix.length + data.length);
+    combined.set(prefix, 0);
+    combined.set(data, prefix.length);
+    return encryptDataWithPrefix(combined, sharedSecret, salt);
+}
+
+/**
+ * @param data  {Uint8Array}
+ * @param myPublicKey {Uint8Array}
+ * @param theirPublicKey {Uint8Array}
+ * @param privateKey    {Uint8Array}
+ * @param salt  {Uint8Array}
+ * @return {Promise<Uint8Array>}
+ */
+const encryptData = async (data, myPublicKey, theirPublicKey, privateKey, salt) => {
+    const sharedSecret = await ed25519.getSharedSecret(privateKey, theirPublicKey);
+
+    const encrypted = await encryptDataImpl(data, sharedSecret, salt);
+    const prefixedEncrypted = new Uint8Array(myPublicKey.length + encrypted.length);
+    for (let i = 0; i < myPublicKey.length; i++) {
+        prefixedEncrypted[i] = theirPublicKey[i] ^ myPublicKey[i];
+    }
+    prefixedEncrypted.set(encrypted, myPublicKey.length);
+    return prefixedEncrypted;
+}
+
+/**
+ * @param comment   {string}
+ * @param myPublicKey   {Uint8Array}
+ * @param theirPublicKey    {Uint8Array}
+ * @param myPrivateKey  {Uint8Array}
+ * @param senderAddress   {string | Address}
+ * @return {Promise<Uint8Array>} full message binary payload with 0x2167da4b prefix
+ */
+const encryptMessageComment = async (comment, myPublicKey, theirPublicKey, myPrivateKey, senderAddress) => {
+    if (!comment || !comment.length) throw new Error('empty comment');
+
+    if (myPrivateKey.length === 64) {
+        myPrivateKey = myPrivateKey.slice(0, 32); // convert nacl private key
+    }
+
+    const commentBytes = new TextEncoder().encode(comment);
+
+    const salt = new TextEncoder().encode(new TonWeb.utils.Address(senderAddress).toString(true, true, true, false));
+
+    const encryptedBytes = await encryptData(commentBytes, myPublicKey, theirPublicKey, myPrivateKey, salt);
+
+    const payload = new Uint8Array(encryptedBytes.length + 4);
+    payload[0] = 0x21; // encrypted text prefix
+    payload[1] = 0x67;
+    payload[2] = 0xda;
+    payload[3] = 0x4b;
+    payload.set(encryptedBytes, 4);
+
+    return payload;
+}
+
+/**
+ * @param cbcStateSecret {Uint8Array}
+ * @param msgKey {Uint8Array}
+ * @param encryptedData {Uint8Array}
+ * @param salt {Uint8Array}
+ * @return {Promise<Uint8Array>}
+ */
+const doDecrypt = async (cbcStateSecret, msgKey, encryptedData, salt) => {
+    const decryptedData = (await getAesCbcState(cbcStateSecret)).decrypt(encryptedData);
+    const dataHash = await combineSecrets(salt, decryptedData);
+    const gotMsgKey = dataHash.slice(0, 16);
+    if (msgKey.join(',') !== gotMsgKey.join(',')) {
+        throw new Error('Failed to decrypt: hash mismatch')
+    }
+    const prefixLength = decryptedData[0];
+    if (prefixLength > decryptedData.length || prefixLength < 16) {
+        throw new Error('Failed to decrypt: invalid prefix size');
+    }
+    return decryptedData.slice(prefixLength);
+}
+
+/**
+ * @param encryptedData {Uint8Array}
+ * @param sharedSecret {Uint8Array}
+ * @param salt {Uint8Array}
+ * @return {Promise<Uint8Array>}
+ */
+const decryptDataImpl = async (encryptedData, sharedSecret, salt) => {
+    if (encryptedData.length < 16) throw new Error('Failed to decrypt: data is too small');
+    if (encryptedData.length % 16 !== 0) throw new Error('Failed to decrypt: data size is not divisible by 16');
+    const msgKey = encryptedData.slice(0, 16);
+    const data = encryptedData.slice(16);
+    const cbcStateSecret = await combineSecrets(sharedSecret, msgKey);
+    const res = await doDecrypt(cbcStateSecret, msgKey, data, salt);
+    return res;
+}
+
+/**
+ * @param data  {Uint8Array}
+ * @param publicKey  {Uint8Array}
+ * @param privateKey  {Uint8Array}
+ * @param salt  {Uint8Array}
+ * @return {Promise<Uint8Array>}
+ */
+const decryptData = async (data, publicKey, privateKey, salt) => {
+    if (data.length < publicKey.length) {
+        throw new Error('Failed to decrypt: data is too small');
+    }
+    const theirPublicKey = new Uint8Array(publicKey.length);
+    for (let i = 0; i < publicKey.length; i++) {
+        theirPublicKey[i] = data[i] ^ publicKey[i];
+    }
+    const sharedSecret = await ed25519.getSharedSecret(privateKey, theirPublicKey);
+
+    const decrypted = await decryptDataImpl(data.slice(publicKey.length), sharedSecret, salt);
+    return decrypted;
+}
+
+/**
+ * @param encryptedData {Uint8Array}    encrypted data without 0x2167da4b prefix
+ * @param myPublicKey   {Uint8Array}
+ * @param myPrivateKey  {Uint8Array}
+ * @param senderAddress   {string | Address}
+ * @return {Promise<string>}    decrypted text comment
+ */
+const decryptMessageComment = async (encryptedData, myPublicKey, myPrivateKey, senderAddress) => {
+    if (myPrivateKey.length === 64) {
+        myPrivateKey = myPrivateKey.slice(0, 32); // convert nacl private key
+    }
+
+    const salt = new TextEncoder().encode(new TonWeb.utils.Address(senderAddress).toString(true, true, true, false));
+
+    const decryptedBytes = await decryptData(encryptedData, myPublicKey, myPrivateKey, salt);
+    return new TextDecoder().decode(decryptedBytes);
+}
 ;// CONCATENATED MODULE: ./src/js/Controller.js
+
 
 
 let extensionWindowId = -1;
@@ -78,7 +302,7 @@ const createDappPromise = () => {
 const showExtensionWindow = () => {
     return new Promise(async resolve => {
         if (extensionWindowId > -1) {
-            chrome.windows.update(extensionWindowId, { focused: true });
+            chrome.windows.update(extensionWindowId, {focused: true});
             return resolve();
         }
 
@@ -198,6 +422,10 @@ class Controller {
 
         this.pendingMessageResolvers = new Map();
         this._lastMsgId = 1;
+
+        if (IS_EXTENSION) {
+            setInterval(() => storage.setItem('__time', Date.now()), 5 * 1000);
+        }
 
         this.whenReady = this._init();
     }
@@ -338,6 +566,13 @@ class Controller {
             return new TextDecoder().decode(TonWeb.utils.base64ToBytes(base64));
         }
 
+        function getEncryptedComment(msg) {
+            if (!msg.msg_data) return '';
+            if (msg.msg_data['@type'] !== 'msg.dataEncryptedText') return '';
+            const base64 = msg.msg_data.text;
+            return base64;
+        }
+
         const arr = [];
         const transactions = await this.ton.getTransactions(this.myAddress, limit);
         for (let t of transactions) {
@@ -350,14 +585,21 @@ class Controller {
             let from_addr = "";
             let to_addr = "";
             let comment = "";
-            if (t.in_msg.source) { // internal message with grams, set source
+            let encryptedComment = "";
+            let inbound = false;
+
+            if (t.in_msg.source) { // internal message with Toncoins, set source
+                inbound = true;
                 from_addr = t.in_msg.source;
                 to_addr = t.in_msg.destination;
                 comment = getComment(t.in_msg);
-            } else if (t.out_msgs.length) { // external message, we sending grams
+                encryptedComment = getEncryptedComment(t.in_msg);
+            } else if (t.out_msgs.length) { // external message, we sending Toncoins
+                inbound = false;
                 from_addr = t.out_msgs[0].source;
                 to_addr = t.out_msgs[0].destination;
                 comment = getComment(t.out_msgs[0]);
+                encryptedComment = getEncryptedComment(t.out_msgs[0]);
                 //TODO support many out messages. We need to show separate outgoing payment for each? How to show fees?
             } else {
                 // Deploying wallet contract onchain
@@ -365,6 +607,8 @@ class Controller {
 
             if (to_addr) {
                 arr.push({
+                    inbound,
+                    hash: t.transaction_id.hash,
                     amount: amount.toString(),
                     from_addr: from_addr,
                     to_addr: to_addr,
@@ -372,6 +616,7 @@ class Controller {
                     storageFee: t.storage_fee.toString(),
                     otherFee: t.other_fee.toString(),
                     comment: comment,
+                    encryptedComment: encryptedComment,
                     date: t.utime * 1000
                 });
             }
@@ -729,6 +974,22 @@ class Controller {
         this.debug(address.toString(true, true, true));
     }
 
+    // DECRYPT MESSAGE COMMENT
+
+    onDecryptComment(hash, encryptedComment, senderAddress) {
+        this.afterEnterPassword = async mnemonicWords => {
+            const keyPair = await TonWeb.mnemonic.mnemonicToKeyPair(mnemonicWords);
+            let decryptedComment = ''
+            try {
+                decryptedComment = await decryptMessageComment(TonWeb.utils.base64ToBytes(encryptedComment), keyPair.publicKey, keyPair.secretKey, senderAddress);
+            } catch (e) {
+                console.error(e);
+            }
+            this.sendToView('decryptedComment', {hash, decryptedComment});
+        };
+        this.sendToView('showPopup', {name: 'enterPassword'});
+    }
+
     // SEND GRAMS
 
     /**
@@ -763,14 +1024,20 @@ class Controller {
      * @param amount    {BN} in nanotons
      * @param toAddress {string}
      * @param comment?  {string | Uint8Array}
+     * @param needEncryptComment {boolean}
      * @param needQueue? {boolean}
      * @param stateInit? {Cell}
      */
-    async showSendConfirm(amount, toAddress, comment, needQueue, stateInit) {
+    async showSendConfirm(amount, toAddress, comment, needEncryptComment, needQueue, stateInit) {
         createDappPromise();
 
-        if (!amount.gt(new BN(0))) {
-            this.sendToView('sendCheckFailed', { message: 'Invalid amount' });
+        if (!amount.gte(new BN(0))) {
+            this.sendToView('sendCheckFailed', {message: 'Invalid amount'});
+            return false;
+        }
+
+        if (amount.eq(new BN(0)) && !comment) {
+            this.sendToView('sendCheckFailed', {message: 'Invalid amount'});
             return false;
         }
 
@@ -796,7 +1063,7 @@ class Controller {
         try {
             await this.update(true);
         } catch {
-            this.sendToView('sendCheckFailed', { message: 'API request error' });
+            this.sendToView('sendCheckFailed', {message: 'API request error'});
             return false;
         }
 
@@ -812,7 +1079,7 @@ class Controller {
         try {
             fee = await this.getFees(amount, toAddress, comment, stateInit);
         } catch {
-            this.sendToView('sendCheckFailed', { message: 'API request error' });
+            this.sendToView('sendCheckFailed', {message: 'API request error'});
             return false;
         }
 
@@ -821,12 +1088,32 @@ class Controller {
             return false;
         }
 
+        if (!comment) {
+            needEncryptComment = false;
+        }
+
+        let toPublicKey = null;
+
+        if (needEncryptComment) {
+            try {
+                const toPublicKeyBN = await this.ton.provider.call2(toAddress, 'get_public_key');
+                toPublicKey = TonWeb.utils.hexToBytes(toPublicKeyBN.toString(16));
+            } catch (e) {
+            }
+
+            if (!toPublicKey) {
+                this.sendToView('sendCheckCantPublicKey', {});
+                return false;
+            }
+        }
+
         if (this.isLedger) {
             this.sendToView('showPopup', {
                 name: 'sendConfirm',
                 amount: amount.toString(),
                 toAddress: toAddress,
-                fee: fee.toString()
+                fee: fee.toString(),
+                needEncryptComment: false
             }, needQueue);
 
             const sendResult = await this.send(toAddress, amount, comment, null, stateInit);
@@ -834,21 +1121,27 @@ class Controller {
             if (sendResult) {
                 dAppPromise.resolve(true);
             } else {
-                this.sendToView('sendCheckFailed', { message: 'API request error' });
+                this.sendToView('sendCheckFailed', {message: 'API request error'});
                 dAppPromise.resolve(false);
             }
         } else {
             this.afterEnterPassword = async words => {
                 this.processingVisible = true;
                 this.sendToView('showPopup', {name: 'processing'});
-                const privateKey = await Controller.wordsToPrivateKey(words);
 
+                if (needEncryptComment) {
+                    const keyPair = await TonWeb.mnemonic.mnemonicToKeyPair(words);
+                    const encryptedCommentBytes = await encryptMessageComment(comment, keyPair.publicKey, toPublicKey, keyPair.secretKey, this.myAddress);
+                    comment = encryptedCommentBytes;
+                }
+
+                const privateKey = await Controller.wordsToPrivateKey(words);
                 const sendResult = await this.send(toAddress, amount, comment, privateKey, stateInit);
 
                 if (sendResult) {
                     dAppPromise.resolve(true);
                 } else {
-                    this.sendToView('sendCheckFailed', { message: 'API request error' });
+                    this.sendToView('sendCheckFailed', {message: 'API request error'});
                     dAppPromise.resolve(false);
                 }
             };
@@ -861,7 +1154,8 @@ class Controller {
                 name: 'sendConfirm',
                 amount: amount.toString(),
                 toAddress: toAddress,
-                fee: fee.toString()
+                fee: fee.toString(),
+                needEncryptComment: needEncryptComment
             }, needQueue);
         }
 
@@ -901,7 +1195,7 @@ class Controller {
     /**
      * @param toAddress {string}
      * @param amount    {BN} in nanograms
-     * @param comment   {string}
+     * @param comment   {string | Uint8Array}
      * @param privateKey    {string}
      * @param stateInit? {Cell}
      * @return  {Promise<boolean>}
@@ -1105,11 +1399,14 @@ class Controller {
             case 'onEnterPassword':
                 await this.onEnterPassword(params.password);
                 break;
+            case 'decryptComment':
+                await this.onDecryptComment(params.hash, params.encryptedComment, params.senderAddress);
+                break;
             case 'onChangePassword':
                 await this.onChangePassword(params.oldPassword, params.newPassword);
                 break;
             case 'onSend':
-                await this.showSendConfirm(new BN(params.amount), params.toAddress, params.comment);
+                await this.showSendConfirm(new BN(params.amount), params.toAddress, params.comment, params.needEncryptComment);
                 break;
             case 'onBackupDone':
                 await this.onBackupDone();
@@ -1236,7 +1533,7 @@ class Controller {
                     name: 'loader',
                 });
 
-                const result = await this.showSendConfirm(new BN(param.value), param.to, param.data, needQueue, param.stateInit);
+                const result = await this.showSendConfirm(new BN(param.value), param.to, param.data, false, needQueue, param.stateInit);
                 if (!result) {
                     this.sendToView('closePopup');
                 }
