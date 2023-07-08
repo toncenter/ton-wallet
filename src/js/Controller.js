@@ -1,5 +1,5 @@
 import storage from './util/storage.js';
-import {decryptMessageComment, encryptMessageComment} from "./util/encryption.js";
+import {decryptMessageComment, encryptMessageComment, makeSnakeCells} from "./util/encryption.js";
 
 let extensionWindowId = -1;
 let contentScriptPorts = new Set();
@@ -357,7 +357,7 @@ class Controller {
     /**
      * @param toAddress {String}  Destination address in any format
      * @param amount    {BN}  Transfer value in nanograms
-     * @param comment   {String}  Transfer comment
+     * @param comment   {String | Uint8Array | Cell}  Transfer comment
      * @param keyPair    nacl.KeyPair
      * @param stateInit? {Cell}
      * @return Promise<{send: Function, estimateFee: Function}>
@@ -725,7 +725,7 @@ class Controller {
     /**
      * @param amount    {BN}    in nanograms
      * @param toAddress {string}
-     * @param comment?  {string}
+     * @param comment?  {string | Uint8Array | Cell}
      * @param stateInit? {Cell}
      * @return {Promise<BN>} in nanograms
      */
@@ -804,11 +804,38 @@ class Controller {
             return false;
         }
 
+        if (!comment) {
+            needEncryptComment = false;
+        }
+
+        // serialize long text comment
+        if (!needEncryptComment && (typeof comment === 'string')) {
+            if (comment.length > 0) {
+                const commentBytes = new TextEncoder().encode(comment);
+                const payloadBytes = new Uint8Array(commentBytes.length + 4);
+                payloadBytes[0] = 0;
+                payloadBytes[1] = 0;
+                payloadBytes[2] = 0;
+                payloadBytes[3] = 0;
+                payloadBytes.set(commentBytes, 4);
+                comment = makeSnakeCells(payloadBytes);
+            }
+        }
+
         let fee;
 
         try {
-            fee = await this.getFees(amount, toAddress, comment, stateInit);
-        } catch {
+            let tempComment = comment;
+
+            if (needEncryptComment) { // encrypt with random key just to get estimage fees
+                const tempKeyPair = TonWeb.utils.newKeyPair();
+                const tempEncryptedCommentCell = await encryptMessageComment(comment, tempKeyPair.publicKey, tempKeyPair.publicKey, tempKeyPair.secretKey, this.myAddress);
+                tempComment = tempEncryptedCommentCell;
+            }
+
+            fee = await this.getFees(amount, toAddress, tempComment, stateInit);
+        } catch (e) {
+            console.error(e);
             this.sendToView('sendCheckFailed', {message: 'API request error'});
             return false;
         }
@@ -816,10 +843,6 @@ class Controller {
         if (this.balance.sub(fee).lt(amount)) {
             this.sendToView('sendCheckCantPayFee', {fee});
             return false;
-        }
-
-        if (!comment) {
-            needEncryptComment = false;
         }
 
         let toPublicKey = null;
@@ -861,8 +884,8 @@ class Controller {
 
                 if (needEncryptComment) {
                     const keyPair = await TonWeb.mnemonic.mnemonicToKeyPair(words);
-                    const encryptedCommentBytes = await encryptMessageComment(comment, keyPair.publicKey, toPublicKey, keyPair.secretKey, this.myAddress);
-                    comment = encryptedCommentBytes;
+                    const encryptedCommentCell = await encryptMessageComment(comment, keyPair.publicKey, toPublicKey, keyPair.secretKey, this.myAddress);
+                    comment = encryptedCommentCell;
                 }
 
                 const privateKey = await Controller.wordsToPrivateKey(words);
@@ -925,7 +948,7 @@ class Controller {
     /**
      * @param toAddress {string}
      * @param amount    {BN} in nanograms
-     * @param comment   {string | Uint8Array}
+     * @param comment   {string | Uint8Array | Cell}
      * @param privateKey    {string}
      * @param stateInit? {Cell}
      * @return  {Promise<boolean>}

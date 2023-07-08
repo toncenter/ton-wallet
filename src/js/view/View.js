@@ -91,6 +91,7 @@ class View {
 
         onInput($('#amountInput'), resetErrors);
         onInput($('#toWalletInput'), resetErrors);
+        onInput($('#commentInput'), resetErrors);
         onInput($('#createPassword_repeatInput'), resetErrors);
         onInput($('#enterPassword_input'), resetErrors);
         onInput($('#changePassword_oldInput'), resetErrors);
@@ -341,16 +342,63 @@ class View {
                 $('#amountInput').classList.add('error');
                 return;
             }
-            const toAddress = $('#toWalletInput').value;
-            if (!toAddress.toLowerCase().endsWith('.ton') && !toAddress.toLowerCase().endsWith('.t.me') && !TonWeb.Address.isValid(toAddress)) {
+
+            const toAddressString = $('#toWalletInput').value;
+            let toAddress = null;
+            try {
+                toAddress = new TonWeb.utils.Address(toAddressString);
+            } catch (e) {
+            }
+            if (!toAddressString.toLowerCase().endsWith('.ton') && !toAddressString.toLowerCase().endsWith('.t.me') && !toAddress) {
                 $('#toWalletInput').classList.add('error');
                 return;
             }
+
             const comment = $('#commentInput').value;
             const needEncryptComment = $('#encryptCommentCheckbox').checked;
+            if (comment.length > 1024) {
+                $('#commentInput').classList.add('error');
+                $('#notify').innerText = 'Maximum 1024 symbols';
+                triggerClass($('#notify'), 'faded-show', 2000);
+                return;
+            }
+
+            // from https://github.com/tonkeeper/ton-assets/blob/main/accounts.json with "require_memo": true
+            const exchangeAddresses = [
+                '0:5f00decb7da51881764dc3959cec60609045f6ca1b89e646bde49d492705d77f', // OKX
+                '0:b31535e934db05bbc220267467903c8108bdabcbc2a06588838b726ddf589ef0', // FTX
+                '0:57eb74407604a19f7e04005315ef70aeb7b675e6551977586756f6baf12125ee', // MEXC
+                '0:7994848c1fcbcbc57a6a5a987b66eb424b8b54e10759b6b514a66b600c2b0eef', // EXMO
+                '0:8d195793baad9a08c46dc353aebe999341dabd07721b9725f19e18abc3d10d92', // EXMO Cold Storage 1
+                '0:26ab8ae763a3a7c3067d882b7b01cd5d37254cb8768f57b6a47c00028effc7b8', // EXMO Cold Storage 2
+                '0:0130c77346e9ed82df677d107ad6a775c11f9c18f6a05c0dd17906b355850dad', // EXMO Deposit
+                '0:342a359e38357c083968129fddddf049ef5c47315bfbef27505a356bf9f02d65', // CoinEx
+                '0:555f3053e257130374bb831ae0e219e5e5f9ec0ca8f8a0d133369d3d690c64c2', // Huobi Deposit
+                '0:85af78e8d035e920117cda654615cdf371d464480b629e110d3c5310d85ab362', // Huobi
+                '0:80d4123841167ca989ac912443cc99a4b9c1a87584536427ff6fd85c92395ae9', // Kucoin
+                '0:a14b1f452385b2bb984ad2c4441e1d23cae071fdfc096dfba53ebba3b6ff1d10', // Lbank.info
+                '0:c3f1da8ecda8f8cd42bace224ea3f1b6971eaa7f54c492d4d190527b4f573f7c', // Bybit
+                '0:008bb088e81e38d583826901093567027cc1575ec744ac354fa4eeec302d166d', // bit.com
+            ]
+
+            const isExchange = toAddress && (exchangeAddresses.indexOf(toAddress.toString(false)) > -1);
+
+            if (isExchange) {
+                if (!comment) {
+                    $('#notify').innerText = 'Exchange require text comment (MEMO) for deposit';
+                    triggerClass($('#notify'), 'faded-show', 2000);
+                    return;
+                }
+
+                if (comment && needEncryptComment) {
+                    $('#notify').innerText = `Can't encrypt comment when depositing on exchange`;
+                    triggerClass($('#notify'), 'faded-show', 2000);
+                    return;
+                }
+            }
 
             this.toggleButtonLoader(e.currentTarget, true);
-            this.sendMessage('onSend', {amount: amountNano.toString(), toAddress, comment, needEncryptComment});
+            this.sendMessage('onSend', {amount: amountNano.toString(), toAddress: toAddressString, comment, needEncryptComment});
         });
         $('#send_closeBtn').addEventListener('click', () => this.closePopup());
 

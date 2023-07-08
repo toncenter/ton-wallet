@@ -115,12 +115,39 @@ export const encryptData = async (data, myPublicKey, theirPublicKey, privateKey,
 }
 
 /**
+ * @param bytes {Uint8Array}
+ * @return {Cell}
+ */
+export const makeSnakeCells = (bytes) => {
+    const ROOT_CELL_BYTE_LENGTH = 35 + 4;
+    const CELL_BYTE_LENGTH = 127;
+    const root = new TonWeb.boc.Cell();
+    root.bits.writeBytes(bytes.slice(0, Math.min(bytes.length, ROOT_CELL_BYTE_LENGTH)));
+
+    const cellCount = Math.ceil((bytes.length - ROOT_CELL_BYTE_LENGTH) / CELL_BYTE_LENGTH);
+    if (cellCount > 16) {
+        throw new Error('Text too long');
+    }
+
+    let cell = root;
+    for (let i = 0; i < cellCount; i++) {
+        const prevCell = cell;
+        cell = new TonWeb.boc.Cell();
+        const cursor = ROOT_CELL_BYTE_LENGTH + i * CELL_BYTE_LENGTH;
+        cell.bits.writeBytes(bytes.slice(cursor, Math.min(bytes.length, cursor + CELL_BYTE_LENGTH)));
+        prevCell.refs[0] = cell;
+    }
+
+    return root;
+}
+
+/**
  * @param comment   {string}
  * @param myPublicKey   {Uint8Array}
  * @param theirPublicKey    {Uint8Array}
  * @param myPrivateKey  {Uint8Array}
  * @param senderAddress   {string | Address}
- * @return {Promise<Uint8Array>} full message binary payload with 0x2167da4b prefix
+ * @return {Promise<Cell>} full message binary payload with 0x2167da4b prefix
  */
 export const encryptMessageComment = async (comment, myPublicKey, theirPublicKey, myPrivateKey, senderAddress) => {
     if (!comment || !comment.length) throw new Error('empty comment');
@@ -142,7 +169,7 @@ export const encryptMessageComment = async (comment, myPublicKey, theirPublicKey
     payload[3] = 0x4b;
     payload.set(encryptedBytes, 4);
 
-    return payload;
+    return makeSnakeCells(payload);
 }
 
 /**
