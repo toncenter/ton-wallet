@@ -162,12 +162,39 @@ const encryptData = async (data, myPublicKey, theirPublicKey, privateKey, salt) 
 }
 
 /**
+ * @param bytes {Uint8Array}
+ * @return {Cell}
+ */
+const makeSnakeCells = (bytes) => {
+    const ROOT_CELL_BYTE_LENGTH = 35 + 4;
+    const CELL_BYTE_LENGTH = 127;
+    const root = new TonWeb.boc.Cell();
+    root.bits.writeBytes(bytes.slice(0, Math.min(bytes.length, ROOT_CELL_BYTE_LENGTH)));
+
+    const cellCount = Math.ceil((bytes.length - ROOT_CELL_BYTE_LENGTH) / CELL_BYTE_LENGTH);
+    if (cellCount > 16) {
+        throw new Error('Text too long');
+    }
+
+    let cell = root;
+    for (let i = 0; i < cellCount; i++) {
+        const prevCell = cell;
+        cell = new TonWeb.boc.Cell();
+        const cursor = ROOT_CELL_BYTE_LENGTH + i * CELL_BYTE_LENGTH;
+        cell.bits.writeBytes(bytes.slice(cursor, Math.min(bytes.length, cursor + CELL_BYTE_LENGTH)));
+        prevCell.refs[0] = cell;
+    }
+
+    return root;
+}
+
+/**
  * @param comment   {string}
  * @param myPublicKey   {Uint8Array}
  * @param theirPublicKey    {Uint8Array}
  * @param myPrivateKey  {Uint8Array}
  * @param senderAddress   {string | Address}
- * @return {Promise<Uint8Array>} full message binary payload with 0x2167da4b prefix
+ * @return {Promise<Cell>} full message binary payload with 0x2167da4b prefix
  */
 const encryptMessageComment = async (comment, myPublicKey, theirPublicKey, myPrivateKey, senderAddress) => {
     if (!comment || !comment.length) throw new Error('empty comment');
@@ -189,7 +216,7 @@ const encryptMessageComment = async (comment, myPublicKey, theirPublicKey, myPri
     payload[3] = 0x4b;
     payload.set(encryptedBytes, 4);
 
-    return payload;
+    return makeSnakeCells(payload);
 }
 
 /**
@@ -627,7 +654,7 @@ class Controller {
     /**
      * @param toAddress {String}  Destination address in any format
      * @param amount    {BN}  Transfer value in nanograms
-     * @param comment   {String}  Transfer comment
+     * @param comment   {String | Uint8Array | Cell}  Transfer comment
      * @param keyPair    nacl.KeyPair
      * @param stateInit? {Cell}
      * @return Promise<{send: Function, estimateFee: Function}>
@@ -995,7 +1022,7 @@ class Controller {
     /**
      * @param amount    {BN}    in nanograms
      * @param toAddress {string}
-     * @param comment?  {string}
+     * @param comment?  {string | Uint8Array | Cell}
      * @param stateInit? {Cell}
      * @return {Promise<BN>} in nanograms
      */
@@ -1074,11 +1101,38 @@ class Controller {
             return false;
         }
 
+        if (!comment) {
+            needEncryptComment = false;
+        }
+
+        // serialize long text comment
+        if (!needEncryptComment && (typeof comment === 'string')) {
+            if (comment.length > 0) {
+                const commentBytes = new TextEncoder().encode(comment);
+                const payloadBytes = new Uint8Array(commentBytes.length + 4);
+                payloadBytes[0] = 0;
+                payloadBytes[1] = 0;
+                payloadBytes[2] = 0;
+                payloadBytes[3] = 0;
+                payloadBytes.set(commentBytes, 4);
+                comment = makeSnakeCells(payloadBytes);
+            }
+        }
+
         let fee;
 
         try {
-            fee = await this.getFees(amount, toAddress, comment, stateInit);
-        } catch {
+            let tempComment = comment;
+
+            if (needEncryptComment) { // encrypt with random key just to get estimage fees
+                const tempKeyPair = TonWeb.utils.newKeyPair();
+                const tempEncryptedCommentCell = await encryptMessageComment(comment, tempKeyPair.publicKey, tempKeyPair.publicKey, tempKeyPair.secretKey, this.myAddress);
+                tempComment = tempEncryptedCommentCell;
+            }
+
+            fee = await this.getFees(amount, toAddress, tempComment, stateInit);
+        } catch (e) {
+            console.error(e);
             this.sendToView('sendCheckFailed', {message: 'API request error'});
             return false;
         }
@@ -1086,10 +1140,6 @@ class Controller {
         if (this.balance.sub(fee).lt(amount)) {
             this.sendToView('sendCheckCantPayFee', {fee});
             return false;
-        }
-
-        if (!comment) {
-            needEncryptComment = false;
         }
 
         let toPublicKey = null;
@@ -1131,8 +1181,8 @@ class Controller {
 
                 if (needEncryptComment) {
                     const keyPair = await TonWeb.mnemonic.mnemonicToKeyPair(words);
-                    const encryptedCommentBytes = await encryptMessageComment(comment, keyPair.publicKey, toPublicKey, keyPair.secretKey, this.myAddress);
-                    comment = encryptedCommentBytes;
+                    const encryptedCommentCell = await encryptMessageComment(comment, keyPair.publicKey, toPublicKey, keyPair.secretKey, this.myAddress);
+                    comment = encryptedCommentCell;
                 }
 
                 const privateKey = await Controller.wordsToPrivateKey(words);
@@ -1195,7 +1245,7 @@ class Controller {
     /**
      * @param toAddress {string}
      * @param amount    {BN} in nanograms
-     * @param comment   {string | Uint8Array}
+     * @param comment   {string | Uint8Array | Cell}
      * @param privateKey    {string}
      * @param stateInit? {Cell}
      * @return  {Promise<boolean>}
