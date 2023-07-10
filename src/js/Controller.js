@@ -850,8 +850,13 @@ class Controller {
         if (needEncryptComment) {
             try {
                 const toPublicKeyBN = await this.ton.provider.call2(toAddress, 'get_public_key');
-                toPublicKey = TonWeb.utils.hexToBytes(toPublicKeyBN.toString(16));
+                let toPublicKeyHex = toPublicKeyBN.toString(16);
+                if (toPublicKeyHex.length % 2 !== 0) {
+                    toPublicKeyHex = '0' + toPublicKeyHex;
+                }
+                toPublicKey = TonWeb.utils.hexToBytes(toPublicKeyHex);
             } catch (e) {
+                console.error(e);
             }
 
             if (!toPublicKey) {
