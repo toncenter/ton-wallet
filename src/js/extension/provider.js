@@ -10,6 +10,7 @@
             // Init storage
             this._nextJsonRpcId = window.ton ? window.ton._nextJsonRpcId : 0;
             this._promises = window.ton ? window.ton._promises : {};
+            // todo: take `listeners` from previous window.ton ?
 
             // Fire the connect
             this._connect();
@@ -69,6 +70,7 @@
                 id,
                 method,
                 params,
+                origin: window.origin
             };
 
             const promise = new Promise((resolve, reject) => {
@@ -265,11 +267,162 @@
         }
     };
 
-    const havePrevInstance = !!window.ton;
+    // TONCONNECT
 
+    function tonConnectEventError(message, code) {
+        return {
+            event: 'connect_error',
+            id: Date.now(),
+            payload: {
+                code: code,
+                message: message
+            }
+        }
+    }
+
+    class TonConnectBridge {
+        constructor(provider, prevBridge) {
+            this.provider = provider;
+
+            provider.on('chainChanged', () => {
+                this.notify({
+                    event: 'disconnect',
+                    id: Date.now(),
+                    payload: {}
+                })
+            });
+
+            this.callbacks = prevBridge?.tonconnect ? prevBridge?.tonconnect.callbacks : [];
+
+            this.deviceInfo = {
+                platform: 'web',
+                appName: 'TON Wallet',
+                appVersion: '1.1.46',
+                maxProtocolVersion: 2,
+                features: [
+                    'SendTransaction',
+                    {
+                        name: 'SendTransaction',
+                        maxMessages: 1,
+                    },
+                ],
+            };
+
+            this.walletInfo = {
+                name: 'TON Wallet',
+                image: 'https://wallet.ton.org/assets/ui/qr-logo.png',
+                about_url: 'https://wallet.ton.org',
+            }
+
+            this.protocolVersion = 2;
+            this.isWalletBrowser = false;
+        }
+
+        async connect(protocolVersion, message) {
+            if (protocolVersion > this.protocolVersion) {
+                return this.notify(
+                    tonConnectEventError('Unsupported protocol version', 1)
+                );
+            }
+
+            try {
+                const items = await this.provider.send(
+                    'tonConnect_connect',
+                    [message]
+                );
+
+                return this.notify({
+                    event: 'connect',
+                    id: Date.now(),
+                    payload: {
+                        items: items,
+                        device: this.deviceInfo
+                    }
+                });
+            } catch (e) {
+                return this.notify(
+                    tonConnectEventError(e?.message || 'Unknown error', 0)
+                );
+            }
+        }
+
+        async disconnect() {
+            await this.provider.send('tonConnect_disconnect', []);
+            return this.notify({
+                event: 'disconnect',
+                id: Date.now(),
+                payload: {}
+            })
+        }
+
+        async restoreConnection() {
+            try {
+                const items = await this.provider.send('tonConnect_reconnect', [{name: 'ton_addr'}]);
+
+                return this.notify({
+                    event: 'connect',
+                    id: Date.now(),
+                    payload: {
+                        items: items,
+                        device: this.deviceInfo
+                    }
+                })
+            } catch (e) {
+                return this.notify(
+                    tonConnectEventError(e?.message || 'Unknown error', 0)
+                );
+            }
+        }
+
+        async send(message) {
+            try {
+                const result = await this.provider.send(
+                    'tonConnect_' + message.method,
+                    message.params.map(param => JSON.parse(param))
+                );
+                return {
+                    result,
+                    id: String(message.id)
+                }
+            } catch (e) {
+                return {
+                    error: {
+                        message: e?.message || 'Unknown error',
+                        code: 0 // unknown error
+                    },
+                    id: String(message.id)
+                }
+            }
+        }
+
+        listen(callback) {
+            this.callbacks.push(callback);
+            const callbacks = this.callbacks;
+            return () => {
+                const index = callbacks.indexOf(callback);
+                if (index > -1) {
+                    callbacks.splice(index, 1);
+                }
+            }
+        }
+
+        async notify(event) {
+            this.callbacks.forEach(callback => callback(event));
+            return event;
+        }
+    }
+
+    // START
+
+    const havePrevInstance = !!window.ton;
     window.tonProtocolVersion = 1;
     window.ton = new TonProvider();
     if (!havePrevInstance) window.dispatchEvent(new Event('tonready'));
+
+    window.tonwallet = {
+        provider: window.ton,
+        tonconnect: new TonConnectBridge(window.ton, window.tonwallet)
+    }
 
     function toggleMagicBadge(isTurnedOn) {
         if (isTurnedOn) {

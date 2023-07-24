@@ -1244,7 +1244,47 @@ class Controller {
         });
     }
 
-    async onDappMessage(method, params) {
+    async createTonAddrItemReply(needQueue) {
+        if (!this.myAddress) {
+            return {
+                message: 'Missing connection',
+                code: 1 // BAD_REQUEST_ERROR
+            };
+        }
+        if (!this.publicKeyHex) {
+            await this.requestPublicKey(needQueue); // todo: cancel not handled
+        }
+        const walletVersion = await storage.getItem('walletVersion');
+
+        const TONCONNECT_MAINNET = '-239';
+        const TONCONNECT_TESTNET = '-3';
+
+        const rawAddressString = new TonWeb.utils.Address(this.myAddress).toString(false);
+        const WalletClass = walletVersion ? this.ton.wallet.all[walletVersion] : this.ton.wallet.default;
+        const wallet = new WalletClass(this.ton.provider, {
+            publicKey: TonWeb.utils.hexToBytes(this.publicKeyHex),
+            wc: 0
+        });
+        const {stateInit} = await wallet.createStateInit();
+        const stateInitBase64 = TonWeb.utils.bytesToBase64(await stateInit.toBoc(false));
+
+        return {
+            name: 'ton_addr',
+            address: rawAddressString,
+            network: this.isTestnet ? TONCONNECT_TESTNET : TONCONNECT_MAINNET,
+            walletStateInit: stateInitBase64,
+            publicKey: this.publicKeyHex
+        };
+    }
+
+    async createTonProofItemReply(needQueue) {
+        return {
+            name: 'ton_proof',
+            // toTonProofItemReply tonConnectProofPayload
+        }
+    }
+
+    async onDappMessage(method, params, origin) {
         // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md
         // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1102.md
         await this.whenReady;
@@ -1252,6 +1292,85 @@ class Controller {
         const needQueue = !popupPort;
 
         switch (method) {
+            case 'tonConnect_connect':
+                if (!this.myAddress) {
+                    throw {
+                        message: 'Missing connection',
+                        code: 1 // BAD_REQUEST_ERROR
+                    }
+                }
+
+                const data = params[0];
+                const needTonProof = data.items.some((item) => item.name === 'ton_proof');
+                if (needTonProof ||
+                    !storage.getItem('tonconnect_' + this.myAddress + '_' + (this.isTestnet ? 'testnet' : 'mainnet') + '_' + origin)) {
+                    // show confirmation
+                }
+
+                const isConfirmed = true;
+
+                if (!isConfirmed) {
+                    throw {
+                        message: 'Reject request',
+                        code: 300 // USER_REJECTS_ERROR
+                    }
+                }
+
+                storage.setItem('tonconnect_' + this.myAddress + '_' + (this.isTestnet ? 'testnet' : 'mainnet') + '_' + origin, 'true');
+
+                const connectResult = [
+                    await this.createTonAddrItemReply(needQueue),
+                ];
+                if (needTonProof) {
+                    connectResult.push(await this.createTonProofItemReply(needQueue))
+                }
+
+                return connectResult;
+
+            case 'tonConnect_reconnect':
+                if (!this.myAddress ||
+                    !storage.getItem('tonconnect_' + this.myAddress + '_' + (this.isTestnet ? 'testnet' : 'mainnet') + '_' + origin)) {
+                    throw {
+                        message: 'Missing connection',
+                        code: 1 // BAD_REQUEST_ERROR
+                    }
+                }
+
+                return [
+                    await this.createTonAddrItemReply(needQueue)
+                ];
+
+            case 'tonConnect_disconnect':
+                storage.removeItem('tonconnect_' + this.myAddress + '_' + (this.isTestnet ? 'testnet' : 'mainnet') + '_' + origin);
+                return;
+
+            case 'tonConnect_sendTransaction': // todo
+                console.log('tonConnect_sendTransaction', params, origin, params[0], params[1]);
+
+                if (!this.myAddress) {
+                    throw {
+                        message: 'Missing connection',
+                        code: 1 // BAD_REQUEST_ERROR
+                    }
+                }
+                if (!storage.getItem('tonconnect_' + this.myAddress + '_' + (this.isTestnet ? 'testnet' : 'mainnet') + '_' + origin)) {
+                    throw {
+                        message: 'dApp don\'t have an access to wallet',
+                        code: 1 // BAD_REQUEST_ERROR
+                    }
+                }
+
+                const isTxConfirmed = true;
+
+                if (!isTxConfirmed) {
+                    throw  {
+                        message: 'Reject request',
+                        code: 300 // USER_REJECTS_ERROR
+                    }
+                }
+
+                return false; // sendTonConnectTransfer
+
             case 'ton_requestAccounts':
                 return (this.myAddress ? [this.myAddress] : []);
             case 'ton_requestWallets':
@@ -1304,6 +1423,11 @@ class Controller {
             case 'flushMemoryCache':
                 await chrome.webRequest.handlerBehaviorChanged();
                 return true;
+            default:
+                throw {
+                    message: `Method "${method}" not implemented`,
+                    code: 400 // METHOD_NOT_SUPPORTED
+                };
         }
     }
 }
@@ -1312,7 +1436,7 @@ const controller = new Controller();
 
 if (IS_EXTENSION) {
     chrome.runtime.onConnect.addListener(port => {
-        if (port.name === 'gramWalletContentScript') {
+        if (port.name === 'gramWalletContentScript') { // dapp
             contentScriptPorts.add(port)
             port.onMessage.addListener(async (msg, port) => {
                 if (msg.type === 'gramWalletAPI_ton_provider_connect') {
@@ -1323,18 +1447,29 @@ if (IS_EXTENSION) {
 
                 if (!msg.message) return;
 
-                const result = await controller.onDappMessage(msg.message.method, msg.message.params);
+                const origin = decodeURIComponent(msg.message.origin);
+
+                let result = undefined;
+                let error = undefined;
+                try {
+                    result = await controller.onDappMessage(msg.message.method, msg.message.params, origin);
+                } catch (e) {
+                    error = {
+                        message: e.message,
+                        code: e.code || 0
+                    };
+                }
                 if (port) {
                     port.postMessage(JSON.stringify({
                         type: 'gramWalletAPI',
-                        message: {jsonrpc: '2.0', id: msg.message.id, method: msg.message.method, result}
+                        message: {jsonrpc: '2.0', id: msg.message.id, method: msg.message.method, result, error}
                     }));
                 }
             });
             port.onDisconnect.addListener(port => {
                 contentScriptPorts.delete(port)
             })
-        } else if (port.name === 'gramWalletPopup') {
+        } else if (port.name === 'gramWalletPopup') { // view
             popupPort = port;
             popupPort.onMessage.addListener(function (msg) {
                 if (msg.method === 'response') {
