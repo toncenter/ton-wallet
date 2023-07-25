@@ -1,6 +1,9 @@
 import storage from './util/storage.js';
 import {decryptMessageComment, encryptMessageComment, makeSnakeCells} from "./util/encryption.js";
 
+const TONCONNECT_MAINNET = '-239';
+const TONCONNECT_TESTNET = '-3';
+
 let extensionWindowId = -1;
 let contentScriptPorts = new Set();
 let popupPort = null;
@@ -877,7 +880,7 @@ class Controller {
             const sendResult = await this.send(toAddress, amount, comment, null, stateInit);
 
             if (sendResult) {
-                dAppPromise.resolve(true);
+                dAppPromise.resolve(sendResult);
             } else {
                 this.sendToView('sendCheckFailed', {message: 'API request error'});
                 dAppPromise.resolve(false);
@@ -897,7 +900,7 @@ class Controller {
                 const sendResult = await this.send(toAddress, amount, comment, privateKey, stateInit);
 
                 if (sendResult) {
-                    dAppPromise.resolve(true);
+                    dAppPromise.resolve(sendResult);
                 } else {
                     this.sendToView('sendCheckFailed', {message: 'API request error'});
                     dAppPromise.resolve(false);
@@ -1039,7 +1042,7 @@ class Controller {
         const sendResponse = await query.send();
         if (sendResponse["@type"] === "ok") {
             // wait for transaction, then show Done popup
-            return true;
+            return await query.getQuery();
         } else {
             this.sendToView('closePopup');
             alert('Send error');
@@ -1256,9 +1259,6 @@ class Controller {
         }
         const walletVersion = await storage.getItem('walletVersion');
 
-        const TONCONNECT_MAINNET = '-239';
-        const TONCONNECT_TESTNET = '-3';
-
         const rawAddressString = new TonWeb.utils.Address(this.myAddress).toString(false);
         const WalletClass = walletVersion ? this.ton.wallet.all[walletVersion] : this.ton.wallet.default;
         const wallet = new WalletClass(this.ton.provider, {
@@ -1277,10 +1277,69 @@ class Controller {
         };
     }
 
-    async createTonProofItemReply(needQueue) {
+    /**
+     * @param origin    {string}
+     * @param payload   {string}
+     * @param needQueue {boolean}
+     */
+    async createTonProofItemReply(origin, payload, needQueue) {
+        const timestamp = Math.round(Date.now() / 1000);
+        const timestampBuffer = new BigInt64Array(1);
+        timestampBuffer[0] = BigInt(timestamp);
+
+        const domain = new URL(origin).host;
+        const domainBuffer = new TextEncoder().encode(domain);
+        const domainLengthBuffer = new Int32Array(1);
+        domainLengthBuffer[0] = domainBuffer.byteLength;
+
+        const address = new TonWeb.utils.Address(this.myAddress);
+
+        const addressWorkchainBuffer = new Int32Array(1);
+        addressWorkchainBuffer[0] = address.wc;
+
+        const addressBuffer = new Uint8Array(4 + address.hashPart.length);
+        addressBuffer.set(addressWorkchainBuffer, 0);
+        addressBuffer.set(address.hashPart, 4);
+
+        const prefixBuffer = new TextEncoder().encode('ton-proof-item-v2/');
+        const payloadBuffer = new TextEncoder().encode(payload);
+        const messageBuffer = new Uint8Array(prefixBuffer.byteLength + addressBuffer.byteLength + domainLengthBuffer.byteLength + domainBuffer.byteLength + timestampBuffer.byteLength + payloadBuffer.byteLength);
+
+        let offset = 0;
+        messageBuffer.set(prefixBuffer, offset); offset += prefixBuffer.byteLength;
+        messageBuffer.set(addressBuffer, offset); offset += addressBuffer.byteLength;
+        messageBuffer.set(domainLengthBuffer, offset); offset += domainLengthBuffer.byteLength;
+        messageBuffer.set(domainBuffer, offset); offset += domainBuffer.byteLength;
+        messageBuffer.set(new Uint8Array(timestampBuffer.buffer), offset); offset += 8;
+        messageBuffer.set(payloadBuffer, offset);
+
+        const ffffPrefix = new Uint8Array([0xff, 0xff]);
+        const tonconnectPrefix = new TextEncoder().encode('ton-connect')
+
+        const messageBufferHash = new Uint8Array(await TonWeb.utils.sha256(messageBuffer));
+        const bufferToSign = new Uint8Array(ffffPrefix.byteLength + tonconnectPrefix.byteLength + messageBufferHash.byteLength);
+        offset = 0;
+        bufferToSign.set(ffffPrefix, offset); offset += ffffPrefix.byteLength;
+        bufferToSign.set(tonconnectPrefix, offset); offset += tonconnectPrefix.byteLength;
+        bufferToSign.set(messageBufferHash, offset);
+
+        const hexToSign = TonWeb.utils.bytesToHex(new Uint8Array(await TonWeb.utils.sha256(bufferToSign)));
+        const signatureHex = await this.showSignConfirm(hexToSign, needQueue);
+        console.log({signatureHex});
+        const signatureBase64 = TonWeb.utils.bytesToBase64(TonWeb.utils.hexToBytes(signatureHex));
+        console.log({signatureBase64});
+
         return {
             name: 'ton_proof',
-            // toTonProofItemReply tonConnectProofPayload
+            proof: {
+                timestamp: timestamp, // 64-bit unix epoch time of the signing operation (seconds)
+                domain: {
+                    lengthBytes: domainBuffer.byteLength, // AppDomain Length
+                    value: domain, // app domain name (as url part, without encoding)
+                },
+                signature: signatureBase64, // base64-encoded signature
+                payload: payload, // payload from the request
+            },
         }
     }
 
@@ -1301,7 +1360,7 @@ class Controller {
                 }
 
                 const data = params[0];
-                const needTonProof = data.items.some((item) => item.name === 'ton_proof');
+                const needTonProof = data.items.find((item) => item.name === 'ton_proof');
                 if (needTonProof ||
                     !storage.getItem('tonconnect_' + this.myAddress + '_' + (this.isTestnet ? 'testnet' : 'mainnet') + '_' + origin)) {
                     // show confirmation
@@ -1322,7 +1381,7 @@ class Controller {
                     await this.createTonAddrItemReply(needQueue),
                 ];
                 if (needTonProof) {
-                    connectResult.push(await this.createTonProofItemReply(needQueue))
+                    connectResult.push(await this.createTonProofItemReply(origin, needTonProof.payload, needQueue))
                 }
 
                 return connectResult;
@@ -1344,8 +1403,9 @@ class Controller {
                 storage.removeItem('tonconnect_' + this.myAddress + '_' + (this.isTestnet ? 'testnet' : 'mainnet') + '_' + origin);
                 return;
 
-            case 'tonConnect_sendTransaction': // todo
-                console.log('tonConnect_sendTransaction', params, origin, params[0], params[1]);
+            case 'tonConnect_sendTransaction':
+                const tx = params[0];
+                console.log('tonConnect_sendTransaction', params, origin, tx);
 
                 if (!this.myAddress) {
                     throw {
@@ -1360,16 +1420,96 @@ class Controller {
                     }
                 }
 
-                const isTxConfirmed = true;
+                if (!(tx.valid_until >= Date.now() / 1000)) {
+                    throw {
+                        message: 'invalid or expired validUntil',
+                        code: 1 // BAD_REQUEST_ERROR
+                    }
+                }
 
-                if (!isTxConfirmed) {
+                if (tx.from) {
+                    if (!Address.isValid(tx.from)) {
+                        throw {
+                            message: 'Invalid source address',
+                            code: 1 // BAD_REQUEST_ERROR
+                        }
+                    }
+
+                    if (new TonWeb.utils.Address(tx.from).toString(false) !== new TonWeb.utils.Address(this.myAddress).toString(false)) {
+                        throw {
+                            message: 'Different source address',
+                            code: 1 // BAD_REQUEST_ERROR
+                        }
+                    }
+                }
+
+                if (tx.network) {
+                    if (tx.network !== TONCONNECT_TESTNET && tx.network !== TONCONNECT_MAINNET) {
+                        throw {
+                            message: 'Invalid network',
+                            code: 1 // BAD_REQUEST_ERROR
+                        }
+                    }
+
+                    if (tx.network === TONCONNECT_MAINNET && this.isTestnet) {
+                        throw {
+                            message: 'Different network',
+                            code: 1 // BAD_REQUEST_ERROR
+                        }
+                    }
+                }
+
+                if (!tx.messages || !tx.messages.length) {
+                    throw {
+                        message: 'no messages',
+                        code: 1 // BAD_REQUEST_ERROR
+                    }
+                }
+
+                try {
+                    for (const message of tx.messages) {
+                        if (!message.address) {
+                            throw new Error('no address')
+                        }
+                        if (!Address.isValid(message.address)) {
+                            throw new Error('invalid address');
+                        }
+                        if (!message.amount) {
+                            throw new Error('no amount')
+                        }
+                        message.amount = new BN(message.amount);
+                        if (message.payload) {
+                            message.payload = TonWeb.boc.Cell.oneFromBoc(TonWeb.utils.base64ToBytes(message.payload));
+                        }
+                        if (message.stateInit) {
+                            message.stateInit = TonWeb.boc.Cell.oneFromBoc(TonWeb.utils.base64ToBytes(message.stateInit));
+                        }
+                    }
+                } catch (e) {
+                    throw {
+                        message: e.message,
+                        code: 1 // BAD_REQUEST_ERROR
+                    }
+                }
+
+                await showExtensionWindow();
+
+                this.sendToView('showPopup', {
+                    name: 'loader',
+                });
+
+                const firstMessage = tx.messages[0];
+
+                const sentBoc = await this.showSendConfirm(firstMessage.amount, firstMessage.address, firstMessage.payload, false, needQueue, firstMessage.stateInit);
+                if (!sentBoc) {
+                    this.sendToView('closePopup');
                     throw  {
                         message: 'Reject request',
                         code: 300 // USER_REJECTS_ERROR
                     }
                 }
 
-                return false; // sendTonConnectTransfer
+                return TonWeb.utils.bytesToBase64(await sentBoc.toBoc(false));
 
             case 'ton_requestAccounts':
                 return (this.myAddress ? [this.myAddress] : []);
@@ -1414,7 +1554,7 @@ class Controller {
                 if (!result) {
                     this.sendToView('closePopup');
                 }
-                return result;
+                return !!result;
             case 'ton_rawSign':
                 const signParam = params[0];
                 await showExtensionWindow();
@@ -1454,6 +1594,7 @@ if (IS_EXTENSION) {
                 try {
                     result = await controller.onDappMessage(msg.message.method, msg.message.params, origin);
                 } catch (e) {
+                    console.error(e);
                     error = {
                         message: e.message,
                         code: e.code || 0
