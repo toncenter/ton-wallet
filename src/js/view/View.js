@@ -412,9 +412,27 @@ class View {
         });
         $('#sendConfirm_okBtn').addEventListener('click', () => this.onMessage('showPopup', {name: 'enterPassword'}));
 
-        $('#signConfirm_closeBtn').addEventListener('click', () => this.closePopup());
-        $('#signConfirm_cancelBtn').addEventListener('click', () => this.closePopup());
+        $('#signConfirm_closeBtn').addEventListener('click', () => {
+            this.sendMessage('onCancelAction');
+            this.closePopup()
+        });
+        $('#signConfirm_cancelBtn').addEventListener('click', () => {
+            this.sendMessage('onCancelAction');
+            this.closePopup()
+        });
         $('#signConfirm_okBtn').addEventListener('click', () => this.onMessage('showPopup', {name: 'enterPassword'}));
+
+        $('#connectConfirm_closeBtn').addEventListener('click', () => {
+            this.sendMessage('onCancelAction');
+            this.closePopup()
+        });
+        $('#connectConfirm_cancelBtn').addEventListener('click', () => {
+            this.sendMessage('onCancelAction');
+            this.closePopup()
+        });
+        $('#connectConfirm_okBtn').addEventListener('click', () => {
+            this.sendMessage('onConnectConfirmed', {});
+        });
 
         $('#processing_closeBtn').addEventListener('click', () => this.closePopup());
         $('#done_closeBtn').addEventListener('click', () => this.closePopup());
@@ -567,7 +585,7 @@ class View {
 
         toggleFaded($('#modal'), name !== '');
 
-        const popups = ['alert', 'receive', 'invoice', 'invoiceQr', 'send', 'sendConfirm', 'signConfirm', 'processing', 'done', 'menuDropdown', 'about', 'delete', 'changePassword', 'enterPassword', 'transaction', 'connectLedger', 'loader'];
+        const popups = ['alert', 'receive', 'invoice', 'invoiceQr', 'send', 'sendConfirm', 'signConfirm', 'connectConfirm', 'processing', 'done', 'menuDropdown', 'about', 'delete', 'changePassword', 'enterPassword', 'transaction', 'connectLedger', 'loader'];
 
         popups.forEach(popup => {
             toggleFaded($('#' + popup), name === popup);
@@ -1261,8 +1279,14 @@ class View {
                         // todo: show label 'Please approve on device'
                         break;
                     case 'signConfirm':
+                        $('#signConfirmText').innerText = params.isConnect ? 'Do you want to connect your wallet to this page?' : 'Do you want to sign:';
+                        toggle($('#signConfirmData'), !params.isConnect);
+                        toggle($('#signConfirmAlert'), !params.isConnect);
+
                         const hex = params.data.length > 48 ? params.data.substring(0, 47) + '…' : params.data;
                         setAddr($('#signConfirmData'), hex);
+                        break;
+                    case 'connectConfirm':
                         break;
                 }
                 break;

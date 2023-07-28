@@ -523,17 +523,31 @@
 
     <div id="signConfirm" class="popup pb-10 visibility-hidden">
         <div class="popup-title">Confirmation</div>
-        <div class="popup-black-text">Do you want to sign:</div>
+        <div id="signConfirmText" class="popup-black-text">Do you want to sign:</div>
 
         <div id="signConfirmData" class="addr"></div>
 
-        <div class="popup-grey-text text-align-center font-weight-bold text-danger">Signing custom data is very dangerous. Use only if you know what you are doing.</div>
+        <div id="signConfirmAlert" class="popup-grey-text text-align-center font-weight-bold text-danger">Signing custom data is very dangerous. Use only if you know what you are doing.</div>
 
         <button id="signConfirm_closeBtn" class="popup-close-btn"></button>
 
         <div class="popup-footer">
-            <button id="signConfirm_cancelBtn" class="btn-lite">CANCEL</button>
-            <button id="signConfirm_okBtn" class="btn-lite">SIGN</button>
+            <button id="signConfirm_cancelBtn" class="btn-lite">NO</button>
+            <button id="signConfirm_okBtn" class="btn-lite">YES</button>
+        </div>
+    </div>
+
+    <!-- Connect Confirm Popup -->
+
+    <div id="connectConfirm" class="popup pb-10 visibility-hidden">
+        <div class="popup-title">Confirmation</div>
+        <div class="popup-black-text">Do you want to connect your wallet to this page?</div>
+
+        <button id="connectConfirm_closeBtn" class="popup-close-btn"></button>
+
+        <div class="popup-footer">
+            <button id="connectConfirm_cancelBtn" class="btn-lite">NO</button>
+            <button id="connectConfirm_okBtn" class="btn-lite">YES</button>
         </div>
     </div>
 

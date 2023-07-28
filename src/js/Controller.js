@@ -1142,15 +1142,20 @@ class Controller {
 
     /**
      * @param hexToSign  {string} hex data to sign
+     * @param isConnect {boolean}
      * @param needQueue {boolean}
      * @returns {Promise<string>} signature in hex
      */
-    showSignConfirm(hexToSign, needQueue) {
+    showSignConfirm(hexToSign, isConnect, needQueue) {
         return new Promise((resolve, reject) => {
             if (this.isLedger) {
                 alert('sign not supported by Ledger');
                 reject();
             } else {
+
+                this.onCancelAction = () => {
+                    reject('User cancel');
+                };
 
                 this.afterEnterPassword = async words => {
                     this.sendToView('closePopup');
@@ -1162,9 +1167,59 @@ class Controller {
                 this.sendToView('showPopup', {
                     name: 'signConfirm',
                     data: hexToSign,
+                    isConnect: isConnect
                 }, needQueue);
 
             }
+        });
+    }
+
+    /**
+     * Ask user for password and set `this.publicKeyHex`
+     * @param needQueue {boolean}
+     * @return {Promise<void>}
+     */
+    requestPublicKey(needQueue) {
+        return new Promise(async (resolve, reject) => {
+            await showExtensionWindow();
+
+            this.onCancelAction = () => {
+                reject('User cancel');
+            };
+
+            this.afterEnterPassword = async words => {
+                const privateKey = await Controller.wordsToPrivateKey(words);
+                const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
+                this.publicKeyHex = TonWeb.utils.bytesToHex(keyPair.publicKey);
+                await storage.setItem('publicKey', this.publicKeyHex);
+                resolve();
+            };
+
+            this.sendToView('showPopup', {name: 'enterPassword'}, needQueue);
+        });
+    }
+
+    /**
+     * @param needQueue {boolean}
+     * @returns {Promise<void>}
+     */
+    showConnectConfirm(needQueue) {
+        return new Promise((resolve, reject) => {
+            this.onCancelAction = () => {
+                reject({
+                    message: 'Reject request',
+                    code: 300 // USER_REJECTS_ERROR
+                });
+            };
+
+            this.onConnectConfirmed = async () => {
+                this.sendToView('closePopup');
+                resolve();
+            };
+
+            this.sendToView('showPopup', {
+                name: 'connectConfirm',
+            }, needQueue);
         });
     }
 
@@ -1278,6 +1333,12 @@ class Controller {
                     this.onCancelAction = null;
                 }
                 break;
+            case 'onConnectConfirmed':
+                if (this.onConnectConfirmed) {
+                    this.onConnectConfirmed();
+                    this.onConnectConfirmed = null;
+                }
+                break;
             case 'onEnterPassword':
                 await this.onEnterPassword(params.password);
                 break;
@@ -1352,6 +1413,10 @@ class Controller {
 
     // TRANSPORT WITH DAPP
 
+    /**
+     * @param method    {string}
+     * @param params    {any | any[]}
+     */
     sendToDapp(method, params) {
         contentScriptPorts.forEach(port => {
             port.postMessage(JSON.stringify({
@@ -1361,31 +1426,19 @@ class Controller {
         });
     }
 
-    requestPublicKey(needQueue) {
-        return new Promise(async (resolve, reject) => {
-            await showExtensionWindow();
-
-            this.afterEnterPassword = async words => {
-                const privateKey = await Controller.wordsToPrivateKey(words);
-                const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
-                this.publicKeyHex = TonWeb.utils.bytesToHex(keyPair.publicKey);
-                await storage.setItem('publicKey', this.publicKeyHex);
-                resolve();
-            };
-
-            this.sendToView('showPopup', {name: 'enterPassword'}, needQueue);
-        });
-    }
-
+    /**
+     * @param needQueue {boolean}
+     * @return {Promise<{name: 'ton_addr', address: string, network: string, walletStateInit: string, publicKey: string }>}
+     */
     async createTonAddrItemReply(needQueue) {
         if (!this.myAddress) {
-            return {
+            throw {
                 message: 'Missing connection',
                 code: 1 // BAD_REQUEST_ERROR
             };
         }
         if (!this.publicKeyHex) {
-            await this.requestPublicKey(needQueue); // todo: cancel not handled
+            await this.requestPublicKey(needQueue);
         }
         const walletVersion = await storage.getItem('walletVersion');
 
@@ -1411,8 +1464,16 @@ class Controller {
      * @param origin    {string}
      * @param payload   {string}
      * @param needQueue {boolean}
+     * @return {any} ton_proof item
      */
     async createTonProofItemReply(origin, payload, needQueue) {
+        if (!this.myAddress) {
+            throw {
+                message: 'Missing connection',
+                code: 1 // BAD_REQUEST_ERROR
+            };
+        }
+
         const timestamp = Math.round(Date.now() / 1000);
         const timestampBuffer = new BigInt64Array(1);
         timestampBuffer[0] = BigInt(timestamp);
@@ -1461,7 +1522,7 @@ class Controller {
         bufferToSign.set(messageBufferHash, offset);
 
         const hexToSign = TonWeb.utils.bytesToHex(new Uint8Array(await TonWeb.utils.sha256(bufferToSign)));
-        const signatureHex = await this.showSignConfirm(hexToSign, needQueue);
+        const signatureHex = await this.showSignConfirm(hexToSign, true, needQueue);
         console.log({signatureHex});
         const signatureBase64 = TonWeb.utils.bytesToBase64(TonWeb.utils.hexToBytes(signatureHex));
         console.log({signatureBase64});
@@ -1498,18 +1559,12 @@ class Controller {
 
                 const data = params[0];
                 const tonProof = data.items.find((item) => item.name === 'ton_proof');
-                if (tonProof ||
-                    !storage.getItem('tonconnect_' + this.myAddress + '_' + (this.isTestnet ? 'testnet' : 'mainnet') + '_' + origin)) {
-                    // show confirmation
-                }
 
-                const isConfirmed = true;
 
-                if (!isConfirmed) {
-                    throw {
-                        message: 'Reject request',
-                        code: 300 // USER_REJECTS_ERROR
-                    }
+                if (!tonProof &&
+                    !(await storage.getItem('tonconnect_' + this.myAddress + '_' + (this.isTestnet ? 'testnet' : 'mainnet') + '_' + origin))) {
+
+                    await this.showConnectConfirm(needQueue);
                 }
 
                 storage.setItem('tonconnect_' + this.myAddress + '_' + (this.isTestnet ? 'testnet' : 'mainnet') + '_' + origin, 'true');
@@ -1525,7 +1580,7 @@ class Controller {
 
             case 'tonConnect_reconnect':
                 if (!this.myAddress ||
-                    !storage.getItem('tonconnect_' + this.myAddress + '_' + (this.isTestnet ? 'testnet' : 'mainnet') + '_' + origin)) {
+                    !(await storage.getItem('tonconnect_' + this.myAddress + '_' + (this.isTestnet ? 'testnet' : 'mainnet') + '_' + origin))) {
                     throw {
                         message: 'Missing connection',
                         code: 1 // BAD_REQUEST_ERROR
@@ -1537,7 +1592,7 @@ class Controller {
                 ];
 
             case 'tonConnect_disconnect':
-                storage.removeItem('tonconnect_' + this.myAddress + '_' + (this.isTestnet ? 'testnet' : 'mainnet') + '_' + origin);
+                await storage.removeItem('tonconnect_' + this.myAddress + '_' + (this.isTestnet ? 'testnet' : 'mainnet') + '_' + origin);
                 return;
 
             case 'tonConnect_sendTransaction':
@@ -1745,7 +1800,7 @@ class Controller {
                 const signParam = params[0];
                 await showExtensionWindow();
 
-                return this.showSignConfirm(signParam.data, needQueue);
+                return this.showSignConfirm(signParam.data, false, needQueue);
             case 'flushMemoryCache':
                 await chrome.webRequest.handlerBehaviorChanged();
                 return true;
