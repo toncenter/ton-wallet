@@ -303,7 +303,7 @@
                     'SendTransaction',
                     {
                         name: 'SendTransaction',
-                        maxMessages: 1,
+                        maxMessages: 4,
                     },
                 ],
             };

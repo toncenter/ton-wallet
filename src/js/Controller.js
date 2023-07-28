@@ -9,6 +9,9 @@ let contentScriptPorts = new Set();
 let popupPort = null;
 const queueToPopup = [];
 
+/**
+ * @type {Promise<void> | null}
+ */
 let dAppPromise = null;
 
 const createDappPromise = () => {
@@ -127,7 +130,9 @@ const DEFAULT_LEDGER_WALLET_VERSION = 'v3R1';
 
 class Controller {
     constructor() {
+        /** @type {boolean} */
         this.isTestnet = false;
+        /** @type {boolean} */
         this.isDebug = false;
         /** @type {string} */
         this.myAddress = null;
@@ -140,14 +145,21 @@ class Controller {
         /** @type {WalletContract} */
         this.walletContract = null;
         this.transactions = [];
+        /** @type {number} */
         this.updateIntervalId = 0;
-        this.lastTransactionTime = 0;
-        this.isContractInitialized = false;
+
+        /** @type {null | {totalAmount: BN, bodyHashBase64: string }} */
         this.sendingData = null;
+
+        /** @type {boolean} */
         this.processingVisible = false;
 
         this.ledgerApp = null;
+        /** @type {boolean} */
         this.isLedger = false;
+
+        /** @type {(words: string[]) => Promise<void> | null} */
+        this.afterEnterPassword = null;
 
         if (self.view) {
             self.view.controller = this;
@@ -170,7 +182,7 @@ class Controller {
 
     /**
      * @param words {string[]}
-     * @return {Promise<string>}
+     * @return {Promise<string>} base64
      */
     static async wordsToPrivateKey(words) {
         const keyPair = await TonWeb.mnemonic.mnemonicToKeyPair(words);
@@ -194,16 +206,22 @@ class Controller {
         return (await decrypt(await storage.getItem('words'), password)).split(',');
     }
 
-    async getWallet() {
+    /**
+     * @return {Promise<{seqno: number | null, balance: any}>}
+     */
+    async getMyWalletInfo() {
         return this.ton.provider.getWalletInfo(this.myAddress);
     }
 
+    /**
+     * @return {boolean}
+     */
     checkContractInitialized(getWalletResponse) {
         return getWalletResponse.account_state === "active";
     }
 
     /**
-     * @return {BN} in nanograms
+     * @return {BN} in nanotons
      */
     getBalance(getWalletResponse) {
         return new BN(getWalletResponse.balance);
@@ -290,8 +308,16 @@ class Controller {
         }
     }
 
+    /**
+     * @param limit? {number}
+     * @return {Promise<any[]>} transactions
+     */
     async getTransactions(limit = 20) {
 
+        /**
+         * @param msg   {any} raw.message
+         * @return {string}
+         */
         function getComment(msg) {
             if (!msg.msg_data) return '';
             if (msg.msg_data['@type'] !== 'msg.dataText') return '';
@@ -299,6 +325,10 @@ class Controller {
             return new TextDecoder().decode(TonWeb.utils.base64ToBytes(base64));
         }
 
+        /**
+         * @param msg {any} raw.message
+         * @return {string} '' or base64
+         */
         function getEncryptedComment(msg) {
             if (!msg.msg_data) return '';
             if (msg.msg_data['@type'] !== 'msg.dataEncryptedText') return '';
@@ -307,10 +337,10 @@ class Controller {
         }
 
         const arr = [];
-        const transactions = await this.ton.getTransactions(this.myAddress, limit);
-        for (let t of transactions) {
+        const transactions = await this.ton.getTransactions(this.myAddress, limit); // raw.transaction[]
+        for (const t of transactions) {
             let amount = new BN(t.in_msg.value);
-            for (let outMsg of t.out_msgs) {
+            for (const outMsg of t.out_msgs) {
                 amount = amount.sub(new BN(outMsg.value));
             }
             //amount = amount.sub(new BN(t.fee));
@@ -340,6 +370,7 @@ class Controller {
 
             if (to_addr) {
                 arr.push({
+                    bodyHashBase64: t.in_msg.body_hash,
                     inbound,
                     hash: t.transaction_id.hash,
                     amount: amount.toString(),
@@ -358,27 +389,32 @@ class Controller {
     }
 
     /**
-     * @param toAddress {String}  Destination address in any format
-     * @param amount    {BN}  Transfer value in nanograms
-     * @param comment   {String | Uint8Array | Cell}  Transfer comment
-     * @param keyPair    nacl.KeyPair
-     * @param stateInit? {Cell}
-     * @return Promise<{send: Function, estimateFee: Function}>
+     * @param request {{expireAt?: number, messages: [{amount: BN, toAddress: string, comment?: string | Uint8Array | Cell, needEncryptComment: boolean, stateInit?: Cell}]}}
+     * @param keyPair    {nacl.KeyPair | null} null if estimates fee, keyPair if real sending
+     * @return Promise<{{send: () => Promise<*>, getQuery: () => Promise<Cell>, estimateFee: () => Promise<*>}}> transfer object
      */
-    async sign(toAddress, amount, comment, keyPair, stateInit) {
-        const wallet = await this.getWallet(this.myAddress);
-        let seqno = wallet.seqno;
-        if (!seqno) seqno = 0;
+    async sign(request, keyPair) {
+        const walletInfo = await this.getMyWalletInfo();
 
+        /** @type {number} */
+        const seqno = walletInfo.seqno || 0;
+
+        /** @type {Uint8Array | null} */
         const secretKey = keyPair ? keyPair.secretKey : null;
-        return this.walletContract.methods.transfer({
+
+        return this.walletContract.methods.transfers({
             secretKey: secretKey,
-            toAddress: toAddress,
-            amount: amount,
             seqno: seqno,
-            payload: comment,
-            sendMode: 3,
-            stateInit
+            expireAt: request.expireAt,
+            messages: request.messages.map(message => {
+                return {
+                    toAddress: message.toAddress,
+                    amount: message.amount,
+                    payload: message.comment,
+                    sendMode: 3,
+                    stateInit: message.stateInit
+                }
+            })
         });
     }
 
@@ -565,6 +601,10 @@ class Controller {
         this.sendToView('showScreen', {name: 'createPassword'});
     }
 
+    /**
+     * @param password  {string}
+     * @return {Promise<void>}
+     */
     async savePrivateKey(password) {
         this.isLedger = false;
         await storage.setItem('isLedger', 'false');
@@ -577,6 +617,11 @@ class Controller {
         this.sendToView('privateKeySaved');
     }
 
+    /**
+     * @param oldPassword   {string}
+     * @param newPassword   {string}
+     * @return {Promise<void>}
+     */
     async onChangePassword(oldPassword, newPassword) {
         let words;
         try {
@@ -591,6 +636,10 @@ class Controller {
         this.sendToView('passwordChanged');
     }
 
+    /**
+     * @param password  {string}
+     * @return {Promise<void>}
+     */
     async onEnterPassword(password) {
         let words;
         try {
@@ -606,6 +655,9 @@ class Controller {
 
     // MAIN
 
+    /**
+     * @return {Promise<void>}
+     */
     async showMain() {
         this.sendToView('showScreen', {name: 'main', myAddress: this.myAddress});
         if (!this.walletContract) {
@@ -618,17 +670,23 @@ class Controller {
                 wc: 0
             });
         }
-        this.updateIntervalId = setInterval(() => this.update(), 5000);
+        this.updateIntervalId = setInterval(() => this.update(false), 5000);
         this.update(true);
         this.sendToDapp('ton_accounts', [this.myAddress]);
     }
 
+    /**
+     * @return {Promise<void>}
+     */
     async initDapp() {
         this.sendToDapp('ton_accounts', this.myAddress ? [this.myAddress] : []);
         this.doMagic((await storage.getItem('magic')) === 'true');
         this.doProxy((await storage.getItem('proxy')) === 'true');
     }
 
+    /**
+     * @return {Promise<void>}
+     */
     async initView() {
         if (!this.myAddress || !(await storage.getItem('words'))) {
             this.sendToView('showScreen', {name: 'start', noAnimation: true});
@@ -643,46 +701,38 @@ class Controller {
         this.sendToView('setIsTestnet', this.isTestnet);
     }
 
+    /**
+     * @param force {boolean}
+     * @return {Promise<boolean>} successfully updated
+     */
     async update(force) {
-        // if (!document.hasFocus()) {
-        //     return;
-        // }
-        const needUpdate = (this.processingVisible && this.sendingData) || (this.balance === null) || force;
+        try {
+            // if (!document.hasFocus()) {
+            //     return true;
+            // }
+            const needUpdate = (this.processingVisible && this.sendingData) || (this.balance === null) || force;
 
-        if (!needUpdate) return;
+            if (!needUpdate) return true;
 
-        const response = await this.getWallet();
+            const myWalletInfo = await this.getMyWalletInfo();
 
-        const balance = this.getBalance(response);
-        const isBalanceChanged = (this.balance === null) || (this.balance.cmp(balance) !== 0);
-        this.balance = balance;
+            const balance = this.getBalance(myWalletInfo);
+            const isBalanceChanged = (this.balance === null) || (this.balance.cmp(balance) !== 0);
+            this.balance = balance;
 
-        const isContractInitialized = this.checkContractInitialized(response) && response.seqno;
-        this.debug('isBalanceChanged', isBalanceChanged);
-        this.debug('isContractInitialized', isContractInitialized);
+            this.debug('isBalanceChanged', isBalanceChanged);
 
-        if (!this.isContractInitialized && isContractInitialized) {
-            this.isContractInitialized = true;
-        }
-
-        if (isBalanceChanged) {
-            this.getTransactions().then(txs => {
+            if (isBalanceChanged) {
+                const txs = await this.getTransactions();
                 if (txs.length > 0) {
                     this.transactions = txs;
-                    const newTxs = txs.filter(tx => Number(tx.date) > this.lastTransactionTime);
-                    this.lastTransactionTime = Number(txs[0].date);
 
                     if (this.processingVisible && this.sendingData) {
-                        for (let tx of newTxs) {
-                            const txAddr = (new Address(tx.to_addr)).toString(true, true, true);
-                            const myAddr = (new Address(this.sendingData.toAddress)).toString(true, true, true);
-                            const txAmount = tx.amount;
-                            const myAmount = '-' + this.sendingData.amount.toString();
-
-                            if (txAddr === myAddr && txAmount === myAmount) {
+                        for (let tx of txs) {
+                            if (tx.bodyHashBase64 === this.sendingData.bodyHashBase64) {
                                 this.sendToView('showPopup', {
                                     name: 'done',
-                                    message: formatNanograms(this.sendingData.amount) + ' TON have been sent'
+                                    message: formatNanograms(this.sendingData.totalAmount) + ' TON have been sent'
                                 });
                                 this.processingVisible = false;
                                 this.sendingData = null;
@@ -691,11 +741,14 @@ class Controller {
                         }
                     }
                 }
+            }
 
-                this.sendToView('setBalance', {balance: balance.toString(), txs});
-            });
-        } else {
             this.sendToView('setBalance', {balance: balance.toString(), txs: this.transactions});
+            return true;
+
+        } catch (e) {
+            console.error(e);
+            return false;
         }
     }
 
@@ -709,6 +762,11 @@ class Controller {
 
     // DECRYPT MESSAGE COMMENT
 
+    /**
+     * @param hash  {string}
+     * @param encryptedComment  {string} base64
+     * @param senderAddress {string | Address}
+     */
     onDecryptComment(hash, encryptedComment, senderAddress) {
         this.afterEnterPassword = async mnemonicWords => {
             const keyPair = await TonWeb.mnemonic.mnemonicToKeyPair(mnemonicWords);
@@ -723,207 +781,364 @@ class Controller {
         this.sendToView('showPopup', {name: 'enterPassword'});
     }
 
-    // SEND GRAMS
+    // SEND TONCOIN
 
     /**
-     * @param amount    {BN}    in nanograms
-     * @param toAddress {string}
-     * @param comment?  {string | Uint8Array | Cell}
-     * @param stateInit? {Cell}
-     * @return {Promise<BN>} in nanograms
+     * @param request {{expireAt?: number, messages: [{amount: BN, toAddress: string, comment?: string | Uint8Array | Cell, needEncryptComment: boolean, stateInit?: Cell}]}}
+     * @return {Promise<BN>} total fees in nanotons
      */
-    async getFees(amount, toAddress, comment, stateInit) {
-        if (!this.isContractInitialized && !this.publicKeyHex) {
-            return TonWeb.utils.toNano('0.010966001');
+    async getFees(request) {
+        /** @type {{expireAt?: number, messages: [{amount: BN, toAddress: string, comment?: string | Uint8Array | Cell, needEncryptComment: boolean, stateInit?: Cell}]}} */
+        const tempRequest = {
+            expireAt: request.expireAt,
+            messages: []
+        };
+
+        for (const message of request.messages) {
+            let tempComment = message.comment
+
+            if (message.needEncryptComment) {
+                const tempKeyPair = TonWeb.utils.newKeyPair();  // encrypt with random key just to get estimage fees
+                const tempEncryptedCommentCell = await encryptMessageComment(message.comment, tempKeyPair.publicKey, tempKeyPair.publicKey, tempKeyPair.secretKey, this.myAddress);
+                tempComment = tempEncryptedCommentCell;
+
+            }
+            tempRequest.messages.push({
+                amount: message.amount,
+                toAddress: message.toAddress,
+                comment: tempComment,
+                needEncryptComment: message.needEncryptComment,
+                stateInit: message.stateInit
+            });
         }
 
-        const query = await this.sign(toAddress, amount, comment, null, stateInit);
+        const query = await this.sign(tempRequest, null);
         const all_fees = await query.estimateFee();
         const fees = all_fees.source_fees;
-        const in_fwd_fee = new BN(fees.in_fwd_fee);
+        const in_fwd_fee = new BN(fees.in_fwd_fee); // External processing fee
         const storage_fee = new BN(fees.storage_fee);
         const gas_fee = new BN(fees.gas_fee);
         const fwd_fee = new BN(fees.fwd_fee);
 
-        // const tooltip_text = '<span>External processing fee ' + (fees.in_fwd_fee / 1e9).toString() + ' grams</span></br>' +
-        //     '<span>Storage fee ' + (fees.storage_fee / 1e9).toString() + ' grams</span></br>' +
-        //     '<span>Gas fee ' + (fees.gas_fee / 1e9).toString() + ' grams</span></br>' +
-        //     '<span>Forwarding fees ' + (fees.fwd_fee / 1e9).toString() + ' grams</span>';
-        //
         return in_fwd_fee.add(storage_fee).add(gas_fee).add(fwd_fee);
     };
 
     /**
-     * @param amount    {BN} in nanotons
-     * @param toAddress {string}
-     * @param comment?  {string | Uint8Array}
-     * @param needEncryptComment {boolean}
+     * @param request {{expireAt?: number, messages: [{amount: BN, toAddress: string, comment?: string | Uint8Array | Cell, needEncryptComment: boolean, stateInit?: Cell}]}}
      * @param needQueue? {boolean}
-     * @param stateInit? {Cell}
+     * @return {Promise<Cell | null>} successfully sent BoC
      */
-    async showSendConfirm(amount, toAddress, comment, needEncryptComment, needQueue, stateInit) {
+    async showSendConfirm(request, needQueue) {
         createDappPromise();
 
-        if (!amount.gte(new BN(0))) {
-            this.sendToView('sendCheckFailed', {message: 'Invalid amount'});
-            return false;
-        }
+        if (!request.messages) throw new Error('no messages');
+        if (!request.messages.length) throw new Error('no messages to send');
+        if (request.messages.length > 4) throw new Error('maximum 4 message at once');
 
-        if (amount.eq(new BN(0)) && !comment) {
-            this.sendToView('sendCheckFailed', {message: 'Invalid amount'});
-            return false;
-        }
+        /** @type {BN} */
+        let totalAmount = new BN(0);
 
-        if (!Address.isValid(toAddress)) {
-            try {
-                toAddress = toAddress.toLowerCase();
-                if (toAddress.endsWith('.ton') || toAddress.endsWith('.t.me')) {
-                    toAddress = await this.ton.dns.getWalletAddress(toAddress);
-                    if (!toAddress) {
+        for (const message of request.messages) {
+
+            // message.address
+
+            if (!message.amount) throw new Error('no amount');
+
+            if (!message.amount.gte(new BN(0))) {
+                this.sendToView('sendCheckFailed', {message: 'Amount must be positive'});
+                return null;
+            }
+
+            if (message.amount.eq(new BN(0)) && !message.comment) {
+                this.sendToView('sendCheckFailed', {message: 'You can send 0 TON only with comment'});
+                return null;
+            }
+
+            totalAmount = totalAmount.add(message.amount);
+
+            // message.toAddress
+
+            if (!message.toAddress) throw new Error('no toAddress');
+
+            if (!Address.isValid(message.toAddress)) {
+                try {
+                    message.toAddress = message.toAddress.toLowerCase();
+                    if (!message.toAddress.endsWith('.ton') && !message.toAddress.endsWith('.t.me')) {
                         throw new Error();
                     }
-                    if (!Address.isValid(toAddress)) {
+
+                    message.toAddress = await this.ton.dns.getWalletAddress(message.toAddress);
+                    if (!message.toAddress) {
                         throw new Error();
                     }
-                    toAddress = toAddress.toString(true, true, true);
+                    if (!Address.isValid(message.toAddress)) {
+                        throw new Error();
+                    }
+                    message.toAddress = message.toAddress.toString(true, true, true, this.isTestnet);
+
+                } catch (e) {
+                    this.sendToView('sendCheckFailed', {message: 'Invalid address or domain'});
+                    return null;
                 }
-            } catch (e) {
-                this.sendToView('sendCheckFailed', {message: 'Invalid address or domain'});
-                return false;
+            }
+
+            // make toAddress non-bounceable if destination contract uninitialized
+            if (!this.checkContractInitialized(await this.ton.provider.getWalletInfo(message.toAddress))) {
+                message.toAddress = (new Address(message.toAddress)).toString(true, true, false);
+            }
+
+            // message.payload
+
+            if (!message.comment) {
+                message.needEncryptComment = false;
+            }
+
+            // serialize long text comment
+            if (!message.needEncryptComment && (typeof message.comment === 'string')) {
+                if (message.comment.length > 0) {
+                    const commentBytes = new TextEncoder().encode(message.comment);
+                    const payloadBytes = new Uint8Array(4 + commentBytes.length);
+                    payloadBytes[0] = 0; // zero uint32 means simple text message
+                    payloadBytes[1] = 0;
+                    payloadBytes[2] = 0;
+                    payloadBytes[3] = 0;
+                    payloadBytes.set(commentBytes, 4);
+                    message.comment = makeSnakeCells(payloadBytes);
+                }
+            }
+
+            // get destination public key for encryption
+
+            if (message.needEncryptComment) {
+                let toPublicKey = null;
+
+                try {
+                    const toPublicKeyBN = await this.ton.provider.call2(message.toAddress, 'get_public_key');
+                    let toPublicKeyHex = toPublicKeyBN.toString(16);
+                    if (toPublicKeyHex.length % 2 !== 0) {
+                        toPublicKeyHex = '0' + toPublicKeyHex;
+                    }
+                    toPublicKey = TonWeb.utils.hexToBytes(toPublicKeyHex);
+                } catch (e) {
+                    console.error(e);
+                }
+
+                if (!toPublicKey) {
+                    this.sendToView('sendCheckCantPublicKey', {});
+                    return null;
+                }
+
+                message.toPublicKey = toPublicKey;
             }
         }
 
-        try {
-            await this.update(true);
-        } catch {
+        // check balance
+
+        if (!(await this.update(true))) {
             this.sendToView('sendCheckFailed', {message: 'API request error'});
-            return false;
+            return null;
         }
 
-        if (this.balance.lt(amount)) {
+        if (this.balance.lt(totalAmount)) {
             this.sendToView('sendCheckFailed', {
                 message: 'Not enough balance'
             });
-            return false;
-        }
-
-        if (!comment) {
-            needEncryptComment = false;
-        }
-
-        // serialize long text comment
-        if (!needEncryptComment && (typeof comment === 'string')) {
-            if (comment.length > 0) {
-                const commentBytes = new TextEncoder().encode(comment);
-                const payloadBytes = new Uint8Array(commentBytes.length + 4);
-                payloadBytes[0] = 0;
-                payloadBytes[1] = 0;
-                payloadBytes[2] = 0;
-                payloadBytes[3] = 0;
-                payloadBytes.set(commentBytes, 4);
-                comment = makeSnakeCells(payloadBytes);
-            }
+            return null;
         }
 
         let fee;
 
         try {
-            let tempComment = comment;
-
-            if (needEncryptComment) { // encrypt with random key just to get estimage fees
-                const tempKeyPair = TonWeb.utils.newKeyPair();
-                const tempEncryptedCommentCell = await encryptMessageComment(comment, tempKeyPair.publicKey, tempKeyPair.publicKey, tempKeyPair.secretKey, this.myAddress);
-                tempComment = tempEncryptedCommentCell;
-            }
-
-            fee = await this.getFees(amount, toAddress, tempComment, stateInit);
+            fee = await this.getFees(request);
         } catch (e) {
             console.error(e);
             this.sendToView('sendCheckFailed', {message: 'API request error'});
-            return false;
+            return null;
         }
 
-        if (this.balance.sub(fee).lt(amount)) {
+        if (this.balance.sub(fee).lt(totalAmount)) {
             this.sendToView('sendCheckCantPayFee', {fee});
-            return false;
+            return null;
         }
 
-        let toPublicKey = null;
-
-        if (needEncryptComment) {
-            try {
-                const toPublicKeyBN = await this.ton.provider.call2(toAddress, 'get_public_key');
-                let toPublicKeyHex = toPublicKeyBN.toString(16);
-                if (toPublicKeyHex.length % 2 !== 0) {
-                    toPublicKeyHex = '0' + toPublicKeyHex;
-                }
-                toPublicKey = TonWeb.utils.hexToBytes(toPublicKeyHex);
-            } catch (e) {
-                console.error(e);
-            }
-
-            if (!toPublicKey) {
-                this.sendToView('sendCheckCantPublicKey', {});
-                return false;
-            }
-        }
+        // start
 
         if (this.isLedger) {
+            const message = request.messages[0];
+
             this.sendToView('showPopup', {
                 name: 'sendConfirm',
-                amount: amount.toString(),
-                toAddress: toAddress,
-                fee: fee.toString(),
-                needEncryptComment: false
+                amount: message.amount.toString(),
+                toAddress: message.toAddress,
+                needEncryptComment: false,
+                fee: fee.toString()
             }, needQueue);
 
-            const sendResult = await this.send(toAddress, amount, comment, null, stateInit);
+            const sentBoc = await this.send(request, null, totalAmount);
 
-            if (sendResult) {
-                dAppPromise.resolve(sendResult);
+            if (sentBoc) {
+                dAppPromise.resolve(sentBoc);
             } else {
                 this.sendToView('sendCheckFailed', {message: 'API request error'});
-                dAppPromise.resolve(false);
+                dAppPromise.resolve(null);
             }
         } else {
             this.afterEnterPassword = async words => {
                 this.processingVisible = true;
                 this.sendToView('showPopup', {name: 'processing'});
 
-                if (needEncryptComment) {
-                    const keyPair = await TonWeb.mnemonic.mnemonicToKeyPair(words);
-                    const encryptedCommentCell = await encryptMessageComment(comment, keyPair.publicKey, toPublicKey, keyPair.secretKey, this.myAddress);
-                    comment = encryptedCommentCell;
+                const keyPair = await TonWeb.mnemonic.mnemonicToKeyPair(words);
+
+                for (const message of request.messages) {
+                    if (message.needEncryptComment) {
+                        const encryptedCommentCell = await encryptMessageComment(message.comment, keyPair.publicKey, message.toPublicKey, keyPair.secretKey, this.myAddress);
+                        message.comment = encryptedCommentCell;
+                    }
                 }
 
-                const privateKey = await Controller.wordsToPrivateKey(words);
-                const sendResult = await this.send(toAddress, amount, comment, privateKey, stateInit);
+                const privateKeyBase64 = await Controller.wordsToPrivateKey(words);
+                const sentBoc = await this.send(request, privateKeyBase64, totalAmount);
 
-                if (sendResult) {
-                    dAppPromise.resolve(sendResult);
+                this.onCancelAction = null;
+
+                if (sentBoc) {
+                    dAppPromise.resolve(sentBoc);
                 } else {
                     this.sendToView('sendCheckFailed', {message: 'API request error'});
-                    dAppPromise.resolve(false);
+                    dAppPromise.resolve(null);
                 }
             };
 
             this.onCancelAction = () => {
-                dAppPromise.resolve(false);
+                dAppPromise.resolve(null);
             };
 
             this.sendToView('showPopup', {
                 name: 'sendConfirm',
-                amount: amount.toString(),
-                toAddress: toAddress,
+                amount: totalAmount.toString(),
+                toAddress: request.messages.length === 1 ? request.messages[0].toAddress : `${request.messages.length} addresses`,
                 fee: fee.toString(),
-                needEncryptComment: needEncryptComment
+                needEncryptComment: request.messages[0].needEncryptComment // todo
             }, needQueue);
         }
 
         this.sendToView('sendCheckSucceeded');
 
-        return dAppPromise || false;
+        return dAppPromise;
     }
+
+    /**
+     * @param request {{expireAt?: number, messages: [{amount: BN, toAddress: string, comment?: string | Uint8Array | Cell, needEncryptComment: boolean, stateInit?: Cell}]}}
+     * @param privateKeyBase64 {string | null} null if Ledger
+     * @param totalAmount {BN}
+     * @return  {Promise<Cell | null>} successfully sent BoC
+     */
+    async send(request, privateKeyBase64, totalAmount) {
+        try {
+            let query;
+
+            if (this.isLedger) {
+                if (request.messages.length !== 1) {
+                    throw new Error('Ledger support only 1 message at once');
+                }
+
+                const message = request.messages[0];
+
+                if (message.needEncryptComment) {
+                    throw new Error('encrypted comment dont supported by Ledger');
+                }
+
+                if (message.stateInit) {
+                    throw new Error('stateInit dont supported by Ledger');
+                }
+
+                if (!this.ledgerApp) {
+                    await this.createLedger((await storage.getItem('ledgerTransportType')) || 'hid');
+                }
+
+                let addressFormat = 0;
+
+                const toAddress = new Address(message.toAddress);
+                if (toAddress.isUserFriendly) {
+                    addressFormat += this.ledgerApp.ADDRESS_FORMAT_USER_FRIENDLY;
+                    if (toAddress.isUrlSafe) {
+                        addressFormat += this.ledgerApp.ADDRESS_FORMAT_URL_SAFE;
+                    }
+                    if (toAddress.isBounceable) {
+                        addressFormat += this.ledgerApp.ADDRESS_FORMAT_BOUNCEABLE;
+                    }
+                    if (toAddress.isTestOnly) {
+                        addressFormat += this.ledgerApp.ADDRESS_FORMAT_TEST_ONLY;
+                    }
+                }
+
+                const wallet = await this.getMyWalletInfo();
+                const seqno = wallet.seqno || 0;
+
+                query = await this.ledgerApp.transfer(ACCOUNT_NUMBER, this.walletContract, message.toAddress, message.amount, seqno, addressFormat);
+                this.sendToView('showPopup', {name: 'processing'});
+                this.processingVisible = true;
+
+            } else {
+
+                const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKeyBase64));
+                query = await this.sign(request, keyPair);
+
+            }
+
+            /** @type {Cell | null} */
+            const sentBoc = await this.sendQuery(query);
+
+            if (!sentBoc) return null;
+
+            /** @type {Cell} */
+            const bodyCell = await query.getBody();
+            /** @type {Uint8Array} */
+            const bodyHash = await bodyCell.hash();
+
+            this.sendingData = {
+                bodyHashBase64: TonWeb.utils.bytesToBase64(bodyHash),
+                totalAmount: totalAmount
+            };
+
+            return sentBoc;
+
+        } catch (e) {
+            this.debug(e);
+            this.sendToView('closePopup');
+            alert('Error sending');
+            return null;
+        }
+    }
+
+    /**
+     * @param hexToSign   {string} hex to sign
+     * @param privateKey    {string}
+     * @returns {Promise<string>} signature in hex
+     */
+    rawSign(hexToSign, privateKey) {
+        const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
+        const signature = nacl.sign.detached(TonWeb.utils.hexToBytes(hexToSign), keyPair.secretKey);
+        return TonWeb.utils.bytesToHex(signature);
+    }
+
+    /**
+     * @param query {{send: () => Promise<*>, getQuery: () => Promise<Cell>}}
+     * @return {Promise<Cell | null>} successfully sent BoC
+     */
+    async sendQuery(query) {
+        const sendResponse = await query.send();
+        if (sendResponse["@type"] === "ok") { // response from ton-http-api
+            // wait for transaction, then show Done popup
+            return query.getQuery();
+        } else {
+            this.sendToView('closePopup');
+            alert('Send error');
+            return null;
+        }
+    }
+
+    // RAW SIGN
 
     /**
      * @param hexToSign  {string} hex data to sign
@@ -939,8 +1154,8 @@ class Controller {
 
                 this.afterEnterPassword = async words => {
                     this.sendToView('closePopup');
-                    const privateKey = await Controller.wordsToPrivateKey(words);
-                    const signature = this.rawSign(hexToSign, privateKey);
+                    const privateKeyBase64 = await Controller.wordsToPrivateKey(words);
+                    const signature = this.rawSign(hexToSign, privateKeyBase64);
                     resolve(signature);
                 };
 
@@ -953,103 +1168,6 @@ class Controller {
         });
     }
 
-    /**
-     * @param toAddress {string}
-     * @param amount    {BN} in nanograms
-     * @param comment   {string | Uint8Array | Cell}
-     * @param privateKey    {string}
-     * @param stateInit? {Cell}
-     * @return  {Promise<boolean>}
-     */
-    async send(toAddress, amount, comment, privateKey, stateInit) {
-        try {
-            let addressFormat = 0;
-            if (this.isLedger) {
-
-                if (stateInit) {
-                    throw new Error('stateInit dont supported by Ledger');
-                }
-
-                if (!this.ledgerApp) {
-                    await this.createLedger((await storage.getItem('ledgerTransportType')) || 'hid');
-                }
-
-                const toAddress_ = new Address(toAddress);
-                if (toAddress_.isUserFriendly) {
-                    addressFormat += this.ledgerApp.ADDRESS_FORMAT_USER_FRIENDLY;
-                    if (toAddress_.isUrlSafe) {
-                        addressFormat += this.ledgerApp.ADDRESS_FORMAT_URL_SAFE;
-                    }
-                    if (toAddress_.isBounceable) {
-                        addressFormat += this.ledgerApp.ADDRESS_FORMAT_BOUNCEABLE;
-                    }
-                    if (toAddress_.isTestOnly) {
-                        addressFormat += this.ledgerApp.ADDRESS_FORMAT_TEST_ONLY;
-                    }
-                }
-            }
-
-            if (!this.checkContractInitialized(await this.ton.provider.getWalletInfo(toAddress))) {
-                toAddress = (new Address(toAddress)).toString(true, true, false);
-            }
-
-            if (this.isLedger) {
-
-                const wallet = await this.getWallet(this.myAddress);
-                let seqno = wallet.seqno;
-                if (!seqno) seqno = 0;
-
-                const query = await this.ledgerApp.transfer(ACCOUNT_NUMBER, this.walletContract, toAddress, amount, seqno, addressFormat);
-                this.sendingData = {toAddress: toAddress, amount: amount, comment: comment, query: query};
-
-                this.sendToView('showPopup', {name: 'processing'});
-                this.processingVisible = true;
-
-                return await this.sendQuery(query);
-
-            } else {
-
-                const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
-                const query = await this.sign(toAddress, amount, comment, keyPair, stateInit);
-                this.sendingData = {toAddress: toAddress, amount: amount, comment: comment, query: query};
-                return await this.sendQuery(query);
-
-            }
-        } catch (e) {
-            this.debug(e);
-            this.sendToView('closePopup');
-            alert('Error sending');
-            return false;
-        }
-    }
-
-    /**
-     * @param hex   {string} hex to sign
-     * @param privateKey    {string}
-     * @returns {Promise<string>} signature in hex
-     */
-    rawSign(hex, privateKey) {
-        const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKey));
-        const signature = nacl.sign.detached(TonWeb.utils.hexToBytes(hex), keyPair.secretKey);
-        return TonWeb.utils.bytesToHex(signature);
-    }
-
-    /**
-     * @param query - return by sign()
-     * @return {Promise<boolean>}
-     */
-    async sendQuery(query) {
-        const sendResponse = await query.send();
-        if (sendResponse["@type"] === "ok") {
-            // wait for transaction, then show Done popup
-            return await query.getQuery();
-        } else {
-            this.sendToView('closePopup');
-            alert('Send error');
-            return false;
-        }
-    }
-
     // DISCONNECT WALLET
 
     clearVars() {
@@ -1058,8 +1176,6 @@ class Controller {
         this.balance = null;
         this.walletContract = null;
         this.transactions = [];
-        this.lastTransactionTime = 0;
-        this.isContractInitialized = false;
         this.sendingData = null;
         this.processingVisible = false;
         this.isLedger = false;
@@ -1121,6 +1237,11 @@ class Controller {
         }
     }
 
+    /**
+     * @param method    {string}
+     * @param params   {Object}
+     * @return {Promise<void>}
+     */
     async onViewMessage(method, params) {
         switch (method) {
             case 'showScreen':
@@ -1167,7 +1288,16 @@ class Controller {
                 await this.onChangePassword(params.oldPassword, params.newPassword);
                 break;
             case 'onSend':
-                await this.showSendConfirm(new BN(params.amount), params.toAddress, params.comment, params.needEncryptComment);
+                await this.showSendConfirm({
+                    messages: [
+                        {
+                            amount: new BN(params.amount),
+                            toAddress: params.toAddress,
+                            comment: params.comment,
+                            needEncryptComment: params.needEncryptComment
+                        }
+                    ]
+                }, false);
                 break;
             case 'onBackupDone':
                 await this.onBackupDone();
@@ -1306,11 +1436,16 @@ class Controller {
         const messageBuffer = new Uint8Array(prefixBuffer.byteLength + addressBuffer.byteLength + domainLengthBuffer.byteLength + domainBuffer.byteLength + timestampBuffer.byteLength + payloadBuffer.byteLength);
 
         let offset = 0;
-        messageBuffer.set(prefixBuffer, offset); offset += prefixBuffer.byteLength;
-        messageBuffer.set(addressBuffer, offset); offset += addressBuffer.byteLength;
-        messageBuffer.set(domainLengthBuffer, offset); offset += domainLengthBuffer.byteLength;
-        messageBuffer.set(domainBuffer, offset); offset += domainBuffer.byteLength;
-        messageBuffer.set(new Uint8Array(timestampBuffer.buffer), offset); offset += 8;
+        messageBuffer.set(prefixBuffer, offset);
+        offset += prefixBuffer.byteLength;
+        messageBuffer.set(addressBuffer, offset);
+        offset += addressBuffer.byteLength;
+        messageBuffer.set(domainLengthBuffer, offset);
+        offset += domainLengthBuffer.byteLength;
+        messageBuffer.set(domainBuffer, offset);
+        offset += domainBuffer.byteLength;
+        messageBuffer.set(new Uint8Array(timestampBuffer.buffer), offset);
+        offset += 8;
         messageBuffer.set(payloadBuffer, offset);
 
         const ffffPrefix = new Uint8Array([0xff, 0xff]);
@@ -1319,8 +1454,10 @@ class Controller {
         const messageBufferHash = new Uint8Array(await TonWeb.utils.sha256(messageBuffer));
         const bufferToSign = new Uint8Array(ffffPrefix.byteLength + tonconnectPrefix.byteLength + messageBufferHash.byteLength);
         offset = 0;
-        bufferToSign.set(ffffPrefix, offset); offset += ffffPrefix.byteLength;
-        bufferToSign.set(tonconnectPrefix, offset); offset += tonconnectPrefix.byteLength;
+        bufferToSign.set(ffffPrefix, offset);
+        offset += ffffPrefix.byteLength;
+        bufferToSign.set(tonconnectPrefix, offset);
+        offset += tonconnectPrefix.byteLength;
         bufferToSign.set(messageBufferHash, offset);
 
         const hexToSign = TonWeb.utils.bytesToHex(new Uint8Array(await TonWeb.utils.sha256(bufferToSign)));
@@ -1360,8 +1497,8 @@ class Controller {
                 }
 
                 const data = params[0];
-                const needTonProof = data.items.find((item) => item.name === 'ton_proof');
-                if (needTonProof ||
+                const tonProof = data.items.find((item) => item.name === 'ton_proof');
+                if (tonProof ||
                     !storage.getItem('tonconnect_' + this.myAddress + '_' + (this.isTestnet ? 'testnet' : 'mainnet') + '_' + origin)) {
                     // show confirmation
                 }
@@ -1380,8 +1517,8 @@ class Controller {
                 const connectResult = [
                     await this.createTonAddrItemReply(needQueue),
                 ];
-                if (needTonProof) {
-                    connectResult.push(await this.createTonProofItemReply(origin, needTonProof.payload, needQueue))
+                if (tonProof) {
+                    connectResult.push(await this.createTonProofItemReply(origin, tonProof.payload, needQueue))
                 }
 
                 return connectResult;
@@ -1407,6 +1544,8 @@ class Controller {
                 const tx = params[0];
                 console.log('tonConnect_sendTransaction', params, origin, tx);
 
+                // check is dapp connected to wallet
+
                 if (!this.myAddress) {
                     throw {
                         message: 'Missing connection',
@@ -1420,10 +1559,27 @@ class Controller {
                     }
                 }
 
-                if (!(tx.valid_until >= Date.now() / 1000)) {
-                    throw {
-                        message: 'invalid or expired validUntil',
-                        code: 1 // BAD_REQUEST_ERROR
+                // check tonConnect_sendTransaction request
+
+                /** @type {number | undefined} */
+                let expireAt = undefined;
+
+                if (tx.valid_until) {
+                    expireAt = Number(tx.valid_until);
+                    if (isNaN(expireAt)) {
+                        throw {
+                            message: 'invalid validUntil',
+                            code: 1 // BAD_REQUEST_ERROR
+                        }
+                    }
+                    if (expireAt > 9999999999) {
+                        expireAt = expireAt / 1000; // convert millis to seconds, todo: it's not good
+                    }
+                    if (expireAt < Date.now() / 1000) {
+                        throw {
+                            message: 'expired',
+                            code: 1 // BAD_REQUEST_ERROR
+                        }
                     }
                 }
 
@@ -1466,8 +1622,8 @@ class Controller {
                     }
                 }
 
-                try {
-                    for (const message of tx.messages) {
+                const convertTonconnectMessage = (message) => {
+                    try {
                         if (!message.address) {
                             throw new Error('no address')
                         }
@@ -1484,12 +1640,25 @@ class Controller {
                         if (message.stateInit) {
                             message.stateInit = TonWeb.boc.Cell.oneFromBoc(TonWeb.utils.base64ToBytes(message.stateInit));
                         }
+
+                        return {
+                            amount: message.amount,
+                            toAddress: message.address,
+                            comment: message.payload,
+                            needEncryptComment: false,
+                            stateInit: message.stateInit
+                        }
+                    } catch (e) {
+                        throw {
+                            message: e.message,
+                            code: 1 // BAD_REQUEST_ERROR
+                        }
                     }
-                } catch (e) {
-                    throw {
-                        message: e.message,
-                        code: 1 // BAD_REQUEST_ERROR
-                    }
+                }
+
+                const messages = [];
+                for (const message of tx.messages) {
+                    messages.push(convertTonconnectMessage(message));
                 }
 
                 await showExtensionWindow();
@@ -1498,12 +1667,18 @@ class Controller {
                     name: 'loader',
                 });
 
-                const firstMessage = tx.messages[0];
+                /** @type {Cell | null} */
+                const sentBoc = await this.showSendConfirm(
+                    {
+                        expireAt: expireAt,
+                        messages
+                    },
+                    needQueue
+                );
 
-                const sentBoc = await this.showSendConfirm(firstMessage.amount, firstMessage.address, firstMessage.payload, false, needQueue, firstMessage.stateInit);
                 if (!sentBoc) {
                     this.sendToView('closePopup');
-                    throw  {
+                    throw {
                         message: 'Reject request',
                         code: 300 // USER_REJECTS_ERROR
                     }
@@ -1550,7 +1725,18 @@ class Controller {
                     name: 'loader',
                 });
 
-                const result = await this.showSendConfirm(new BN(param.value), param.to, param.data, false, needQueue, param.stateInit);
+                const result = await this.showSendConfirm(
+                    {
+                        messages: [{
+                            amount: new BN(param.value),
+                            toAddress: param.to,
+                            comment: param.data,
+                            needEncryptComment: false,
+                            stateInit: param.stateInit,
+                        }]
+                    },
+                    needQueue
+                );
                 if (!result) {
                     this.sendToView('closePopup');
                 }
