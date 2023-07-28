@@ -1550,6 +1550,7 @@ class Controller {
 
         switch (method) {
             case 'tonConnect_connect':
+                await showExtensionWindow();
                 if (!this.myAddress) {
                     throw {
                         message: 'Missing connection',
@@ -1596,6 +1597,8 @@ class Controller {
                 return;
 
             case 'tonConnect_sendTransaction':
+                await showExtensionWindow();
+
                 const tx = params[0];
                 console.log('tonConnect_sendTransaction', params, origin, tx);
 
@@ -1715,8 +1718,6 @@ class Controller {
                 for (const message of tx.messages) {
                     messages.push(convertTonconnectMessage(message));
                 }
-
-                await showExtensionWindow();
 
                 this.sendToView('showPopup', {
                     name: 'loader',
