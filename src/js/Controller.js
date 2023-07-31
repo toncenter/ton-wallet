@@ -717,27 +717,22 @@ class Controller {
             const myWalletInfo = await this.getMyWalletInfo();
 
             const balance = this.getBalance(myWalletInfo);
-            const isBalanceChanged = (this.balance === null) || (this.balance.cmp(balance) !== 0);
             this.balance = balance;
 
-            this.debug('isBalanceChanged', isBalanceChanged);
+            const txs = await this.getTransactions();
+            if (txs.length > 0) {
+                this.transactions = txs;
 
-            if (isBalanceChanged) {
-                const txs = await this.getTransactions();
-                if (txs.length > 0) {
-                    this.transactions = txs;
-
-                    if (this.processingVisible && this.sendingData) {
-                        for (let tx of txs) {
-                            if (tx.bodyHashBase64 === this.sendingData.bodyHashBase64) {
-                                this.sendToView('showPopup', {
-                                    name: 'done',
-                                    message: formatNanograms(this.sendingData.totalAmount) + ' TON have been sent'
-                                });
-                                this.processingVisible = false;
-                                this.sendingData = null;
-                                break;
-                            }
+                if (this.processingVisible && this.sendingData) {
+                    for (let tx of txs) {
+                        if (tx.bodyHashBase64 === this.sendingData.bodyHashBase64) {
+                            this.sendToView('showPopup', {
+                                name: 'done',
+                                message: formatNanograms(this.sendingData.totalAmount) + ' TON have been sent'
+                            });
+                            this.processingVisible = false;
+                            this.sendingData = null;
+                            break;
                         }
                     }
                 }
