@@ -1568,7 +1568,7 @@ class Controller {
                     await this.showConnectConfirm(needQueue);
                 }
 
-                storage.setItem('tonconnect_' + this.myAddress + '_' + (this.isTestnet ? 'testnet' : 'mainnet') + '_' + origin, 'true');
+                await storage.setItem('tonconnect_' + this.myAddress + '_' + (this.isTestnet ? 'testnet' : 'mainnet') + '_' + origin, 'true');
 
                 const connectResult = [
                     await this.createTonAddrItemReply(needQueue),
@@ -1610,7 +1610,7 @@ class Controller {
                         code: 1 // BAD_REQUEST_ERROR
                     }
                 }
-                if (!storage.getItem('tonconnect_' + this.myAddress + '_' + (this.isTestnet ? 'testnet' : 'mainnet') + '_' + origin)) {
+                if (!(await storage.getItem('tonconnect_' + this.myAddress + '_' + (this.isTestnet ? 'testnet' : 'mainnet') + '_' + origin))) {
                     throw {
                         message: 'dApp don\'t have an access to wallet',
                         code: 1 // BAD_REQUEST_ERROR
@@ -1665,7 +1665,7 @@ class Controller {
                         }
                     }
 
-                    if (tx.network === TONCONNECT_MAINNET && this.isTestnet) {
+                    if ((tx.network === TONCONNECT_TESTNET) !== !!this.isTestnet) {
                         throw {
                             message: 'Different network',
                             code: 1 // BAD_REQUEST_ERROR
