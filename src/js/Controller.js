@@ -312,7 +312,7 @@ class Controller {
      * @param limit? {number}
      * @return {Promise<any[]>} transactions
      */
-    async getTransactions(limit = 20) {
+    async getTransactions(limit = 10) {
 
         /**
          * @param msg   {any} raw.message
@@ -702,6 +702,20 @@ class Controller {
     }
 
     /**
+     * @return {Promise<boolean>} successfully updated
+     */
+    async updateBalance() {
+        try {
+            const myWalletInfo = await this.getMyWalletInfo();
+            this.balance = this.getBalance(myWalletInfo);
+            return true;
+        } catch (e) {
+            console.error(e);
+            return false;
+        }
+    }
+
+    /**
      * @param force {boolean}
      * @return {Promise<boolean>} successfully updated
      */
@@ -714,10 +728,7 @@ class Controller {
 
             if (!needUpdate) return true;
 
-            const myWalletInfo = await this.getMyWalletInfo();
-
-            const balance = this.getBalance(myWalletInfo);
-            this.balance = balance;
+            if (!(await this.updateBalance())) return false;
 
             const txs = await this.getTransactions();
             if (txs.length > 0) {
@@ -738,7 +749,7 @@ class Controller {
                 }
             }
 
-            this.sendToView('setBalance', {balance: balance.toString(), txs: this.transactions});
+            this.sendToView('setBalance', {balance: this.balance.toString(), txs: this.transactions});
             return true;
 
         } catch (e) {
@@ -929,7 +940,7 @@ class Controller {
 
         // check balance
 
-        if (!(await this.update(true))) {
+        if (!(await this.updateBalance())) {
             this.sendToView('sendCheckFailed', {message: 'API request error'});
             return null;
         }
@@ -1753,7 +1764,7 @@ class Controller {
                     walletVersion: walletVersion
                 }];
             case 'ton_getBalance':
-                await this.update(true);
+                await this.updateBalance();
                 return (this.balance ? this.balance.toString() : '');
             case 'ton_sendTransaction':
                 const param = params[0];
