@@ -63,7 +63,7 @@ function triggerClass(div, className, duration) {
 }
 
 /**
- * @param params    {{tag: string, clazz?: string | string[], text?: string, child?: HTMLElement[], style?: Map<string, string>}}
+ * @param params    {{tag: string, clazz?: string | string[], text?: string, child?: HTMLElement[], style?: Object<string, string>}}
  * @return {HTMLElement}
  */
 function createElement(params) {

@@ -1,7 +1,14 @@
 import {$$} from "./Utils.js";
 
-var lotties = {};
+/**
+ * @type {Object<string, any>}
+ */
+const lotties = {};
 
+/**
+ * @param div   {HTMLElement}
+ * @return {Promise<void>}
+ */
 function initLottie(div) {
     return new Promise((resolve, reject) => {
         const url = div.getAttribute('src');
@@ -49,6 +56,9 @@ function initLottie(div) {
     });
 }
 
+/**
+ * @return {Promise<void>}
+ */
 async function initLotties() {
     const divs = $$('tgs-player');
     for (let i = 0; i < divs.length; i++) {
@@ -59,6 +69,11 @@ async function initLotties() {
     }
 }
 
+/**
+ * @param lottie?   {any}
+ * @param visible   {boolean}
+ * @param params?    {{hideDelay?: number}}
+ */
 function toggleLottie(lottie, visible, params) {
     if (!lottie) return;
 
