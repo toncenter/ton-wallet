@@ -1,7 +1,7 @@
 import {$$} from "./Utils.js";
 
 /**
- * @type {Object<string, any>}
+ * @type {Object<string, any>} lottie name -> lottie element
  */
 const lotties = {};
 

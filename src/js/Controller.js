@@ -1269,6 +1269,13 @@ class Controller {
 
     // TRANSPORT WITH VIEW
 
+    /**
+     * @param method    {string}
+     * @param params?   {any}  boolean or object, not array
+     * @param needQueue? {boolean}
+     * @param needResult? {boolean}
+     * @return {void | Promise<{magic: (string|null), proxy: (string|null), address: (string|null), words: (string|null), walletVersion: (string|null)}>}
+     */
     sendToView(method, params, needQueue, needResult) {
         if (self.view) {
             const result = self.view.onMessage(method, params);
@@ -1300,7 +1307,7 @@ class Controller {
 
     /**
      * @param method    {string}
-     * @param params   {Object}
+     * @param params?   {any}  boolean or object, not array
      * @return {Promise<void>}
      */
     async onViewMessage(method, params) {

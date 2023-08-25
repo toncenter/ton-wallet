@@ -14,7 +14,9 @@ const ed25519 = self.nobleEd25519;
  */
 const hmac_sha512 = async (key, data) => {
     const hmacAlgo = {name: "HMAC", hash: "SHA-512"};
+    /** @type {CryptoKey} */
     const hmacKey = await self.crypto.subtle.importKey("raw", key, hmacAlgo, false, ["sign"]);
+    /** @type {ArrayBuffer} */
     const signature = await self.crypto.subtle.sign(hmacAlgo, hmacKey, data);
     const result = new Uint8Array(signature);
     if (result.length !== 512 / 8) throw new Error();
@@ -23,7 +25,7 @@ const hmac_sha512 = async (key, data) => {
 
 /**
  * @param hash  {Uint8Array}
- * @return {Promise<any>}
+ * @return {Promise<any>} aesjs.ModeOfOperation.cbc
  */
 const getAesCbcState = async (hash) => {
     if (hash.length < 48) throw new Error();
@@ -44,6 +46,7 @@ const getAesCbcState = async (hash) => {
  */
 const getRandomPrefix = (dataLength, minPadding) => {
     const prefixLength = ((minPadding + 15 + dataLength) & -16) - dataLength;
+    /** @type {Uint8Array} */
     const prefix = self.crypto.getRandomValues(new Uint8Array(prefixLength));
     prefix[0] = prefixLength;
     if ((prefixLength + dataLength) % 16 !== 0) throw new Error();
@@ -67,13 +70,17 @@ const combineSecrets = async (a, b) => {
  */
 const encryptDataWithPrefix = async (data, sharedSecret, salt) => {
     if (data.length % 16 !== 0) throw new Error();
+    /** @type {Uint8Array} */
     const dataHash = await combineSecrets(salt, data);
+    /** @type {Uint8Array} */
     const msgKey = dataHash.slice(0, 16);
 
     const res = new Uint8Array(data.length + 16);
     res.set(msgKey, 0);
 
+    /** @type {Uint8Array} */
     const cbcStateSecret = await combineSecrets(sharedSecret, msgKey);
+    /** @type {Uint8Array} */
     const encrypted = (await getAesCbcState(cbcStateSecret)).encrypt(data);
     res.set(encrypted, 16);
 
@@ -87,6 +94,7 @@ const encryptDataWithPrefix = async (data, sharedSecret, salt) => {
  * @return {Promise<Uint8Array>}
  */
 const encryptDataImpl = async (data, sharedSecret, salt) => {
+    /** @type {Uint8Array} */
     const prefix = await getRandomPrefix(data.length, 16);
     const combined = new Uint8Array(prefix.length + data.length);
     combined.set(prefix, 0);
@@ -103,8 +111,10 @@ const encryptDataImpl = async (data, sharedSecret, salt) => {
  * @return {Promise<Uint8Array>}
  */
 export const encryptData = async (data, myPublicKey, theirPublicKey, privateKey, salt) => {
+    /** @type {Uint8Array} */
     const sharedSecret = await ed25519.getSharedSecret(privateKey, theirPublicKey);
 
+    /** @type {Uint8Array} */
     const encrypted = await encryptDataImpl(data, sharedSecret, salt);
     const prefixedEncrypted = new Uint8Array(myPublicKey.length + encrypted.length);
     for (let i = 0; i < myPublicKey.length; i++) {
@@ -121,6 +131,7 @@ export const encryptData = async (data, myPublicKey, theirPublicKey, privateKey,
 export const makeSnakeCells = (bytes) => {
     const ROOT_CELL_BYTE_LENGTH = 35 + 4;
     const CELL_BYTE_LENGTH = 127;
+    /** @type {Cell} */
     const root = new TonWeb.boc.Cell();
     root.bits.writeBytes(bytes.slice(0, Math.min(bytes.length, ROOT_CELL_BYTE_LENGTH)));
 
@@ -129,8 +140,10 @@ export const makeSnakeCells = (bytes) => {
         throw new Error('Text too long');
     }
 
+    /** @type {Cell} */
     let cell = root;
     for (let i = 0; i < cellCount; i++) {
+        /** @type {Cell} */
         const prevCell = cell;
         cell = new TonWeb.boc.Cell();
         const cursor = ROOT_CELL_BYTE_LENGTH + i * CELL_BYTE_LENGTH;
@@ -156,10 +169,13 @@ export const encryptMessageComment = async (comment, myPublicKey, theirPublicKey
         myPrivateKey = myPrivateKey.slice(0, 32); // convert nacl private key
     }
 
+    /** @type {Uint8Array} */
     const commentBytes = new TextEncoder().encode(comment);
 
+    /** @type {Uint8Array} */
     const salt = new TextEncoder().encode(new TonWeb.utils.Address(senderAddress).toString(true, true, true, false));
 
+    /** @type {Uint8Array} */
     const encryptedBytes = await encryptData(commentBytes, myPublicKey, theirPublicKey, myPrivateKey, salt);
 
     const payload = new Uint8Array(encryptedBytes.length + 4);
@@ -180,8 +196,11 @@ export const encryptMessageComment = async (comment, myPublicKey, theirPublicKey
  * @return {Promise<Uint8Array>}
  */
 const doDecrypt = async (cbcStateSecret, msgKey, encryptedData, salt) => {
+    /** @type {Uint8Array} */
     const decryptedData = (await getAesCbcState(cbcStateSecret)).decrypt(encryptedData);
+    /** @type {Uint8Array} */
     const dataHash = await combineSecrets(salt, decryptedData);
+    /** @type {Uint8Array} */
     const gotMsgKey = dataHash.slice(0, 16);
     if (msgKey.join(',') !== gotMsgKey.join(',')) {
         throw new Error('Failed to decrypt: hash mismatch')
@@ -202,9 +221,13 @@ const doDecrypt = async (cbcStateSecret, msgKey, encryptedData, salt) => {
 const decryptDataImpl = async (encryptedData, sharedSecret, salt) => {
     if (encryptedData.length < 16) throw new Error('Failed to decrypt: data is too small');
     if (encryptedData.length % 16 !== 0) throw new Error('Failed to decrypt: data size is not divisible by 16');
+    /** @type {Uint8Array} */
     const msgKey = encryptedData.slice(0, 16);
+    /** @type {Uint8Array} */
     const data = encryptedData.slice(16);
+    /** @type {Uint8Array} */
     const cbcStateSecret = await combineSecrets(sharedSecret, msgKey);
+    /** @type {Uint8Array} */
     const res = await doDecrypt(cbcStateSecret, msgKey, data, salt);
     return res;
 }
@@ -224,8 +247,10 @@ export const decryptData = async (data, publicKey, privateKey, salt) => {
     for (let i = 0; i < publicKey.length; i++) {
         theirPublicKey[i] = data[i] ^ publicKey[i];
     }
+    /** @type {Uint8Array} */
     const sharedSecret = await ed25519.getSharedSecret(privateKey, theirPublicKey);
 
+    /** @type {Uint8Array} */
     const decrypted = await decryptDataImpl(data.slice(publicKey.length), sharedSecret, salt);
     return decrypted;
 }
@@ -242,8 +267,10 @@ export const decryptMessageComment = async (encryptedData, myPublicKey, myPrivat
         myPrivateKey = myPrivateKey.slice(0, 32); // convert nacl private key
     }
 
+    /** @type {Uint8Array} */
     const salt = new TextEncoder().encode(new TonWeb.utils.Address(senderAddress).toString(true, true, true, false));
 
+    /** @type {Uint8Array} */
     const decryptedBytes = await decryptData(encryptedData, myPublicKey, myPrivateKey, salt);
     return new TextDecoder().decode(decryptedBytes);
 }

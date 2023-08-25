@@ -18,7 +18,7 @@ function $$(selector) {
 
 /**
  * @param div   {HTMLElement}
- * @param visible {boolean | 'none' | 'block' | 'flex'}
+ * @param visible {boolean | 'none' | 'block' | 'flex' | 'inline-block'}
  */
 function toggle(div, visible) {
     let d = visible;
@@ -63,7 +63,7 @@ function triggerClass(div, className, duration) {
 }
 
 /**
- * @param params    {{tag: string, clazz?: string | string[], text?: string, child?: HTMLElement[], style?: Object<string, string>}}
+ * @param params    {{tag: string, clazz?: string | (string | undefined)[], text?: string, child?: (HTMLElement | undefined)[], style?: Object<string, string>}}
  * @return {HTMLElement}
  */
 function createElement(params) {
@@ -117,7 +117,7 @@ function clearElement(el) {
 
 /**
  * @param input {HTMLElement}
- * @param handler   {() => void}
+ * @param handler   {(e: Event) => void}
  */
 function onInput(input, handler) {
     input.addEventListener('change', handler);
@@ -166,6 +166,7 @@ function formatDateFull(date) {
  * @return {boolean}
  */
 function copyToClipboard(text) {
+    /** @type {HTMLTextAreaElement} */
     const textArea = document.createElement("textarea");
     textArea.value = text;
     textArea.style.position = "fixed";  //avoid scrolling to bottom
@@ -173,6 +174,7 @@ function copyToClipboard(text) {
     textArea.focus();
     textArea.select();
 
+    /** @type {boolean} */
     let result = false;
     try {
         result = document.execCommand('copy');

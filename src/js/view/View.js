@@ -1,29 +1,35 @@
 import {
-    $, $$, clearElement,
+    $,
+    $$,
+    clearElement,
+    CONFIRM_WORDS_COUNT,
     copyToClipboard,
     createElement,
     formatDate,
     formatDateFull,
     formatTime,
     IMPORT_WORDS_COUNT,
-    CONFIRM_WORDS_COUNT,
-    onInput, setAddr,
+    onInput,
+    setAddr,
     toggle,
     toggleFaded,
     triggerClass
 } from "./Utils.js";
 
-import {initLotties, toggleLottie, lotties} from "./Lottie.js";
+import {initLotties, lotties, toggleLottie} from "./Lottie.js";
 import DropDown from "./DropDown.js";
 
-const IS_EXTENSION = !!(self.chrome && chrome.runtime && chrome.runtime.onConnect);
-
 const toNano = TonWeb.utils.toNano;
-const formatNanograms = TonWeb.utils.fromNano;
+const fromNano = TonWeb.utils.fromNano;
 const BN = TonWeb.utils.BN;
 
+const IS_EXTENSION = !!(self.chrome && chrome.runtime && chrome.runtime.onConnect);
 const IS_FIREFOX = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
 
+/**
+ * @param text  {string}
+ * @param containerSelector {string}
+ */
 const drawQRCode = (text, containerSelector) => {
     const $container = $(containerSelector);
 
@@ -47,22 +53,39 @@ const drawQRCode = (text, containerSelector) => {
 };
 
 class View {
+    /**
+     * @param mnemonicWords {string[]}
+     */
     constructor(mnemonicWords) {
-        /** @type   {[string]} */
+        /** @type   {string[]} */
         this.mnemonicWords = mnemonicWords;
-        /** @type {Controller} */
+        /** @type {Controller | null} */
         this.controller = null;
+        /** @type {any | null} */
         this.port = null;
-        /** @type   {string} */
+        /** @type   {string | null} */
         this.myAddress = null;
-        /** @type   {BN} */
+        /** @type   {string | null} */
+        this.address = null;
+        /** @type   {BN | null} */
         this.balance = null;
-        /** @type   {string} */
+        /** @type   {string | null} */
         this.currentScreenName = null;
         /** @type   {boolean} */
         this.isTestnet = false;
         /** @type   {string} */
-        this.popup = ''; // current opened popup
+        this.popup = ''; // current opened popup name
+
+        /** @type   {boolean} */
+        this.isBack = false;
+        /** @type   {number} */
+        this.backupShownTime = 0;
+
+        /** @type {any | null} */
+        this.currentOpenTransaction = null;
+
+        /** @type {string | null} */
+        this.currentTransactionAddr = null;
 
         this.createWordInputs({
             count: IMPORT_WORDS_COUNT,
@@ -79,11 +102,17 @@ class View {
             multiColumns: false
         });
 
+        /** @type {Promise<void>} */
         this._initLotties = initLotties().then(() => {
-            toggleLottie(lotties[this.currentScreenName], true);
-            toggleLottie(lotties['symbol'], this.currentScreenName === 'main');
+            if (this.currentScreenName) {
+                toggleLottie(lotties[this.currentScreenName], true);
+                toggleLottie(lotties['symbol'], this.currentScreenName === 'main');
+            }
         });
 
+        /**
+         * @param e {Event}
+         */
         function resetErrors(e) {
             const input = e.target;
             input.classList.remove('error');
@@ -98,6 +127,10 @@ class View {
         onInput($('#changePassword_newInput'), resetErrors);
         onInput($('#changePassword_repeatInput'), resetErrors);
 
+        /**
+         * @param e {ClipboardEvent}
+         * @return {string}
+         */
         function getClipboardData(e) {
             const s = (e.clipboardData || window.clipboardData).getData('text');
             try {
@@ -109,7 +142,9 @@ class View {
 
         $('#toWalletInput').addEventListener('paste', e => {
             const urlString = getClipboardData(e);
-            let parsedTransferUrl;
+
+            /** @type {{address: string, amount?: string, text?: string} | null } */
+            let parsedTransferUrl = null;
             try {
                 parsedTransferUrl = TonWeb.utils.parseTransferUrl(urlString);
             } catch (e) {
@@ -121,7 +156,7 @@ class View {
             $('#toWalletInput').value = parsedTransferUrl.address;
 
             if (parsedTransferUrl.amount) {
-                $('#amountInput').value = TonWeb.utils.fromNano(new BN(parsedTransferUrl.amount));
+                $('#amountInput').value = fromNano(new BN(parsedTransferUrl.amount));
             }
 
             if (parsedTransferUrl.text) {
@@ -137,6 +172,7 @@ class View {
         $("#start_createBtn").addEventListener('click', () => this.sendMessage('showScreen', {name: 'created'}));
         $("#start_importBtn").addEventListener('click', () => this.sendMessage('showScreen', {name: 'import'}));
 
+        /** @type {boolean} */
         let needShowLedger = false;
         try {
             needShowLedger = window.location.href.indexOf('ledgerReview') > -1;
@@ -191,8 +227,8 @@ class View {
         $('#createdContinueButton').addEventListener('click', () => this.sendMessage('createPrivateKey'));
 
         $('#backup_continueBtn').addEventListener('click', () => {
-            const currentTime = +new Date();
-            if (currentTime - this.backupShownTime < 60000) { //1 minute
+            const currentTime = Date.now();
+            if (currentTime - this.backupShownTime < 60000) { // 1 minute
                 this.showAlert({
                     title: 'Sure done?',
                     message: 'You didn\'t have enough time to write these words down.',
@@ -255,7 +291,9 @@ class View {
 
 
         $('#createPassword_continueBtn').addEventListener('click', (e) => {
+            /** @type {string} */
             const password = $('#createPassword_input').value;
+            /** @type {string} */
             const passwordRepeat = $('#createPassword_repeatInput').value;
 
             const isEmpty = password.length === 0 && !this.isTestnet;
@@ -336,14 +374,18 @@ class View {
         $('#connectLedger_cancelBtn').addEventListener('click', () => this.closePopup());
 
         $('#send_btn').addEventListener('click', (e) => {
+            /** @type {string} */
             const amount = $('#amountInput').value;
+            /** @type {BN} */
             const amountNano = toNano(amount);
             if (!amountNano.gt(new BN(0)) || this.balance.lt(amountNano)) {
                 $('#amountInput').classList.add('error');
                 return;
             }
 
+            /** @type {string} */
             const toAddressString = $('#toWalletInput').value;
+            /** @type {Address | null} */
             let toAddress = null;
             try {
                 toAddress = new TonWeb.utils.Address(toAddressString);
@@ -354,7 +396,9 @@ class View {
                 return;
             }
 
+            /** @type {string} */
             const comment = $('#commentInput').value;
+            /** @type {boolean} */
             const needEncryptComment = $('#encryptCommentCheckbox').checked;
             if (comment.length > 1024) {
                 $('#commentInput').classList.add('error');
@@ -398,7 +442,12 @@ class View {
             }
 
             this.toggleButtonLoader(e.currentTarget, true);
-            this.sendMessage('onSend', {amount: amountNano.toString(), toAddress: toAddressString, comment, needEncryptComment});
+            this.sendMessage('onSend', {
+                amount: amountNano.toString(),
+                toAddress: toAddressString,
+                comment,
+                needEncryptComment
+            });
         });
         $('#send_closeBtn').addEventListener('click', () => this.closePopup());
 
@@ -481,8 +530,11 @@ class View {
 
         $('#changePassword_cancelBtn').addEventListener('click', () => this.closePopup());
         $('#changePassword_okBtn').addEventListener('click', async (e) => {
+            /** @type {string} */
             const oldPassword = $('#changePassword_oldInput').value;
+            /** @type {string} */
             const newPassword = $('#changePassword_newInput').value;
+            /** @type {string} */
             const passwordRepeat = $('#changePassword_repeatInput').value;
 
             const isEmpty = newPassword.length === 0 && !this.isTestnet;
@@ -506,6 +558,7 @@ class View {
             this.closePopup();
         });
         $('#enterPassword_okBtn').addEventListener('click', async (e) => {
+            /** @type {string} */
             const password = $('#enterPassword_input').value;
 
             this.toggleButtonLoader(e.currentTarget, true);
@@ -528,6 +581,9 @@ class View {
 
     // COMMON
 
+    /**
+     * @param name  {string}
+     */
     showScreen(name) {
         this.closePopup();
 
@@ -538,7 +594,7 @@ class View {
                 isBack: this.isBack,
             });
 
-            toggleLottie(lotties[screen], name === screen, {hideDelay: 300}); //300ms, as for screen show/hide animation duration in CSS
+            toggleLottie(lotties[screen], name === screen, {hideDelay: 300}); // 300ms, as for screen show/hide animation duration in CSS
         });
         toggleLottie(lotties['symbol'], name === 'main', {hideDelay: 300});
         this.currentScreenName = name;
@@ -548,11 +604,18 @@ class View {
         window.scrollTo(0, 0);
     }
 
+    /**
+     * @param el    {HTMLElement}
+     * @param enable    {boolean}
+     */
     toggleButtonLoader(el, enable) {
         el.disabled = enable;
         enable ? el.classList.add('btn-loader') : el.classList.remove('btn-loader');
     }
 
+    /**
+     * @param params    {{title: string, message: string, buttons?: {label: string, callback: () => void}[]}}
+     */
     showAlert(params) {
         $('#alert .popup-title').innerText = params.title;
         $('#alert .popup-black-text').innerText = params.message;
@@ -573,7 +636,10 @@ class View {
         this.showPopup('alert');
     }
 
-    async showPopup(name) {
+    /**
+     * @param name  {string}
+     */
+    showPopup(name) {
         this.popup = name;
 
         $('#enterPassword_input').value = '';
@@ -601,7 +667,13 @@ class View {
 
     // BACKUP SCREEN
 
+    /**
+     * @param words {string[]}
+     */
     setBackupWords(words) {
+        /**
+         * @param n {number}
+         */
         const createBackupWord = n => {
             $('#createWords').appendChild(
                 createElement({
@@ -638,8 +710,14 @@ class View {
 
     // IMPORT && CONFIRM SCREENS
 
+    /**
+     * @param params    {{count: number, containerId: string, inputId: string, dropdownId: string, multiColumns: boolean}}
+     */
     createWordInputs(params) {
 
+        /**
+         * @param input {HTMLInputElement}
+         */
         const onEnter = input => {
             const i = Number(input.getAttribute('tabindex'));
             if (i === params.count) {
@@ -650,8 +728,13 @@ class View {
         };
 
         const dropdown = new DropDown($(params.dropdownId), onEnter, this.mnemonicWords);
+
+        /** @type {HTMLInputElement | null} */
         let lastInput = null;
 
+        /**
+         * @param input {HTMLInputElement}
+         */
         const showWordsPopup = input => {
             const text = input.value;
             if (text === null || text.length === 0) {
@@ -662,19 +745,30 @@ class View {
             dropdown.show(input, text.toLowerCase());
         };
 
+        /**
+         * @param e {Event}
+         */
         function onWordInput(e) {
+            /** @type {HTMLInputElement} */
             const input = e.target;
             input.classList.remove('error');
 
             showWordsPopup(input);
         }
 
+        /**
+         * @param e {Event}
+         */
         const onFocusIn = (e) => {
+            /** @type {HTMLInputElement} */
             const input = e.target;
             lastInput = input;
             showWordsPopup(input);
         };
 
+        /**
+         * @param e {Event}
+         */
         const onFocusOut = (e) => {
             toggle($(params.dropdownId), false);
             if (lastInput) {
@@ -687,7 +781,11 @@ class View {
             }
         };
 
+        /**
+         * @param e {KeyboardEvent}
+         */
         const onKeyDown = (e) => {
+            /** @type {HTMLInputElement} */
             const input = e.target;
             switch (e.key) {
                 case 'Enter':
@@ -708,6 +806,9 @@ class View {
             }
         };
 
+        /**
+         * @param event {ClipboardEvent}
+         */
         const onPaste = (event) => {
             const text = (event.clipboardData || window.clipboardData).getData('text');
             let arr = text.split(' ');
@@ -716,6 +817,7 @@ class View {
             }
             if (arr.length === params.count) {
                 for (let i = 0; i < params.count; i++) {
+                    /** @type {HTMLInputElement} */
                     const input = $(params.inputId + i);
                     const value = arr[i].toLowerCase().trim();
                     if (!value || this.mnemonicWords.indexOf(value) === -1) {
@@ -729,10 +831,14 @@ class View {
             }
         };
 
+        /**
+         * @param n {number}
+         */
         const createInput = (n) => {
             const inputContainer = createElement({tag: 'div', clazz: 'word-item'});
             const span = createElement({tag: 'span', clazz: 'word-num', text: (n + 1) + '.'});
             inputContainer.appendChild(span);
+            /** @type {HTMLInputElement} */
             const input = createElement({tag: 'input'});
             input.id = params.inputId.slice(1) + n;
             input.type = 'text';
@@ -764,6 +870,7 @@ class View {
     clearImportWords() {
         toggle($('#wordsPopup'), false);
         for (let i = 0; i < IMPORT_WORDS_COUNT; i++) {
+            /** @type {HTMLInputElement} */
             const input = $('#importsInput' + i);
             input.value = '';
             input.classList.remove('error');
@@ -773,6 +880,7 @@ class View {
     clearConfirmWords() {
         toggle($('#wordsConfirmPopup'), false);
         for (let i = 0; i < CONFIRM_WORDS_COUNT; i++) {
+            /** @type {HTMLInputElement} */
             const input = $('#confirmInput' + i);
             input.value = '';
             input.setAttribute('data-word', '');
@@ -780,30 +888,42 @@ class View {
         }
     }
 
+    /**
+     * @param words {string[]}
+     */
     setConfirmWords(words) {
+        /** @type {number[]} */
         const nums = Array(IMPORT_WORDS_COUNT)
             .fill(0)
-            .map((_, i) => ({i, rnd: Math.random()}))
+            .map((_, index) => ({index, rnd: Math.random()}))
             .sort((a, b) => a.rnd - b.rnd)
-            .map(i => i.i)
+            .map(item => item.index)
             .slice(0, CONFIRM_WORDS_COUNT)
             .sort((a, b) => a - b);
 
         const spans = $$('#confirmWordsNums span');
         for (let i = 0; i < CONFIRM_WORDS_COUNT; i++) {
+            /** @type {HTMLInputElement} */
             const input = $('#confirmInput' + i);
-            input.setAttribute('data-index', nums[i]);
+            input.setAttribute('data-index', nums[i].toString());
             input.setAttribute('data-word', words[nums[i]]);
-            spans[i].innerText = nums[i] + 1;
+            spans[i].innerText = (nums[i] + 1).toString();
             input.parentNode.children[0].innerText = (nums[i] + 1) + '.';
         }
     }
 
+    /**
+     * @return {Promise<string[] | null>}
+     */
     async getImportWords() {
+        /** @type {boolean} */
         let isValid = true;
+        /** @type {string[]} */
         const words = [];
         for (let i = 0; i < IMPORT_WORDS_COUNT; i++) {
+            /** @type {HTMLInputElement} */
             const input = $('#importsInput' + i);
+            /** @type {string} */
             const value = input.value.toLowerCase().trim();
             if (!value || this.mnemonicWords.indexOf(value) === -1) {
                 input.classList.add('error');
@@ -825,15 +945,25 @@ class View {
         return isValid ? words : null;
     }
 
+    /**
+     * @return {{isWordsFromList: boolean, isRightWords: boolean, words: null | Object<string, string>}} words - index to word
+     */
     getConfirmWords() {
+        /** @type {boolean} */
         let isWordsFromList = true;
+        /** @type {boolean} */
         let isRightWords = true;
+        /** @type {Object<string, string>} */
         const words = {};
 
         for (let i = 0; i < CONFIRM_WORDS_COUNT; i++) {
+            /** @type {HTMLInputElement} */
             const input = $('#confirmInput' + i);
+            /** @type {string} */
             const value = input.value.toLowerCase().trim();
+            /** @type {string} */
             const index = input.getAttribute('data-index');
+            /** @type {string} */
             const validValue = input.getAttribute('data-word');
             if (!value || this.mnemonicWords.indexOf(value) === -1) {
                 input.classList.add('error');
@@ -869,6 +999,9 @@ class View {
 
     // MAIN SCREEN
 
+    /**
+     * @param updating  {boolean}
+     */
     setUpdating(updating) {
         $('#updateLabel').innerText = updating ? 'updating..' : 'updated just now';
     }
@@ -886,9 +1019,14 @@ class View {
         toggle($('#walletCreated'), false);
     }
 
+    /**
+     * @param balance   {BN}
+     * @param txs   {any[]}
+     */
     setBalance(balance, txs) {
         this.balance = balance;
-        let s = formatNanograms(balance);
+        /** @type {string} */
+        let s = fromNano(balance);
         if (s === '0') s = '0.00';
         const i = s.indexOf('.');
         const first = s.substring(0, i);
@@ -904,8 +1042,12 @@ class View {
         this.setUpdating(false);
     }
 
+    /**
+     * @param txs   {any[]}
+     */
     setTransactions(txs) {
         clearElement($('#transactionsList'));
+        /** @type {string} */
         let date = '';
 
         toggle($('#walletCreated'), txs.length === 0);
@@ -917,6 +1059,7 @@ class View {
             tx.storageFee = new BN(tx.storageFee);
             tx.date = new Date(tx.date);
 
+            /** @type {string} */
             const txDate = formatDate(tx.date);
             if (date !== txDate) {
                 this.addDateSeparator(txDate);
@@ -926,13 +1069,22 @@ class View {
         });
     }
 
+    /**
+     * @param dateString    {string}
+     */
     addDateSeparator(dateString) {
         $('#transactionsList').appendChild(createElement({tag: 'div', clazz: 'date-separator', text: dateString}));
     }
 
+    /**
+     * @param tx    {any}
+     */
     addTx(tx) {
+        /** @type {boolean} */
         const isReceive = tx.inbound;
-        const amountFormatted = formatNanograms(tx.amount);
+        /** @type {string} */
+        const amountFormatted = fromNano(tx.amount);
+        /** @type {string} */
         const addr = isReceive ? tx.from_addr : tx.to_addr;
 
         const item = createElement({
@@ -958,7 +1110,7 @@ class View {
                 setAddr(createElement({tag: 'div', clazz: ['tx-addr', 'addr']}), addr),
                 tx.encryptedComment ? createElement({tag: 'div', clazz: 'tx-item-encrypted-icon'}) : undefined,
                 tx.comment ? createElement({tag: 'div', clazz: 'tx-comment', text: tx.comment}) : undefined,
-                createElement({tag: 'div', clazz: 'tx-fee', text: `blockchain fees: ${formatNanograms(tx.fee)}`}),
+                createElement({tag: 'div', clazz: 'tx-fee', text: `blockchain fees: ${fromNano(tx.fee)}`}),
                 createElement({tag: 'div', clazz: 'tx-item-date', text: formatTime(tx.date)})
             ]
         });
@@ -970,16 +1122,22 @@ class View {
 
     // TRANSACTION POPUP
 
+    /**
+     * @param tx    {any}
+     */
     onTransactionClick(tx) {
         this.currentOpenTransaction = tx;
         this.showPopup('transaction');
-        const isReceive = !tx.amount.isNeg();
+        /** @type {boolean} */
+        const isReceive = tx.inbound;
+        /** @type {string} */
+        const amountFormatted = fromNano(tx.amount);
+        /** @type {string} */
         const addr = isReceive ? tx.from_addr : tx.to_addr;
         this.currentTransactionAddr = addr;
-        const amountFormatted = formatNanograms(tx.amount);
         $('#transactionAmount').innerText = (isReceive ? '+' + amountFormatted : amountFormatted) + ' 💎';
-        $('#transactionFee').innerText = formatNanograms(tx.otherFee) + ' transaction fee';
-        $('#transactionStorageFee').innerText = formatNanograms(tx.storageFee) + ' storage fee';
+        $('#transactionFee').innerText = fromNano(tx.otherFee) + ' transaction fee';
+        $('#transactionStorageFee').innerText = fromNano(tx.storageFee) + ' storage fee';
         $('#transactionSenderLabel').innerText = isReceive ? 'Sender' : 'Recipient';
         setAddr($('#transactionSender'), addr);
         toggle($('#transactionCommentLabel'), !!tx.comment || !!tx.encryptedComment);
@@ -1004,6 +1162,9 @@ class View {
 
     // RECEIVE POPUP
 
+    /**
+     * @param address   {string}
+     */
     setMyAddress(address) {
         setAddr($('#receive .addr'), address);
         drawQRCode(TonWeb.utils.formatTransferUrl(address), '#qr');
@@ -1011,6 +1172,10 @@ class View {
         this.loadDiamond(address);
     }
 
+    /**
+     * @param address   {string}
+     * @return {Promise<void>}
+     */
     async loadDiamond(address) {
         toggle($('.balance-symbol'), true);
         toggle($('.balance-diamond-container'), false);
@@ -1036,6 +1201,9 @@ class View {
         }
     }
 
+    /**
+     * @param onyAddress    {boolean} share address or transfer link
+     */
     onShareAddressClick(onyAddress) {
         const data = onyAddress ? this.myAddress : TonWeb.utils.formatTransferUrl(this.myAddress);
         const text = onyAddress ? 'Wallet address copied to clipboard' : 'Transfer link copied to clipboard';
@@ -1059,9 +1227,13 @@ class View {
         $('#invoice_link').innerText = this.getInvoiceLink();
     };
 
+    /**
+     * @return {string}
+     */
     getInvoiceLink() {
         const amountString = $('#invoice_amountInput').value;
-        const amount = amountString ? TonWeb.utils.toNano(amountString) : undefined;
+        /** @type {string | undefined} */
+        const amount = amountString ? toNano(amountString).toString() : undefined;
         return TonWeb.utils.formatTransferUrl(this.myAddress, amount, $('#invoice_commentInput').value);
     }
 
@@ -1076,13 +1248,20 @@ class View {
         this.onMessage('showPopup', {name: 'invoiceQr'});
     }
 
+    /**
+     * @param link  {string}
+     */
     drawInvoiceQr(link) {
         drawQRCode(link, '#invoiceQrImg');
     }
 
-    // TRANSPORT
+    // TRANSPORT WITH CONTROLLER
 
-    // send message to Controller.js
+    /**
+     * Send message to Controller.js
+     * @param method    {string}
+     * @param params?    {any}  boolean or object, not array
+     */
     sendMessage(method, params) {
         if (this.controller) {
             this.controller.onViewMessage(method, params);
@@ -1091,7 +1270,12 @@ class View {
         }
     }
 
-    // receive message from Controller.js
+    /**
+     * Receive message from Controller.js
+     * @param method    {string}
+     * @param params?    {any} boolean or object, not array
+     * @return {undefined | {magic: string | null, proxy: string | null, address: string | null, words: string | null, walletVersion: string | null}}
+     */
     onMessage(method, params) {
         switch (method) {
             case 'disableCreated':
@@ -1174,9 +1358,8 @@ class View {
                 this.toggleButtonLoader($('#send_btn'), false);
                 $('#amountInput').classList.add('error');
 
-                $('#notify').innerText = `Estimated fee is ~${formatNanograms(params.fee)} TON`;
+                $('#notify').innerText = `Estimated fee is ~${fromNano(params.fee)} TON`;
                 triggerClass($('#notify'), 'faded-show', 3000);
-
                 break;
 
             case 'decryptedComment':
@@ -1269,9 +1452,9 @@ class View {
                         $('#toWalletInput').focus();
                         break;
                     case 'sendConfirm':
-                        $('#sendConfirmAmount').innerText = formatNanograms(new BN(params.amount)) + ' TON';
+                        $('#sendConfirmAmount').innerText = fromNano(new BN(params.amount)) + ' TON';
                         setAddr($('#sendConfirmAddr'), params.toAddress);
-                        $('#sendConfirmFee').innerText = params.fee ? 'Fee: ~' + formatNanograms(new BN(params.fee)) + ' TON' : '';
+                        $('#sendConfirmFee').innerText = params.fee ? 'Fee: ~' + fromNano(new BN(params.fee)) + ' TON' : '';
 
                         toggle($('#sendConfirmNotEncryptedNote'), !params.needEncryptComment);
                         toggle($('#sendConfirm .popup-footer'), !this.isLedger);
@@ -1312,16 +1495,17 @@ class View {
 window.view = new View(TonWeb.mnemonic.wordlists.EN);
 
 if (IS_EXTENSION) {
-    let port;
+
+    // connect to background process
 
     const connectToBackground = () => {
-        port = chrome.runtime.connect({ name: 'gramWalletPopup' });
+        const port = chrome.runtime.connect({name: 'gramWalletPopup'});
         window.view.port = port;
 
         port.onMessage.addListener(data => {
             const result = window.view.onMessage(data.method, data.params);
             if (result && data.id) {
-                port.postMessage({ method: 'response', id: data.id, result });
+                port.postMessage({method: 'response', id: data.id, result});
             }
         });
 
@@ -1332,38 +1516,47 @@ if (IS_EXTENSION) {
 
     connectToBackground();
 
-    (async () => {
+    // remember extension position and size
+
+    const startTrackWindowPositionAndSize = async () => {
         let prevWindow = await chrome.windows.getCurrent();
 
         setInterval(async () => {
             const currentWindow = await chrome.windows.getCurrent();
 
             if (
-                currentWindow.top === prevWindow.top &&
-                currentWindow.left === prevWindow.left &&
-                currentWindow.height === prevWindow.height &&
-                currentWindow.width === prevWindow.width
-            ) return;
+                currentWindow.top !== prevWindow.top ||
+                currentWindow.left !== prevWindow.left ||
+                currentWindow.height !== prevWindow.height ||
+                currentWindow.width !== prevWindow.width
+            ) {
+                prevWindow = currentWindow;
 
-            window.view.sendMessage('onWindowUpdate', {
-                top: currentWindow.top,
-                left: currentWindow.left,
-                height: currentWindow.height,
-                width: currentWindow.width
-            });
-
-            prevWindow = currentWindow;
+                window.view.sendMessage('onWindowUpdate', {
+                    top: currentWindow.top,
+                    left: currentWindow.left,
+                    height: currentWindow.height,
+                    width: currentWindow.width
+                });
+            }
         }, 3000);
-    })();
+    }
+
+    startTrackWindowPositionAndSize();
 }
 
+// show attention message in browser console
+
 if (window.top == window && window.console) {
+    /** @type {Object<string, string[]>} */
     const selfXssAttentions = {
         'ru-RU': ['Внимание!', 'Используя эту консоль, вы можете подвергнуться атаке Self-XSS, что позволит злоумышленникам завладеть вашим кошельком.\nНе вводите и не вставляйте программный код, который не понимаете.'],
         '*': ['Attention!', 'Using this console, you can be exposed to a Self-XSS attack, allowing attackers to take over your wallet.\nDo not enter or paste program code that you do not understand.']
     };
 
+    /** @type {string} */
     const userLanguage = navigator.language || navigator.userLanguage;
+    /** @type {string[]} */
     let localizedSelfXssAttention = selfXssAttentions[userLanguage];
     if (!localizedSelfXssAttention) localizedSelfXssAttention = selfXssAttentions['*'];
 
