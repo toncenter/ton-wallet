@@ -155,6 +155,27 @@ export const makeSnakeCells = (bytes) => {
 }
 
 /**
+ * @param cell  {Cell}
+ * @return {Uint8Array}
+ */
+export const parseSnakeCells = (cell) => {
+    /** @type {Cell} */
+   let c = cell;
+    /** @type {Uint8Array} */
+   let result = new Uint8Array(0);
+   while (c) {
+       /** @type {Uint8Array} */
+       const newResult = new Uint8Array(result.length + c.bits.array.length);
+       newResult.set(result);
+       newResult.set(c.bits.array, result.length);
+
+       result = newResult;
+       c = c.refs[0];
+   }
+   return result;
+}
+
+/**
  * @param comment   {string}
  * @param myPublicKey   {Uint8Array}
  * @param theirPublicKey    {Uint8Array}

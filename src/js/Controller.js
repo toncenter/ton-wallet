@@ -1,5 +1,5 @@
 import storage from './util/storage.js';
-import {decryptMessageComment, encryptMessageComment, makeSnakeCells} from "./util/encryption.js";
+import {decryptMessageComment, encryptMessageComment, makeSnakeCells, parseSnakeCells} from "./util/encryption.js";
 
 const TONCONNECT_MAINNET = '-239';
 const TONCONNECT_TESTNET = '-3';
@@ -148,7 +148,7 @@ class Controller {
         /** @type {number} */
         this.updateIntervalId = 0;
 
-        /** @type {null | {totalAmount: BN, bodyHashBase64: string }} */
+        /** @type {null | {totalAmount: BN, bodyHashHex: string }} */
         this.sendingData = null;
 
         /** @type {boolean} */
@@ -207,24 +207,17 @@ class Controller {
     }
 
     /**
-     * @return {Promise<{seqno: number | null, balance: any}>}
+     * @param isTestnet {boolean}
+     * @return {string}
      */
-    async getMyWalletInfo() {
-        return this.ton.provider.getWalletInfo(this.myAddress);
-    }
-
-    /**
-     * @return {boolean}
-     */
-    checkContractInitialized(getWalletResponse) {
-        return getWalletResponse.account_state === "active";
-    }
-
-    /**
-     * @return {BN} in nanotons
-     */
-    getBalance(getWalletResponse) {
-        return new BN(getWalletResponse.balance);
+    getApiKey(isTestnet) {
+        const webApiKey = isTestnet
+            ? TONCENTER_API_KEY_WEB_TEST
+            : TONCENTER_API_KEY_WEB_MAIN;
+        const extensionApiKey = isTestnet
+            ? TONCENTER_API_KEY_EXT_TEST
+            : TONCENTER_API_KEY_EXT_MAIN;
+        return IS_EXTENSION ? extensionApiKey : webApiKey;
     }
 
     async _init() {
@@ -237,19 +230,15 @@ class Controller {
             const mainnetRpc = 'https://toncenter.com/api/v2/jsonRPC';
             const testnetRpc = 'https://testnet.toncenter.com/api/v2/jsonRPC';
 
-            const apiKey = this.isTestnet
-                ? TONCENTER_API_KEY_WEB_TEST
-                : TONCENTER_API_KEY_WEB_MAIN;
-            const extensionApiKey = this.isTestnet
-                ? TONCENTER_API_KEY_EXT_TEST
-                : TONCENTER_API_KEY_EXT_MAIN;
-
             if (IS_EXTENSION && !(await storage.getItem('address'))) {
                 await this._restoreDeprecatedStorage();
             }
 
-            this.ton = new TonWeb(new TonWeb.HttpProvider(this.isTestnet ? testnetRpc : mainnetRpc, {apiKey: IS_EXTENSION ? extensionApiKey : apiKey}));
+            this.ton = new TonWeb(new TonWeb.HttpProvider(this.isTestnet ? testnetRpc : mainnetRpc, {apiKey: this.getApiKey(this.isTestnet)}));
             this.myAddress = await storage.getItem('address');
+            if (this.myAddress) {
+                this.myAddress = new TonWeb.utils.Address(this.myAddress).toString(true, true, false, this.isTestnet);
+            }
             this.publicKeyHex = await storage.getItem('publicKey');
 
             if (!this.myAddress || !(await storage.getItem('words'))) {
@@ -308,6 +297,92 @@ class Controller {
         }
     }
 
+    // INDEXED API
+
+    /**
+     * @private
+     * @param method   {string}
+     * @param params   {any}
+     * @return {Promise<any>}
+     */
+    async sendToIndex(method, params) {
+        const mainnetRpc = 'https://toncenter.com/api/v3/';
+        const testnetRpc = 'https://testnet.toncenter.com/api/v3/';
+        const rpc = this.isTestnet ? testnetRpc : mainnetRpc;
+
+        const headers = {
+            'Content-Type': 'application/json',
+            'X-API-Key': this.getApiKey(this.isTestnet)
+        };
+
+        const response = await fetch(rpc + method + '?' + new URLSearchParams(params), {
+            method: 'GET',
+            headers: headers,
+        });
+        return await response.json();
+    }
+
+    /**
+     * @private
+     * @param address   {string}
+     * @return {Promise<{seqno: number | null}>}
+     */
+    async getWalletInfoFromIndex(address) {
+        return this.sendToIndex('wallet', {
+            address: address
+        });
+    }
+
+    /**
+     * @private
+     * @param address   {string}
+     * @return {Promise<{balance: string, status: string}>}
+     */
+    async getAccountInfoFromIndex(address) {
+        return this.sendToIndex('account', {
+            address: address
+        });
+    }
+
+    /**
+     * @return {Promise<number>} seqno
+     */
+    async getMySeqno() {
+        const walletInfo = await this.getWalletInfoFromIndex(this.myAddress);
+        return walletInfo.seqno || 0;
+    }
+
+    /**
+     * @param address   {string}
+     * @return {Promise<BN>} in nanotons
+     */
+    async getBalance(address) {
+        const accountInfo = await this.getAccountInfoFromIndex(address);
+        return new BN(accountInfo.balance);
+    }
+
+    /**
+     * @param address   {string}
+     * @return {Promise<boolean>}
+     */
+    async checkContractInitialized(address) {
+        const accountInfo = await this.getAccountInfoFromIndex(address);
+        return accountInfo.status === "active";
+    }
+
+    /**
+     * @private
+     * @param address   {string}
+     * @param limit {number}
+     * @return {Promise<void>}
+     */
+    async getTransactionsFromIndex(address, limit) {
+        return this.sendToIndex('transactions', {
+            account: address,
+            limit: limit
+        });
+    }
+
     /**
      * @param limit? {number}
      * @return {Promise<any[]>} transactions
@@ -319,10 +394,10 @@ class Controller {
          * @return {string}
          */
         function getComment(msg) {
-            if (!msg.msg_data) return '';
-            if (msg.msg_data['@type'] !== 'msg.dataText') return '';
-            const base64 = msg.msg_data.text;
-            return new TextDecoder().decode(TonWeb.utils.base64ToBytes(base64));
+            if (!msg.message_content) return '';
+            if (!msg.message_content.decoded) return '';
+            if (msg.message_content.decoded['type'] !== 'text_comment') return '';
+            return msg.message_content.decoded.comment;
         }
 
         /**
@@ -330,20 +405,21 @@ class Controller {
          * @return {string} '' or base64
          */
         function getEncryptedComment(msg) {
-            if (!msg.msg_data) return '';
-            if (msg.msg_data['@type'] !== 'msg.dataEncryptedText') return '';
-            const base64 = msg.msg_data.text;
-            return base64;
+            if (!msg.message_content) return '';
+            if (!msg.message_content.body) return '';
+            if (msg.opcode !== "0x2167da4b") return '';
+            const cellBase64 = msg.message_content.body;
+            const cell = TonWeb.boc.Cell.oneFromBoc(TonWeb.utils.base64ToBytes(cellBase64));
+            return TonWeb.utils.bytesToBase64(parseSnakeCells(cell).slice(4)); // skip 4 bytes of prefix 0x2167da4b
         }
 
         const arr = [];
-        const transactions = await this.ton.getTransactions(this.myAddress, limit); // raw.transaction[]
+        const transactions = await this.getTransactionsFromIndex(this.myAddress, limit); // index.transaction[]
         for (const t of transactions) {
             let amount = new BN(t.in_msg.value);
             for (const outMsg of t.out_msgs) {
                 amount = amount.sub(new BN(outMsg.value));
             }
-            //amount = amount.sub(new BN(t.fee));
 
             let from_addr = "";
             let to_addr = "";
@@ -353,14 +429,14 @@ class Controller {
 
             if (t.in_msg.source) { // internal message with Toncoins, set source
                 inbound = true;
-                from_addr = t.in_msg.source;
-                to_addr = t.in_msg.destination;
+                from_addr = t.in_msg.source_friendly;
+                to_addr = t.in_msg.destination_friendly;
                 comment = getComment(t.in_msg);
                 encryptedComment = getEncryptedComment(t.in_msg);
             } else if (t.out_msgs.length) { // external message, we sending Toncoins
                 inbound = false;
-                from_addr = t.out_msgs[0].source;
-                to_addr = t.out_msgs[0].destination;
+                from_addr = t.out_msgs[0].source_friendly;
+                to_addr = t.out_msgs[0].destination_friendly;
                 comment = getComment(t.out_msgs[0]);
                 encryptedComment = getEncryptedComment(t.out_msgs[0]);
                 //TODO support many out messages. We need to show separate outgoing payment for each? How to show fees?
@@ -370,18 +446,16 @@ class Controller {
 
             if (to_addr) {
                 arr.push({
-                    bodyHashBase64: t.in_msg.body_hash,
+                    bodyHashHex: t.in_msg.message_content.hash, // hex without 0x uppercase
                     inbound,
-                    hash: t.transaction_id.hash,
+                    hash: t.hash, // hex without 0x uppercase
                     amount: amount.toString(),
                     from_addr: from_addr,
                     to_addr: to_addr,
-                    fee: t.fee.toString(),
-                    storageFee: t.storage_fee.toString(),
-                    otherFee: t.other_fee.toString(),
+                    fee: t.total_fees, // string BN
                     comment: comment,
                     encryptedComment: encryptedComment,
-                    date: t.utime * 1000
+                    date: t.now * 1000
                 });
             }
         }
@@ -394,10 +468,8 @@ class Controller {
      * @return Promise<{{send: () => Promise<*>, getQuery: () => Promise<Cell>, estimateFee: () => Promise<*>}}> transfer object
      */
     async sign(request, keyPair) {
-        const walletInfo = await this.getMyWalletInfo();
-
         /** @type {number} */
-        const seqno = walletInfo.seqno || 0;
+        const seqno = await this.getMySeqno();
 
         /** @type {Uint8Array | null} */
         const secretKey = keyPair ? keyPair.secretKey : null;
@@ -432,7 +504,7 @@ class Controller {
             publicKey: keyPair.publicKey,
             wc: 0
         });
-        this.myAddress = (await this.walletContract.getAddress()).toString(true, true, true);
+        this.myAddress = (await this.walletContract.getAddress()).toString(true, true, false, this.isTestnet);
         this.publicKeyHex = TonWeb.utils.bytesToHex(keyPair.publicKey);
         await storage.setItem('publicKey', this.publicKeyHex);
         await storage.setItem('walletVersion', walletVersion);
@@ -517,7 +589,7 @@ class Controller {
         this.walletContract = wallet;
 
         const address = await wallet.getAddress();
-        this.myAddress = address.toString(true, true, true);
+        this.myAddress = address.toString(true, true, false, this.isTestnet);
         this.publicKeyHex = TonWeb.utils.bytesToHex(publicKey);
     }
 
@@ -553,13 +625,12 @@ class Controller {
                         publicKey: keyPair.publicKey,
                         wc: 0
                     });
-                    const walletAddress = (await wallet.getAddress()).toString(true, true, true);
-                    const walletInfo = await this.ton.provider.getWalletInfo(walletAddress);
-                    const walletBalance = this.getBalance(walletInfo);
+                    const walletAddress = (await wallet.getAddress()).toString(true, true, false, this.isTestnet);
+                    const walletBalance = await this.getBalance(walletAddress);
                     if (walletBalance.gt(new BN(0))) {
                         hasBalance.push({balance: walletBalance, clazz: WalletClass});
                     }
-                    this.debug(wallet.getName(), walletAddress, walletInfo, walletBalance.toString());
+                    this.debug(wallet.getName(), walletAddress, walletBalance.toString());
                 }
 
                 let walletClass = this.ton.wallet.all[DEFAULT_WALLET_VERSION];
@@ -588,7 +659,7 @@ class Controller {
             publicKey: keyPair.publicKey,
             wc: 0
         });
-        this.myAddress = (await this.walletContract.getAddress()).toString(true, true, true);
+        this.myAddress = (await this.walletContract.getAddress()).toString(true, true, false, this.isTestnet);
         this.publicKeyHex = TonWeb.utils.bytesToHex(keyPair.publicKey);
         await storage.setItem('publicKey', this.publicKeyHex);
         await storage.setItem('walletVersion', this.walletContract.getName());
@@ -706,8 +777,7 @@ class Controller {
      */
     async updateBalance() {
         try {
-            const myWalletInfo = await this.getMyWalletInfo();
-            this.balance = this.getBalance(myWalletInfo);
+            this.balance = await this.getBalance(this.myAddress);
             return true;
         } catch (e) {
             console.error(e);
@@ -736,7 +806,7 @@ class Controller {
 
                 if (this.processingVisible && this.sendingData) {
                     for (let tx of txs) {
-                        if (tx.bodyHashBase64 === this.sendingData.bodyHashBase64) {
+                        if (tx.bodyHashHex === this.sendingData.bodyHashHex) {
                             this.sendToView('showPopup', {
                                 name: 'done',
                                 message: formatNanograms(this.sendingData.totalAmount) + ' TON have been sent'
@@ -889,7 +959,7 @@ class Controller {
             }
 
             // make toAddress non-bounceable if destination contract uninitialized
-            if (!this.checkContractInitialized(await this.ton.provider.getWalletInfo(message.toAddress))) {
+            if (!(await this.checkContractInitialized(message.toAddress))) {
                 message.toAddress = (new Address(message.toAddress)).toString(true, true, false);
             }
 
@@ -1078,8 +1148,7 @@ class Controller {
                     }
                 }
 
-                const wallet = await this.getMyWalletInfo();
-                const seqno = wallet.seqno || 0;
+                const seqno = await this.getMySeqno();
 
                 query = await this.ledgerApp.transfer(ACCOUNT_NUMBER, this.walletContract, message.toAddress, message.amount, seqno, addressFormat);
                 this.sendToView('showPopup', {name: 'processing'});
@@ -1103,7 +1172,7 @@ class Controller {
             const bodyHash = await bodyCell.hash();
 
             this.sendingData = {
-                bodyHashBase64: TonWeb.utils.bytesToBase64(bodyHash),
+                bodyHashHex: TonWeb.utils.bytesToHex(bodyHash).toUpperCase(),
                 totalAmount: totalAmount
             };
 

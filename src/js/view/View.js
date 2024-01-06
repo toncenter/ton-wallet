@@ -1055,8 +1055,6 @@ class View {
         txs.forEach(tx => {
             tx.amount = new BN(tx.amount);
             tx.fee = new BN(tx.fee);
-            tx.otherFee = new BN(tx.otherFee);
-            tx.storageFee = new BN(tx.storageFee);
             tx.date = new Date(tx.date);
 
             /** @type {string} */
@@ -1136,8 +1134,7 @@ class View {
         const addr = isReceive ? tx.from_addr : tx.to_addr;
         this.currentTransactionAddr = addr;
         $('#transactionAmount').innerText = (isReceive ? '+' + amountFormatted : amountFormatted) + ' 💎';
-        $('#transactionFee').innerText = fromNano(tx.otherFee) + ' transaction fee';
-        $('#transactionStorageFee').innerText = fromNano(tx.storageFee) + ' storage fee';
+        $('#transactionFee').innerText = fromNano(tx.fee) + ' transaction fee';
         $('#transactionSenderLabel').innerText = isReceive ? 'Sender' : 'Recipient';
         setAddr($('#transactionSender'), addr);
         toggle($('#transactionCommentLabel'), !!tx.comment || !!tx.encryptedComment);
