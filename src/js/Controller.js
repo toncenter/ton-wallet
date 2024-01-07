@@ -408,7 +408,9 @@ class Controller {
             if (!msg.message_content) return '';
             if (!msg.message_content.body) return '';
             if (msg.opcode !== "0x2167da4b") return '';
+            /** @type {string} */
             const cellBase64 = msg.message_content.body;
+            /** @type {Cell} */
             const cell = TonWeb.boc.Cell.oneFromBoc(TonWeb.utils.base64ToBytes(cellBase64));
             return TonWeb.utils.bytesToBase64(parseSnakeCells(cell).slice(4)); // skip 4 bytes of prefix 0x2167da4b
         }
@@ -444,6 +446,13 @@ class Controller {
                 // Deploying wallet contract onchain
             }
 
+            /** @type {BN} */
+            let fee = new BN(t.total_fees);
+            for (let outMsg of t.out_msgs) {
+                fee = fee.add(new BN(outMsg.fwd_fee));
+                fee = fee.add(new BN(outMsg.ihr_fee));
+            }
+
             if (to_addr) {
                 arr.push({
                     bodyHashHex: t.in_msg.message_content.hash, // hex without 0x uppercase
@@ -452,7 +461,7 @@ class Controller {
                     amount: amount.toString(),
                     from_addr: from_addr,
                     to_addr: to_addr,
-                    fee: t.total_fees, // string BN
+                    fee: fee.toString(), // string BN
                     comment: comment,
                     encryptedComment: encryptedComment,
                     date: t.now * 1000
