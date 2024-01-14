@@ -16,6 +16,43 @@
     font-display: block;
 }
 
+/* Inter Regular */
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 400;
+    font-display: block;
+    src: url("../assets/fonts/Inter/Inter-400.woff2") format("woff2");
+  }
+  
+  /* Inter Medium */
+  @font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 500;
+    font-display: block;
+    src: url("../assets/fonts/Inter/Inter-500.woff2") format("woff2");
+  }
+  
+  /* Inter Semi Bold */
+  @font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 600;
+    font-display: block;
+    src: url("../assets/fonts/Inter/Inter-600.woff2") format("woff2");
+  }
+  
+  /* Inter Bold */
+  @font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 700;
+    font-display: block;
+    src: url("../assets/fonts/Inter/Inter-700.woff2") format("woff2");
+  }
+  
+
 html {
     -moz-osx-font-smoothing: grayscale;
     -webkit-font-smoothing: antialiased;
@@ -1272,4 +1309,173 @@ button {
     -webkit-transform: rotate(45deg);
     -ms-transform: rotate(45deg);
     transform: rotate(45deg);
+}
+
+#install .middle {
+    font-family: "Inter", -apple-system, BlinkMacSystemFont,
+    Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+    background-color: #EFEFF3;
+}
+
+#install .container {
+    width: 100%;
+    max-width: 544px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+#install .screen-title {
+    max-width: 350px;
+    color: #000;
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 40px;
+    letter-spacing: -0.07px;
+
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+#install #start_createBtn, #install #start_importBtn {
+    display: none;
+}
+
+#install .widget {
+    width: 100%;
+
+    display: flex;
+    padding: 26px 32px 32px;
+    flex-direction: column;
+    align-items: flex-start;
+
+    border-radius: 32px;
+    background: #FFF;
+}
+
+#install .widget-icon {
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    margin-bottom: 24px;
+}
+
+#install .widget-title {
+    color: #000;
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 30px;
+    letter-spacing: -0.046px;
+
+    margin-bottom: 6px;
+}
+
+#install .widget-subtitle {
+    color: #728A96;
+    font-size: 18px;
+    font-weight: 400;
+    line-height: 28px;
+    letter-spacing: -0.025px;
+
+    margin-bottom: 24px;
+}
+
+#install .widget-subtitle.shortened {
+    max-width: 300px;
+}
+
+#install .widget-button-link {
+    width: 100%;
+    -webkit-tap-highlight-color: transparent;
+    text-decoration: none;
+}
+
+#install .widget-button-link:focus {
+    border-radius: 12px;
+    outline: solid #32AAFE 1px;
+}
+
+#install .widget-button {
+    width: 100%;
+
+    display: flex;
+    padding: 12px 24px;
+    justify-content: center;
+    align-items: center;
+
+    border-radius: 12px;
+    background: #32AAFE;
+    transition: opacity 0.2s linear;
+
+    color:#FFF;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    letter-spacing: -0.018px;
+
+    outline: none;
+    border: none;
+}
+
+#install .widget-button:hover {
+    opacity: 0.9;
+}
+
+@media (max-width: 734px) {
+    #install .middle {
+        justify-content: flex-start;
+        padding: 16px;
+    }
+
+    #install .container {
+        gap: 8px;
+    }
+
+    #install .screen-title {
+        max-width: 320px;
+        font-size: 22px;
+        font-weight: 600;
+        line-height: 28px;
+        letter-spacing: -0.031px;
+        margin-bottom: 16px;
+    }
+
+    #install .widget {
+        border-radius: 24px;
+        padding: 18px 24px 24px 24px;
+    }
+
+    #install .widget-icon {
+        width: 48px;
+        height: 48px;
+
+        margin-bottom: 16px;
+    }
+
+    #install .widget-title {
+        font-size: 20px;
+        font-weight: 600;
+        line-height: 26px;
+        letter-spacing: -0.038px;
+    }
+    
+    #install .widget-subtitle {
+        font-size: 16px;
+        line-height: 24px;
+        letter-spacing: -0.018px;
+    }
+
+    #install .widget-button {
+        border-radius: 12px;
+
+        padding: 8px 24px;
+
+        font-size: 14px;
+        line-height: 24px;
+        letter-spacing: -0.008px;
+    }
 }
