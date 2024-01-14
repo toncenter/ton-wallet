@@ -143,6 +143,8 @@ class View {
         $('#toWalletInput').addEventListener('paste', e => {
             const urlString = getClipboardData(e);
 
+            if (!urlString.startsWith('ton://')) return;
+
             /** @type {{address: string, amount?: string, text?: string} | null } */
             let parsedTransferUrl = null;
             try {
