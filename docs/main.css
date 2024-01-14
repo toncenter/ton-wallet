@@ -1025,7 +1025,7 @@ button {
     margin-bottom: 8px;
 }
 
-#transactionFee, #transactionStorageFee {
+#transactionFee {
     color: #999;
     text-align: center;
 }

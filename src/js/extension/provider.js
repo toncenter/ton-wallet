@@ -297,7 +297,7 @@
             this.deviceInfo = {
                 platform: 'web',
                 appName: 'tonwallet',
-                appVersion: '1.1.47',
+                appVersion: '1.1.48',
                 maxProtocolVersion: 2,
                 features: [
                     'SendTransaction',

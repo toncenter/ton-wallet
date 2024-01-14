@@ -26,19 +26,35 @@ __webpack_require__.r(__webpack_exports__);
  */
 
 /* harmony default export */ const storage = (self.localStorage || {
+    /**
+     * @param key   {string}
+     * @param value {string}
+     * @return {Promise<void>}
+     */
     setItem(key, value) {
         return chrome.storage.local.set({[key]: value});
     },
 
+    /**
+     * @param key   {string}
+     * @return {Promise<string | null>}
+     */
     getItem(key) {
         return chrome.storage.local.get(key)
             .then(({[key]: value}) => value);
     },
 
+    /**
+     * @param key   {string}
+     * @return {Promise<void>}
+     */
     removeItem(key) {
         return chrome.storage.local.remove(key);
     },
 
+    /**
+     * @return {Promise<void>}
+     */
     clear() {
         return chrome.storage.local.clear();
     },
@@ -61,7 +77,9 @@ const ed25519 = self.nobleEd25519;
  */
 const hmac_sha512 = async (key, data) => {
     const hmacAlgo = {name: "HMAC", hash: "SHA-512"};
+    /** @type {CryptoKey} */
     const hmacKey = await self.crypto.subtle.importKey("raw", key, hmacAlgo, false, ["sign"]);
+    /** @type {ArrayBuffer} */
     const signature = await self.crypto.subtle.sign(hmacAlgo, hmacKey, data);
     const result = new Uint8Array(signature);
     if (result.length !== 512 / 8) throw new Error();
@@ -70,7 +88,7 @@ const hmac_sha512 = async (key, data) => {
 
 /**
  * @param hash  {Uint8Array}
- * @return {Promise<any>}
+ * @return {Promise<any>} aesjs.ModeOfOperation.cbc
  */
 const getAesCbcState = async (hash) => {
     if (hash.length < 48) throw new Error();
@@ -91,6 +109,7 @@ const getAesCbcState = async (hash) => {
  */
 const getRandomPrefix = (dataLength, minPadding) => {
     const prefixLength = ((minPadding + 15 + dataLength) & -16) - dataLength;
+    /** @type {Uint8Array} */
     const prefix = self.crypto.getRandomValues(new Uint8Array(prefixLength));
     prefix[0] = prefixLength;
     if ((prefixLength + dataLength) % 16 !== 0) throw new Error();
@@ -114,13 +133,17 @@ const combineSecrets = async (a, b) => {
  */
 const encryptDataWithPrefix = async (data, sharedSecret, salt) => {
     if (data.length % 16 !== 0) throw new Error();
+    /** @type {Uint8Array} */
     const dataHash = await combineSecrets(salt, data);
+    /** @type {Uint8Array} */
     const msgKey = dataHash.slice(0, 16);
 
     const res = new Uint8Array(data.length + 16);
     res.set(msgKey, 0);
 
+    /** @type {Uint8Array} */
     const cbcStateSecret = await combineSecrets(sharedSecret, msgKey);
+    /** @type {Uint8Array} */
     const encrypted = (await getAesCbcState(cbcStateSecret)).encrypt(data);
     res.set(encrypted, 16);
 
@@ -134,6 +157,7 @@ const encryptDataWithPrefix = async (data, sharedSecret, salt) => {
  * @return {Promise<Uint8Array>}
  */
 const encryptDataImpl = async (data, sharedSecret, salt) => {
+    /** @type {Uint8Array} */
     const prefix = await getRandomPrefix(data.length, 16);
     const combined = new Uint8Array(prefix.length + data.length);
     combined.set(prefix, 0);
@@ -150,8 +174,10 @@ const encryptDataImpl = async (data, sharedSecret, salt) => {
  * @return {Promise<Uint8Array>}
  */
 const encryptData = async (data, myPublicKey, theirPublicKey, privateKey, salt) => {
+    /** @type {Uint8Array} */
     const sharedSecret = await ed25519.getSharedSecret(privateKey, theirPublicKey);
 
+    /** @type {Uint8Array} */
     const encrypted = await encryptDataImpl(data, sharedSecret, salt);
     const prefixedEncrypted = new Uint8Array(myPublicKey.length + encrypted.length);
     for (let i = 0; i < myPublicKey.length; i++) {
@@ -168,6 +194,7 @@ const encryptData = async (data, myPublicKey, theirPublicKey, privateKey, salt) 
 const makeSnakeCells = (bytes) => {
     const ROOT_CELL_BYTE_LENGTH = 35 + 4;
     const CELL_BYTE_LENGTH = 127;
+    /** @type {Cell} */
     const root = new TonWeb.boc.Cell();
     root.bits.writeBytes(bytes.slice(0, Math.min(bytes.length, ROOT_CELL_BYTE_LENGTH)));
 
@@ -176,8 +203,10 @@ const makeSnakeCells = (bytes) => {
         throw new Error('Text too long');
     }
 
+    /** @type {Cell} */
     let cell = root;
     for (let i = 0; i < cellCount; i++) {
+        /** @type {Cell} */
         const prevCell = cell;
         cell = new TonWeb.boc.Cell();
         const cursor = ROOT_CELL_BYTE_LENGTH + i * CELL_BYTE_LENGTH;
@@ -186,6 +215,27 @@ const makeSnakeCells = (bytes) => {
     }
 
     return root;
+}
+
+/**
+ * @param cell  {Cell}
+ * @return {Uint8Array}
+ */
+const parseSnakeCells = (cell) => {
+    /** @type {Cell} */
+   let c = cell;
+    /** @type {Uint8Array} */
+   let result = new Uint8Array(0);
+   while (c) {
+       /** @type {Uint8Array} */
+       const newResult = new Uint8Array(result.length + c.bits.array.length);
+       newResult.set(result);
+       newResult.set(c.bits.array, result.length);
+
+       result = newResult;
+       c = c.refs[0];
+   }
+   return result;
 }
 
 /**
@@ -203,10 +253,13 @@ const encryptMessageComment = async (comment, myPublicKey, theirPublicKey, myPri
         myPrivateKey = myPrivateKey.slice(0, 32); // convert nacl private key
     }
 
+    /** @type {Uint8Array} */
     const commentBytes = new TextEncoder().encode(comment);
 
+    /** @type {Uint8Array} */
     const salt = new TextEncoder().encode(new TonWeb.utils.Address(senderAddress).toString(true, true, true, false));
 
+    /** @type {Uint8Array} */
     const encryptedBytes = await encryptData(commentBytes, myPublicKey, theirPublicKey, myPrivateKey, salt);
 
     const payload = new Uint8Array(encryptedBytes.length + 4);
@@ -227,8 +280,11 @@ const encryptMessageComment = async (comment, myPublicKey, theirPublicKey, myPri
  * @return {Promise<Uint8Array>}
  */
 const doDecrypt = async (cbcStateSecret, msgKey, encryptedData, salt) => {
+    /** @type {Uint8Array} */
     const decryptedData = (await getAesCbcState(cbcStateSecret)).decrypt(encryptedData);
+    /** @type {Uint8Array} */
     const dataHash = await combineSecrets(salt, decryptedData);
+    /** @type {Uint8Array} */
     const gotMsgKey = dataHash.slice(0, 16);
     if (msgKey.join(',') !== gotMsgKey.join(',')) {
         throw new Error('Failed to decrypt: hash mismatch')
@@ -249,9 +305,13 @@ const doDecrypt = async (cbcStateSecret, msgKey, encryptedData, salt) => {
 const decryptDataImpl = async (encryptedData, sharedSecret, salt) => {
     if (encryptedData.length < 16) throw new Error('Failed to decrypt: data is too small');
     if (encryptedData.length % 16 !== 0) throw new Error('Failed to decrypt: data size is not divisible by 16');
+    /** @type {Uint8Array} */
     const msgKey = encryptedData.slice(0, 16);
+    /** @type {Uint8Array} */
     const data = encryptedData.slice(16);
+    /** @type {Uint8Array} */
     const cbcStateSecret = await combineSecrets(sharedSecret, msgKey);
+    /** @type {Uint8Array} */
     const res = await doDecrypt(cbcStateSecret, msgKey, data, salt);
     return res;
 }
@@ -271,8 +331,10 @@ const decryptData = async (data, publicKey, privateKey, salt) => {
     for (let i = 0; i < publicKey.length; i++) {
         theirPublicKey[i] = data[i] ^ publicKey[i];
     }
+    /** @type {Uint8Array} */
     const sharedSecret = await ed25519.getSharedSecret(privateKey, theirPublicKey);
 
+    /** @type {Uint8Array} */
     const decrypted = await decryptDataImpl(data.slice(publicKey.length), sharedSecret, salt);
     return decrypted;
 }
@@ -289,8 +351,10 @@ const decryptMessageComment = async (encryptedData, myPublicKey, myPrivateKey, s
         myPrivateKey = myPrivateKey.slice(0, 32); // convert nacl private key
     }
 
+    /** @type {Uint8Array} */
     const salt = new TextEncoder().encode(new TonWeb.utils.Address(senderAddress).toString(true, true, true, false));
 
+    /** @type {Uint8Array} */
     const decryptedBytes = await decryptData(encryptedData, myPublicKey, myPrivateKey, salt);
     return new TextDecoder().decode(decryptedBytes);
 }
@@ -445,7 +509,7 @@ class Controller {
         /** @type {number} */
         this.updateIntervalId = 0;
 
-        /** @type {null | {totalAmount: BN, bodyHashBase64: string }} */
+        /** @type {null | {totalAmount: BN, bodyHashHex: string }} */
         this.sendingData = null;
 
         /** @type {boolean} */
@@ -504,24 +568,17 @@ class Controller {
     }
 
     /**
-     * @return {Promise<{seqno: number | null, balance: any}>}
+     * @param isTestnet {boolean}
+     * @return {string}
      */
-    async getMyWalletInfo() {
-        return this.ton.provider.getWalletInfo(this.myAddress);
-    }
-
-    /**
-     * @return {boolean}
-     */
-    checkContractInitialized(getWalletResponse) {
-        return getWalletResponse.account_state === "active";
-    }
-
-    /**
-     * @return {BN} in nanotons
-     */
-    getBalance(getWalletResponse) {
-        return new BN(getWalletResponse.balance);
+    getApiKey(isTestnet) {
+        const webApiKey = isTestnet
+            ? '4f96a149e04e0821d20f9e99ee716e20ff52db7238f38663226b1c0f303003e0'
+            : '4f96a149e04e0821d20f9e99ee716e20ff52db7238f38663226b1c0f303003e0';
+        const extensionApiKey = isTestnet
+            ? '503af517296765c3f1729fcb301b063a00650a50a881eeaddb6307d5d45e21aa'
+            : '503af517296765c3f1729fcb301b063a00650a50a881eeaddb6307d5d45e21aa';
+        return IS_EXTENSION ? extensionApiKey : webApiKey;
     }
 
     async _init() {
@@ -534,19 +591,15 @@ class Controller {
             const mainnetRpc = 'https://toncenter.com/api/v2/jsonRPC';
             const testnetRpc = 'https://testnet.toncenter.com/api/v2/jsonRPC';
 
-            const apiKey = this.isTestnet
-                ? '4f96a149e04e0821d20f9e99ee716e20ff52db7238f38663226b1c0f303003e0'
-                : '4f96a149e04e0821d20f9e99ee716e20ff52db7238f38663226b1c0f303003e0';
-            const extensionApiKey = this.isTestnet
-                ? '503af517296765c3f1729fcb301b063a00650a50a881eeaddb6307d5d45e21aa'
-                : '503af517296765c3f1729fcb301b063a00650a50a881eeaddb6307d5d45e21aa';
-
             if (IS_EXTENSION && !(await storage.getItem('address'))) {
                 await this._restoreDeprecatedStorage();
             }
 
-            this.ton = new TonWeb(new TonWeb.HttpProvider(this.isTestnet ? testnetRpc : mainnetRpc, {apiKey: IS_EXTENSION ? extensionApiKey : apiKey}));
+            this.ton = new TonWeb(new TonWeb.HttpProvider(this.isTestnet ? testnetRpc : mainnetRpc, {apiKey: this.getApiKey(this.isTestnet)}));
             this.myAddress = await storage.getItem('address');
+            if (this.myAddress) {
+                this.myAddress = new TonWeb.utils.Address(this.myAddress).toString(true, true, false, this.isTestnet);
+            }
             this.publicKeyHex = await storage.getItem('publicKey');
 
             if (!this.myAddress || !(await storage.getItem('words'))) {
@@ -605,6 +658,92 @@ class Controller {
         }
     }
 
+    // INDEXED API
+
+    /**
+     * @private
+     * @param method   {string}
+     * @param params   {any}
+     * @return {Promise<any>}
+     */
+    async sendToIndex(method, params) {
+        const mainnetRpc = 'https://toncenter.com/api/v3/';
+        const testnetRpc = 'https://testnet.toncenter.com/api/v3/';
+        const rpc = this.isTestnet ? testnetRpc : mainnetRpc;
+
+        const headers = {
+            'Content-Type': 'application/json',
+            'X-API-Key': this.getApiKey(this.isTestnet)
+        };
+
+        const response = await fetch(rpc + method + '?' + new URLSearchParams(params), {
+            method: 'GET',
+            headers: headers,
+        });
+        return await response.json();
+    }
+
+    /**
+     * @private
+     * @param address   {string}
+     * @return {Promise<{seqno: number | null}>}
+     */
+    async getWalletInfoFromIndex(address) {
+        return this.sendToIndex('wallet', {
+            address: address
+        });
+    }
+
+    /**
+     * @private
+     * @param address   {string}
+     * @return {Promise<{balance: string, status: string}>}
+     */
+    async getAccountInfoFromIndex(address) {
+        return this.sendToIndex('account', {
+            address: address
+        });
+    }
+
+    /**
+     * @return {Promise<number>} seqno
+     */
+    async getMySeqno() {
+        const walletInfo = await this.getWalletInfoFromIndex(this.myAddress);
+        return walletInfo.seqno || 0;
+    }
+
+    /**
+     * @param address   {string}
+     * @return {Promise<BN>} in nanotons
+     */
+    async getBalance(address) {
+        const accountInfo = await this.getAccountInfoFromIndex(address);
+        return new BN(accountInfo.balance);
+    }
+
+    /**
+     * @param address   {string}
+     * @return {Promise<boolean>}
+     */
+    async checkContractInitialized(address) {
+        const accountInfo = await this.getAccountInfoFromIndex(address);
+        return accountInfo.status === "active";
+    }
+
+    /**
+     * @private
+     * @param address   {string}
+     * @param limit {number}
+     * @return {Promise<void>}
+     */
+    async getTransactionsFromIndex(address, limit) {
+        return this.sendToIndex('transactions', {
+            account: address,
+            limit: limit
+        });
+    }
+
     /**
      * @param limit? {number}
      * @return {Promise<any[]>} transactions
@@ -616,10 +755,10 @@ class Controller {
          * @return {string}
          */
         function getComment(msg) {
-            if (!msg.msg_data) return '';
-            if (msg.msg_data['@type'] !== 'msg.dataText') return '';
-            const base64 = msg.msg_data.text;
-            return new TextDecoder().decode(TonWeb.utils.base64ToBytes(base64));
+            if (!msg.message_content) return '';
+            if (!msg.message_content.decoded) return '';
+            if (msg.message_content.decoded['type'] !== 'text_comment') return '';
+            return msg.message_content.decoded.comment;
         }
 
         /**
@@ -627,20 +766,23 @@ class Controller {
          * @return {string} '' or base64
          */
         function getEncryptedComment(msg) {
-            if (!msg.msg_data) return '';
-            if (msg.msg_data['@type'] !== 'msg.dataEncryptedText') return '';
-            const base64 = msg.msg_data.text;
-            return base64;
+            if (!msg.message_content) return '';
+            if (!msg.message_content.body) return '';
+            if (msg.opcode !== "0x2167da4b") return '';
+            /** @type {string} */
+            const cellBase64 = msg.message_content.body;
+            /** @type {Cell} */
+            const cell = TonWeb.boc.Cell.oneFromBoc(TonWeb.utils.base64ToBytes(cellBase64));
+            return TonWeb.utils.bytesToBase64(parseSnakeCells(cell).slice(4)); // skip 4 bytes of prefix 0x2167da4b
         }
 
         const arr = [];
-        const transactions = await this.ton.getTransactions(this.myAddress, limit); // raw.transaction[]
+        const transactions = await this.getTransactionsFromIndex(this.myAddress, limit); // index.transaction[]
         for (const t of transactions) {
             let amount = new BN(t.in_msg.value);
             for (const outMsg of t.out_msgs) {
                 amount = amount.sub(new BN(outMsg.value));
             }
-            //amount = amount.sub(new BN(t.fee));
 
             let from_addr = "";
             let to_addr = "";
@@ -650,14 +792,14 @@ class Controller {
 
             if (t.in_msg.source) { // internal message with Toncoins, set source
                 inbound = true;
-                from_addr = t.in_msg.source;
-                to_addr = t.in_msg.destination;
+                from_addr = t.in_msg.source_friendly;
+                to_addr = t.in_msg.destination_friendly;
                 comment = getComment(t.in_msg);
                 encryptedComment = getEncryptedComment(t.in_msg);
             } else if (t.out_msgs.length) { // external message, we sending Toncoins
                 inbound = false;
-                from_addr = t.out_msgs[0].source;
-                to_addr = t.out_msgs[0].destination;
+                from_addr = t.out_msgs[0].source_friendly;
+                to_addr = t.out_msgs[0].destination_friendly;
                 comment = getComment(t.out_msgs[0]);
                 encryptedComment = getEncryptedComment(t.out_msgs[0]);
                 //TODO support many out messages. We need to show separate outgoing payment for each? How to show fees?
@@ -665,20 +807,25 @@ class Controller {
                 // Deploying wallet contract onchain
             }
 
+            /** @type {BN} */
+            let fee = new BN(t.total_fees);
+            for (let outMsg of t.out_msgs) {
+                fee = fee.add(new BN(outMsg.fwd_fee));
+                fee = fee.add(new BN(outMsg.ihr_fee));
+            }
+
             if (to_addr) {
                 arr.push({
-                    bodyHashBase64: t.in_msg.body_hash,
+                    bodyHashHex: t.in_msg.message_content.hash, // hex without 0x uppercase
                     inbound,
-                    hash: t.transaction_id.hash,
+                    hash: t.hash, // hex without 0x uppercase
                     amount: amount.toString(),
                     from_addr: from_addr,
                     to_addr: to_addr,
-                    fee: t.fee.toString(),
-                    storageFee: t.storage_fee.toString(),
-                    otherFee: t.other_fee.toString(),
+                    fee: fee.toString(), // string BN
                     comment: comment,
                     encryptedComment: encryptedComment,
-                    date: t.utime * 1000
+                    date: t.now * 1000
                 });
             }
         }
@@ -691,10 +838,8 @@ class Controller {
      * @return Promise<{{send: () => Promise<*>, getQuery: () => Promise<Cell>, estimateFee: () => Promise<*>}}> transfer object
      */
     async sign(request, keyPair) {
-        const walletInfo = await this.getMyWalletInfo();
-
         /** @type {number} */
-        const seqno = walletInfo.seqno || 0;
+        const seqno = await this.getMySeqno();
 
         /** @type {Uint8Array | null} */
         const secretKey = keyPair ? keyPair.secretKey : null;
@@ -729,7 +874,7 @@ class Controller {
             publicKey: keyPair.publicKey,
             wc: 0
         });
-        this.myAddress = (await this.walletContract.getAddress()).toString(true, true, true);
+        this.myAddress = (await this.walletContract.getAddress()).toString(true, true, false, this.isTestnet);
         this.publicKeyHex = TonWeb.utils.bytesToHex(keyPair.publicKey);
         await storage.setItem('publicKey', this.publicKeyHex);
         await storage.setItem('walletVersion', walletVersion);
@@ -814,7 +959,7 @@ class Controller {
         this.walletContract = wallet;
 
         const address = await wallet.getAddress();
-        this.myAddress = address.toString(true, true, true);
+        this.myAddress = address.toString(true, true, false, this.isTestnet);
         this.publicKeyHex = TonWeb.utils.bytesToHex(publicKey);
     }
 
@@ -850,13 +995,12 @@ class Controller {
                         publicKey: keyPair.publicKey,
                         wc: 0
                     });
-                    const walletAddress = (await wallet.getAddress()).toString(true, true, true);
-                    const walletInfo = await this.ton.provider.getWalletInfo(walletAddress);
-                    const walletBalance = this.getBalance(walletInfo);
+                    const walletAddress = (await wallet.getAddress()).toString(true, true, false, this.isTestnet);
+                    const walletBalance = await this.getBalance(walletAddress);
                     if (walletBalance.gt(new BN(0))) {
                         hasBalance.push({balance: walletBalance, clazz: WalletClass});
                     }
-                    this.debug(wallet.getName(), walletAddress, walletInfo, walletBalance.toString());
+                    this.debug(wallet.getName(), walletAddress, walletBalance.toString());
                 }
 
                 let walletClass = this.ton.wallet.all[DEFAULT_WALLET_VERSION];
@@ -885,7 +1029,7 @@ class Controller {
             publicKey: keyPair.publicKey,
             wc: 0
         });
-        this.myAddress = (await this.walletContract.getAddress()).toString(true, true, true);
+        this.myAddress = (await this.walletContract.getAddress()).toString(true, true, false, this.isTestnet);
         this.publicKeyHex = TonWeb.utils.bytesToHex(keyPair.publicKey);
         await storage.setItem('publicKey', this.publicKeyHex);
         await storage.setItem('walletVersion', this.walletContract.getName());
@@ -1003,8 +1147,7 @@ class Controller {
      */
     async updateBalance() {
         try {
-            const myWalletInfo = await this.getMyWalletInfo();
-            this.balance = this.getBalance(myWalletInfo);
+            this.balance = await this.getBalance(this.myAddress);
             return true;
         } catch (e) {
             console.error(e);
@@ -1033,7 +1176,7 @@ class Controller {
 
                 if (this.processingVisible && this.sendingData) {
                     for (let tx of txs) {
-                        if (tx.bodyHashBase64 === this.sendingData.bodyHashBase64) {
+                        if (tx.bodyHashHex === this.sendingData.bodyHashHex) {
                             this.sendToView('showPopup', {
                                 name: 'done',
                                 message: formatNanograms(this.sendingData.totalAmount) + ' TON have been sent'
@@ -1186,7 +1329,7 @@ class Controller {
             }
 
             // make toAddress non-bounceable if destination contract uninitialized
-            if (!this.checkContractInitialized(await this.ton.provider.getWalletInfo(message.toAddress))) {
+            if (!(await this.checkContractInitialized(message.toAddress))) {
                 message.toAddress = (new Address(message.toAddress)).toString(true, true, false);
             }
 
@@ -1375,8 +1518,7 @@ class Controller {
                     }
                 }
 
-                const wallet = await this.getMyWalletInfo();
-                const seqno = wallet.seqno || 0;
+                const seqno = await this.getMySeqno();
 
                 query = await this.ledgerApp.transfer(ACCOUNT_NUMBER, this.walletContract, message.toAddress, message.amount, seqno, addressFormat);
                 this.sendToView('showPopup', {name: 'processing'});
@@ -1400,7 +1542,7 @@ class Controller {
             const bodyHash = await bodyCell.hash();
 
             this.sendingData = {
-                bodyHashBase64: TonWeb.utils.bytesToBase64(bodyHash),
+                bodyHashHex: TonWeb.utils.bytesToHex(bodyHash).toUpperCase(),
                 totalAmount: totalAmount
             };
 
@@ -1566,6 +1708,13 @@ class Controller {
 
     // TRANSPORT WITH VIEW
 
+    /**
+     * @param method    {string}
+     * @param params?   {any}  boolean or object, not array
+     * @param needQueue? {boolean}
+     * @param needResult? {boolean}
+     * @return {void | Promise<{magic: (string|null), proxy: (string|null), address: (string|null), words: (string|null), walletVersion: (string|null)}>}
+     */
     sendToView(method, params, needQueue, needResult) {
         if (self.view) {
             const result = self.view.onMessage(method, params);
@@ -1597,7 +1746,7 @@ class Controller {
 
     /**
      * @param method    {string}
-     * @param params   {Object}
+     * @param params?   {any}  boolean or object, not array
      * @return {Promise<void>}
      */
     async onViewMessage(method, params) {
