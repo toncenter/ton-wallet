@@ -148,7 +148,7 @@ class Controller {
         /** @type {number} */
         this.updateIntervalId = 0;
 
-        /** @type {null | {totalAmount: BN, bodyHashHex: string }} */
+        /** @type {null | {totalAmount: BN, bodyHashBase64: string }} */
         this.sendingData = null;
 
         /** @type {boolean} */
@@ -306,8 +306,8 @@ class Controller {
      * @return {Promise<any>}
      */
     async sendToIndex(method, params) {
-        const mainnetRpc = 'https://toncenter.com/api/v3/';
-        const testnetRpc = 'https://testnet.toncenter.com/api/v3/';
+        const mainnetRpc = 'https://stage.toncenter.com/api/v3/';
+        const testnetRpc = 'https://stage-testnet.toncenter.com/api/v3/';
         const rpc = this.isTestnet ? testnetRpc : mainnetRpc;
 
         const headers = {
@@ -416,7 +416,18 @@ class Controller {
         }
 
         const arr = [];
-        const transactions = await this.getTransactionsFromIndex(this.myAddress, limit); // index.transaction[]
+        const transactionsResponse= await this.getTransactionsFromIndex(this.myAddress, limit);
+        const transactions = transactionsResponse.transactions; // index.transaction[]
+        const addressBook = transactionsResponse.address_book;
+
+        /**
+         * @param rawAddress    {string}
+         * @return {string}
+         */
+        const formatTxAddress = (rawAddress) => {
+            return addressBook[rawAddress].user_friendly;
+        }
+
         for (const t of transactions) {
             let amount = new BN(t.in_msg.value);
             for (const outMsg of t.out_msgs) {
@@ -431,14 +442,14 @@ class Controller {
 
             if (t.in_msg.source) { // internal message with Toncoins, set source
                 inbound = true;
-                from_addr = t.in_msg.source_friendly;
-                to_addr = t.in_msg.destination_friendly;
+                from_addr = formatTxAddress(t.in_msg.source);
+                to_addr = formatTxAddress(t.in_msg.destination);
                 comment = getComment(t.in_msg);
                 encryptedComment = getEncryptedComment(t.in_msg);
             } else if (t.out_msgs.length) { // external message, we sending Toncoins
                 inbound = false;
-                from_addr = t.out_msgs[0].source_friendly;
-                to_addr = t.out_msgs[0].destination_friendly;
+                from_addr = formatTxAddress(t.out_msgs[0].source);
+                to_addr = formatTxAddress(t.out_msgs[0].destination);
                 comment = getComment(t.out_msgs[0]);
                 encryptedComment = getEncryptedComment(t.out_msgs[0]);
                 //TODO support many out messages. We need to show separate outgoing payment for each? How to show fees?
@@ -455,9 +466,9 @@ class Controller {
 
             if (to_addr) {
                 arr.push({
-                    bodyHashHex: t.in_msg.message_content.hash, // hex without 0x uppercase
+                    bodyHashBase64: t.in_msg.message_content.hash, // base64
                     inbound,
-                    hash: t.hash, // hex without 0x uppercase
+                    hash: t.hash, // base64
                     amount: amount.toString(),
                     from_addr: from_addr,
                     to_addr: to_addr,
@@ -815,7 +826,7 @@ class Controller {
 
                 if (this.processingVisible && this.sendingData) {
                     for (let tx of txs) {
-                        if (tx.bodyHashHex === this.sendingData.bodyHashHex) {
+                        if (tx.bodyHashBase64 === this.sendingData.bodyHashBase64) {
                             this.sendToView('showPopup', {
                                 name: 'done',
                                 message: formatNanograms(this.sendingData.totalAmount) + ' TON have been sent'
@@ -1181,7 +1192,7 @@ class Controller {
             const bodyHash = await bodyCell.hash();
 
             this.sendingData = {
-                bodyHashHex: TonWeb.utils.bytesToHex(bodyHash).toUpperCase(),
+                bodyHashBase64: TonWeb.utils.bytesToBase64(bodyHash),
                 totalAmount: totalAmount
             };
 

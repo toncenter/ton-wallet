@@ -44,7 +44,7 @@ const base = {
         all_frames: true
     }],
     web_accessible_resources: ['js/extension/provider.js'],
-    content_security_policy: "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data: https://nft.ton.diamonds/; connect-src https://toncenter.com/api/ https://testnet.toncenter.com/api/ https://ton.diamonds/api/wallet/diamond_nfts"
+    content_security_policy: "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data: https://nft.ton.diamonds/; connect-src https://toncenter.com/api/ https://testnet.toncenter.com/api/ https://stage.toncenter.com/api/ https://stage-testnet.toncenter.com/api/ https://ton.diamonds/api/wallet/diamond_nfts"
 };
 
 const manifest = async buildDest => {
