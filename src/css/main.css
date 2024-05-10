@@ -938,12 +938,18 @@ button {
     margin-top: 20px;
 }
 
-#sendBalance {
+#sendBalance{
     position: absolute;
     right: 0;
     top: 0;
     color: #999999;
     font-size: 14px;
+}
+
+#sendBalance:hover  {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    cursor: pointer;
 }
 
 
