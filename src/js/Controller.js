@@ -306,8 +306,8 @@ class Controller {
      * @return {Promise<any>}
      */
     async sendToIndex(method, params) {
-        const mainnetRpc = 'https://stage.toncenter.com/api/v3/';
-        const testnetRpc = 'https://stage-testnet.toncenter.com/api/v3/';
+        const mainnetRpc = 'https://toncenter.com/api/v3/';
+        const testnetRpc = 'https://testnet.toncenter.com/api/v3/';
         const rpc = this.isTestnet ? testnetRpc : mainnetRpc;
 
         const headers = {
