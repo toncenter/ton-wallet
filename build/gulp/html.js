@@ -4,7 +4,7 @@ const { BUILD_DESTS } = require('./config');
 const { version } = require('../../package.json');
 
 const html = buildDest => {
-    let stream = src('src/index.html').pipe(replace('{{VERSION}}', version));
+    let stream = src('src/index.html').pipe(replace('{{VERSION}}', version)).pipe(src('src/ton-connect.html'));
 
     // For extensions add body class and remove Controller.js including
     if (buildDest !== BUILD_DESTS.WEB) {
