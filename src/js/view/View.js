@@ -374,6 +374,7 @@ class View {
         $('#transaction_closeBtn').addEventListener('click', () => this.closePopup());
 
         $('#connectLedger_cancelBtn').addEventListener('click', () => this.closePopup());
+        $('#sendBalance').addEventListener('click', () => this.setMaxAmount());
 
         $('#send_btn').addEventListener('click', (e) => {
             /** @type {string} */
@@ -1266,6 +1267,16 @@ class View {
             this.controller.onViewMessage(method, params);
         } else {
             this.port.postMessage({method, params});
+        }
+    }
+    /**
+     * Set max amount to send input field
+     */
+    setMaxAmount(){
+        if(this.balance !== null) {
+            const input = $('#amountInput')
+            input.value = fromNano(this.balance.toString());
+            input.classList.remove('error');
         }
     }
 
