@@ -487,7 +487,7 @@ class Controller {
      * @param keyPair    {nacl.KeyPair | null} null if estimates fee, keyPair if real sending
      * @return Promise<{{send: () => Promise<*>, getQuery: () => Promise<Cell>, estimateFee: () => Promise<*>}}> transfer object
      */
-    async sign(request, keyPair) {
+    async sign(request, keyPair, sendAll) {
         /** @type {number} */
         const seqno = await this.getMySeqno();
 
@@ -503,7 +503,7 @@ class Controller {
                     toAddress: message.toAddress,
                     amount: message.amount,
                     payload: message.comment,
-                    sendMode: 3,
+                    sendMode: sendAll ? 128 : 3,
                     stateInit: message.stateInit
                 }
             })
@@ -881,9 +881,10 @@ class Controller {
 
     /**
      * @param request {{expireAt?: number, messages: [{amount: BN, toAddress: string, comment?: string | Uint8Array | Cell, needEncryptComment: boolean, stateInit?: Cell}]}}
+     * @param sendAll {boolean}
      * @return {Promise<BN>} total fees in nanotons
      */
-    async getFees(request) {
+    async getFees(request, sendALl) {
         /** @type {{expireAt?: number, messages: [{amount: BN, toAddress: string, comment?: string | Uint8Array | Cell, needEncryptComment: boolean, stateInit?: Cell}]}} */
         const tempRequest = {
             expireAt: request.expireAt,
@@ -908,7 +909,7 @@ class Controller {
             });
         }
 
-        const query = await this.sign(tempRequest, null);
+        const query = await this.sign(tempRequest, null, sendALl);
         const all_fees = await query.estimateFee();
         const fees = all_fees.source_fees;
         const in_fwd_fee = new BN(fees.in_fwd_fee); // External processing fee
@@ -1043,16 +1044,17 @@ class Controller {
         }
 
         let fee;
+        let sendAll = this.balance.eq(totalAmount)
 
         try {
-            fee = await this.getFees(request);
+            fee = await this.getFees(request, sendAll);
         } catch (e) {
             console.error(e);
             this.sendToView('sendCheckFailed', {message: 'API request error'});
             return null;
         }
 
-        if (this.balance.sub(fee).lt(totalAmount)) {
+        if (!sendAll && this.balance.sub(fee).lt(totalAmount)) {
             this.sendToView('sendCheckCantPayFee', {fee});
             return null;
         }
@@ -1070,7 +1072,7 @@ class Controller {
                 fee: fee.toString()
             }, needQueue);
 
-            const sentBoc = await this.send(request, null, totalAmount);
+            const sentBoc = await this.send(request, null, totalAmount, sendAll);
 
             if (sentBoc) {
                 dAppPromise.resolve(sentBoc);
@@ -1093,7 +1095,7 @@ class Controller {
                 }
 
                 const privateKeyBase64 = await Controller.wordsToPrivateKey(words);
-                const sentBoc = await this.send(request, privateKeyBase64, totalAmount);
+                const sentBoc = await this.send(request, privateKeyBase64, totalAmount, sendAll);
 
                 this.onCancelAction = null;
 
@@ -1127,9 +1129,10 @@ class Controller {
      * @param request {{expireAt?: number, messages: [{amount: BN, toAddress: string, comment?: string | Uint8Array | Cell, needEncryptComment: boolean, stateInit?: Cell}]}}
      * @param privateKeyBase64 {string | null} null if Ledger
      * @param totalAmount {BN}
+     * @param sendAll {boolean}
      * @return  {Promise<Cell | null>} successfully sent BoC
      */
-    async send(request, privateKeyBase64, totalAmount) {
+    async send(request, privateKeyBase64, totalAmount, sendAll) {
         try {
             let query;
 
@@ -1151,6 +1154,10 @@ class Controller {
                 if (!this.ledgerApp) {
                     await this.createLedger((await storage.getItem('ledgerTransportType')) || 'hid');
                 }
+
+                if(sendAll) {
+                    message.sendMode = 128
+                } 
 
                 let addressFormat = 0;
 
@@ -1177,8 +1184,7 @@ class Controller {
             } else {
 
                 const keyPair = nacl.sign.keyPair.fromSeed(TonWeb.utils.base64ToBytes(privateKeyBase64));
-                query = await this.sign(request, keyPair);
-
+                query = await this.sign(request, keyPair, sendAll);
             }
 
             /** @type {Cell | null} */
