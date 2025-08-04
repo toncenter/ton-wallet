@@ -1,2 +1,0 @@
-"use strict";(self.webpackChunkmytonwallet=self.webpackChunkmytonwallet||[]).push([[104],{78104:(a,e,t)=>{t.r(e),t.d(e,{ShareWeb:()=>n});var r=t(16546);class n extends r.E_{async canShare(){return"undefined"!=typeof navigator&&navigator.share?{value:!0}:{value:!1}}async share(a){if("undefined"==typeof navigator||!navigator.share)throw this.unavailable("Share API not available in this browser");return await navigator.share({title:a.title,text:a.text,url:a.url}),{}}}}}]);
-//# sourceMappingURL=104.337a5d5347e427590af0.js.map

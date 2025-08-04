@@ -1,2 +1,0 @@
-"use strict";(self.webpackChunkmytonwallet=self.webpackChunkmytonwallet||[]).push([[895],{73895:(e,n,l)=>{l.r(n),l.d(n,{AppLauncherWeb:()=>r});var a=l(16546);class r extends a.E_{async canOpenUrl(e){return{value:!0}}async openUrl(e){return window.open(e.url,"_blank"),{completed:!0}}}}}]);
-//# sourceMappingURL=895.8f12ef95ea8874f9ec0b.js.map

@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkmytonwallet=self.webpackChunkmytonwallet||[]).push([[106],{11106:(e,l,s)=>{s.r(l),s.d(l,{CapacitorUSBPluginWeb:()=>n});var a=s(16546);class n extends a.E_{async echo(e){return console.log("ECHO",e),e}}}}]);
+//# sourceMappingURL=106.4f3d72aecd28d192bbee.js.map

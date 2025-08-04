@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkmytonwallet=self.webpackChunkmytonwallet||[]).push([[88],{28088:(e,t,s)=>{s.r(t),s.d(t,{SafeAreaWeb:()=>n});var a=s(16546);class n extends a.E_{async getSafeAreaInsets(){return{insets:{top:0,left:0,right:0,bottom:0}}}async getStatusBarHeight(){return{statusBarHeight:0}}setImmersiveNavigationBar(){throw this.unimplemented("Method not supported on Web.")}}}}]);
+//# sourceMappingURL=88.624986b76c0ad075690b.js.map

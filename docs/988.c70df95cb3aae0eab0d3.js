@@ -1,2 +1,0 @@
-"use strict";(self.webpackChunkmytonwallet=self.webpackChunkmytonwallet||[]).push([[988],{91988:(e,n,r)=>{r.r(n),r.d(n,{NativeSettingsWeb:()=>o});var t=r(16546);class o extends t.E_{async open(){return new Promise(((e,n)=>{n(new Error("Not implemented for web."))}))}async openAndroid(){return new Promise(((e,n)=>{n(new Error("Not implemented for web."))}))}async openIOS(){return new Promise(((e,n)=>{n(new Error("Not implemented for web."))}))}}}}]);
-//# sourceMappingURL=988.c70df95cb3aae0eab0d3.js.map

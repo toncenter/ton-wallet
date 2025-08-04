@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "TON Wallet",
   "description": "Set up your own TON Wallet on The Open Network",
-  "version": "3.4.6",
+  "version": "4.0.2",
   "icons": {
     "192": "coreWallet/icon-192x192.png",
     "256": "coreWallet/icon-256x256.png",
@@ -48,6 +48,6 @@
     }
   ],
   "content_security_policy": {
-    "extension_pages": "default-src 'none'; manifest-src 'self'; connect-src 'self' https: ; script-src 'self' 'wasm-unsafe-eval' ; style-src 'self' https://fonts.googleapis.com/; img-src 'self' data: https: blob:; media-src 'self' data:; object-src 'none'; base-uri 'none'; font-src 'self' https://fonts.gstatic.com/; form-action 'none'; frame-src 'self' ;"
+    "extension_pages": "default-src 'none'; manifest-src 'self'; connect-src 'self' blob: https://api.mytonwallet.org wss://api.mytonwallet.org https://api.mytonwallet.org/proxy/ https://static.mytonwallet.org https://toncenter.mytonwallet.org wss://toncenter.mytonwallet.org https://toncenter-testnet.mytonwallet.org wss://toncenter-testnet.mytonwallet.org https://tonapiio.mytonwallet.org https://tonapiio-testnet.mytonwallet.org https://tronapi.mytonwallet.org https://api.shasta.trongrid.io https://ipfs.io/ipfs/ https://tonconnectbridge.mytonwallet.org/bridge/ ; script-src 'self' 'wasm-unsafe-eval' ; style-src 'self' https://fonts.googleapis.com/; img-src 'self' data: blob: https: https://static.mytonwallet.org https://imgproxy.mytonwallet.org https://dns-image.mytonwallet.org https://mytonwallet.s3.eu-central-1.amazonaws.com https://cache.tonapi.io https://c.tonapi.io https://imgproxy.toncenter.com https://web-api.changelly.com; media-src 'self' data: https://static.mytonwallet.org/; object-src 'none'; base-uri 'none'; font-src 'self' https://fonts.gstatic.com/; form-action 'none'; frame-src 'self' https: ;"
   }
 }

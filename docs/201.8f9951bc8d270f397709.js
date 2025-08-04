@@ -1,2 +1,0 @@
-"use strict";(self.webpackChunkmytonwallet=self.webpackChunkmytonwallet||[]).push([[201],{5054:(e,n,t)=>{t.d(n,{SecureStoragePlugin:()=>u});const u=(0,t(16546).F3)("SecureStoragePlugin",{web:()=>t.e(196).then(t.bind(t,75196)).then((e=>new e.SecureStoragePluginWeb))})}}]);
-//# sourceMappingURL=201.8f9951bc8d270f397709.js.map
